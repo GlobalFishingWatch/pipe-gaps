@@ -1,0 +1,95 @@
+#standardSQL
+
+# Utility Functions
+
+
+# Get the longitude of the antipode for a given longitude
+#
+# This funtion transforms the longitude to the meridian on the opposite side of the world
+# This is useful for doing operations with data that spans the anti-meridian
+#
+# Apply the function again to the transformed value to return to the original meridian
+#
+# Example
+#   anti_lon(0.0) = 0.0
+#   anti_lon(90.0) = -90.0
+#   anti_lon(-90.0) = 90.0
+#   anti_lon(-179.0) = 1.0
+#   anti_lon(1.0) = -179.0
+#
+CREATE TEMPORARY FUNCTION anti_lon ( lon FLOAT64 )
+AS (
+  IF (lon < 0, 180.0 + lon, (180 - lon) * -1)
+);
+
+
+# Convert a lat,lon pont in a GEOGRAPHY, such as created with ST_GEOGPOINT(lon, lat)
+# Retrns a STRUCT(lon, lat)
+#
+# It seems ridiculous that we have to convert to json and then parse it to do this, but bigquery
+# does not provide any other way to get the lat/lon out of a GEOGRAPHY
+
+CREATE TEMPORARY FUNCTION geopoint_to_struct (pt GEOGRAPHY)
+AS (
+  STRUCT(
+    CAST(JSON_EXTRACT_SCALAR(ST_ASGEOJSON(pt), "$['coordinates'][0]") AS FLOAT64) as lon,
+    CAST(JSON_EXTRACT_SCALAR(ST_ASGEOJSON(pt), "$['coordinates'][1]") AS FLOAT64) as lat
+  )
+);
+
+# Format gridcode
+# Generate gridcode from lon and lat
+# Returns a String
+
+CREATE TEMPORARY FUNCTION format_gridcode (lon FLOAT64, lat FLOAT64) AS (
+    FORMAT("lon:%+07.2f_lat:%+07.2f", IF(ABS(ROUND(lon /0.01)*0.01) < 0.01, ABS(ROUND(lon /0.01)*0.01), ROUND(lon /0.01)*0.01 ), IF(ABS(ROUND(lat /0.01)*0.01) < 0.01, ABS(ROUND(lat /0.01)*0.01), ROUND(lat /0.01)*0.01 ))
+);
+
+# Convert meters to kilometers
+# Returns a Float
+CREATE TEMPORARY FUNCTION convert_m_to_km (m FLOAT64) AS (m / 1000);
+
+# Convert nautical miles to kilometers
+# Returns a Float
+CREATE TEMPORARY FUNCTION convert_nm_to_km (nm FLOAT64) as (nm * 1.852);
+
+--
+-- Creates a port-id based in the iso3 and the label of the port
+--
+CREATE TEMPORARY FUNCTION
+  generate_port_id (iso3 STRING,
+    label STRING) AS ( LOWER(CONCAT(iso3,"-",REGEXP_REPLACE(NORMALIZE(label),' ',''))) );
+
+-- Returns true an rfmo is whitelisted so that authorizations should be
+-- computed for it
+    CREATE TEMPORARY FUNCTION is_whitelisted_rfmo(rfmo STRING) AS ( rfmo IN (
+          "ICCAT",
+          "IOTC",
+          "WCPFC",
+          "IATTC",
+          "CCSBT",
+          "SPRFMO",
+          "NPFC" )
+     );
+
+CREATE TEMP FUNCTION s2_level() AS (10);
+CREATE TEMP FUNCTION parse_regions_to_struct(regions_str STRING)
+  RETURNS STRUCT<eez ARRAY<STRING>, mpa ARRAY<STRING>, rfmo ARRAY<STRING>, fao ARRAY<STRING>,major_fao ARRAY<STRING>, eez12nm ARRAY<STRING>, high_seas ARRAY<STRING>, mpa_no_take_partial ARRAY<STRING>, mpa_no_take ARRAY<STRING>, duke_paa ARRAY<STRING>, protectedseas ARRAY<STRING>, hsp ARRAY<STRING>, fra_gfcm_fao ARRAY<STRING>>
+  LANGUAGE js AS
+"""
+    const regions = JSON.parse(regions_str)
+    this.eez = regions.eez || [];
+    this.mpa = regions.mpa || [];
+    this.mpa_no_take = regions.mpa_no_take || [];
+    this.mpa_no_take_partial = regions.mpa_no_take_partial || [];
+    this.rfmo = regions.rfmo || [];
+    this.fao = regions.fao || [];
+    this.major_fao = regions.major_fao || [];
+    this.eez12nm = regions.eez12nm || [];
+    this.high_seas = regions.high_seas || [];
+    this.duke_paa = regions.duke_paa || [];
+    this.protectedseas = regions.protectedseas || [];
+    this.hsp = regions.hsp || [];
+    this.fra_gfcm_fao = regions.fra_gfcm_fao || [];
+    return this;
+""";

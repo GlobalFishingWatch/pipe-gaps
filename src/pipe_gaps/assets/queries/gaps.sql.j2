@@ -1,0 +1,31 @@
+SELECT
+  {{ fields }}
+FROM (
+  SELECT *
+  FROM `{{ source_gaps }}`
+  QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY gap_id, start_timestamp
+    ORDER BY version DESC
+  ) = 1
+)
+WHERE
+  1=1
+  {% if start_date %}
+    AND DATE(start_timestamp) >= '{{ start_date }}'
+  {% endif %}
+
+  {% if end_date %}
+    AND DATE(end_timestamp) < '{{ end_date }}'
+  {% endif %}
+
+  {% if ssvids %}
+    AND ssvid IN ({{ ssvids | join(', ') }})
+  {% endif %}
+
+  {% if is_closed is not none %}
+    {% if is_closed %}
+      AND is_closed
+    {% else %}
+      AND NOT is_closed
+    {% endif %}
+  {% endif %}

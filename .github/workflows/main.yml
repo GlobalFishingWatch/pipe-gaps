@@ -1,0 +1,83 @@
+name: main
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  flake8:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.12
+
+      - name: Install flake8
+        run: pip --disable-pip-version-check install flake8
+
+      - name: Lint with flake8
+        run: flake8 --count
+
+  tests:
+    name: tests - Python ${{ matrix.python-version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os: ["ubuntu-latest"]
+        python-version: ["3.13"]
+    env:
+      VENV: .venv
+      PACKAGE: pipe_gaps
+
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          # cache option make the step fail if you don´t have requirements.txt or pyproject.toml on root.
+          # https://github.com/actions/setup-python/issues/807.
+      
+      - name: Install UV
+        run: make uv
+
+      - name: Create virtual environment
+        run: uv venv $VENV
+
+      - name: Install package with test dependencies
+        run: |
+          . $VENV/bin/activate
+          make install-test
+          pip install .
+
+      - name: Test with pytest
+        run: |
+          . $VENV/bin/activate
+          pytest --cov=$PACKAGE --cov-report=xml
+
+      - name: Upload coverage reports to Codecov
+        if: github.ref == 'refs/heads/main' && matrix.python-version == '3.13'
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  tests-in-docker:
+    name: tests - Python 3.12 on Docker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Python
+        uses: actions/setup-python@v6
+  
+      - name: Build docker image
+        run: make docker-build
+    
+      - name: Run tests
+        run: make docker-test

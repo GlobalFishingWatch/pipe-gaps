@@ -1,0 +1,302 @@
+#standardSQL
+
+-- Include some utility functions
+{% include 'utils.sql.j2' %}
+
+-- Parameters of this query:
+-- * source_gaps
+-- * source_voyages
+-- * source_port_visits
+-- * source_segment_info
+-- * source_segs_activity
+-- * source_regions
+-- * source_vessels_byyear
+-- * start_date
+
+WITH
+
+    #################
+    # Voyages source 
+    #################
+    voyages_source as (
+        SELECT
+            *,
+        FROM `{{ source_voyages }}`
+    ),
+
+    
+    # We need to flatten voyages so that we have a record for each vessel id
+    flattened_voyages AS (
+        SELECT
+            trip_id,
+            trip_start,
+            trip_end,
+            trip_start_anchorage_id,
+            trip_end_anchorage_id,
+            trip_end_visit_id,
+            vessel_id
+        FROM voyages_source
+        WHERE trip_start != '1979-01-01' OR trip_start IS NULL
+    ),
+
+    ########################################################
+    # Port visits source, replacing named achorages source #
+    ########################################################
+    port_visit_source as (
+        SELECT
+            JSON_EXTRACT_SCALAR(event_info, "$.visit_id") as visit_id,
+            *,
+        FROM `{{ source_port_visits }}`
+    ),
+
+
+    ############
+    # Gaps     #
+    ############
+    source_gaps AS (
+        SELECT
+            *,
+            EXTRACT(year from start_timestamp) as year
+        FROM
+            `{{ source_gaps }}`
+        WHERE
+          1=1
+        {% if start_date %}
+          AND DATE(start_timestamp) >= '{{ start_date }}'
+        {% endif %}
+
+        {% if end_date %}
+          AND DATE(end_timestamp) < '{{ end_date }}'
+        {% endif %}
+    ),
+
+    ############
+    # Segments #
+    ############
+    segment_info AS (
+      SELECT
+        si.seg_id,
+        si.vessel_id,
+        sa.overlapping_and_short
+      FROM `{{ source_segment_info }}` si
+      JOIN `{{ source_segs_activity }}` sa USING (seg_id)
+    ),
+
+
+    ################
+    # Regions data #
+    ################
+    regions_source as (
+        SELECT
+            *,
+        FROM `{{ source_regions }}`
+    ),
+
+    gridded_regions AS (
+        SELECT
+            * EXCEPT(s2_cells),
+        FROM regions_source
+            CROSS JOIN UNNEST (s2_cells) AS s2_cell
+    ),
+
+    ##########################
+    # Vessels byyear sources #
+    ##########################
+    source_all_vessels AS (
+        SELECT
+            *
+        FROM `{{ source_vessels_byyear }}`
+    ),
+
+    ############### Create base event table ################
+    # * Compute event_id.                                  # 
+    # * Get base common information.                       # 
+    # * Add event_type, vessel_id, seg_id.                 # 
+    # * Calculate lat_mean, lot_mean.                      # 
+    # * Add vessels, voyages, and port visits information. #
+    # * Convert distances to km.                           # 
+    ########################################################
+    base_gap_event AS (
+        SELECT
+            TO_HEX(MD5(FORMAT("%s|%s|%t|%t",'gaps', vessel_start.vessel_id, start_timestamp, end_timestamp))) AS event_id,
+            'gaps' AS event_type,
+            vessel_start.vessel_id,
+            s1.seg_id,
+            start_timestamp AS event_start,
+            end_timestamp AS event_end,
+            (start_lat + end_lat) / 2 AS lat_mean,
+            (start_lon + end_lon) / 2 AS lon_mean,
+            start_lat AS lat_min,
+            start_lon AS lon_min,
+            end_lat AS lat_max,
+            end_lon AS lon_max,
+            start_distance_from_shore_m,
+            end_distance_from_shore_m,
+            start_distance_from_port_m,
+            end_distance_from_port_m,
+            TO_JSON_STRING(
+                STRUCT(
+                    duration_h,
+                    convert_m_to_km(distance_m) AS total_distance_km,
+                    implied_speed_knots,
+                    vessel_start.prod_shiptype as vessel_class,
+                    STRUCT(
+                    -- destination port after event
+                        vessel_trip_end_anchorages.event_id AS event_id,
+                        SAFE.STRING(PARSE_JSON(vessel_trip_end_anchorages.event_info, wide_number_mode=>'round').intermediate_anchorage.id) as id,
+                        SAFE.STRING(PARSE_JSON(vessel_trip_end_anchorages.event_info, wide_number_mode=>'round').intermediate_anchorage.flag) as flag,
+                        SAFE.STRING(PARSE_JSON(vessel_trip_end_anchorages.event_info, wide_number_mode=>'round').intermediate_anchorage.name) as name
+                    ) as main_vessel_destination_port,
+                    s1.vessel_id AS vessel_1_id,
+                    s2.vessel_id AS vessel_2_id,
+                    s1.vessel_id != s2.vessel_id AS is_multi_vessel_gap,
+                    s1.overlapping_and_short AS gap_start_overlapping_and_short,
+                    s2.overlapping_and_short AS gap_end_overlapping_and_short,
+                    s1.overlapping_and_short AND s2.overlapping_and_short AS gap_overlapping_and_short,
+                    LEAST(
+                      start_distance_from_port_m,
+                      COALESCE(end_distance_from_port_m, start_distance_from_port_m)
+                    ) AS gap_min_distance_from_port_m,
+                    LEAST(
+                      start_distance_from_shore_m,
+                      COALESCE(end_distance_from_shore_m, start_distance_from_shore_m)
+                    ) AS gap_min_distance_from_shore_m
+                )
+            ) AS event_info,
+            TO_JSON_STRING(
+                ARRAY_CONCAT(
+                [
+                  STRUCT(
+                    gaps.ssvid AS ssvid,
+                    vessel_start.vessel_id AS id,
+                    vessel_start.shipname AS name,
+                    vessel_start.prod_shiptype AS type,
+                    vessel_start.mmsi_flag AS flag,
+                    s1.seg_id AS seg_id
+                  )
+                ],
+                IF(
+                  s2.vessel_id IS NOT NULL
+                  AND s2.vessel_id != s1.vessel_id,
+                  [
+                    STRUCT(
+                      gaps.ssvid AS ssvid,
+                      vessel_end.vessel_id AS id,
+                      vessel_end.shipname AS name,
+                      vessel_end.prod_shiptype AS type,
+                      vessel_end.mmsi_flag AS flag,
+                      s2.seg_id AS seg_id
+                    )
+                  ],
+                  []
+                )
+              )
+            ) AS event_vessels,
+        FROM source_gaps AS gaps
+            # Join with segments. 
+            LEFT JOIN segment_info s1 ON gaps.start_seg_id = s1.seg_id
+            LEFT JOIN segment_info s2 ON gaps.end_seg_id   = s2.seg_id
+
+            # Start / OFF vessel (mandatory)
+            JOIN source_all_vessels AS vessel_start
+              ON vessel_start.vessel_id = s1.vessel_id
+             AND vessel_start.year      = gaps.year
+
+            # End / ON vessel (optional, open gaps allowed)
+            LEFT JOIN source_all_vessels AS vessel_end
+              ON vessel_end.vessel_id = s2.vessel_id
+             AND vessel_end.year      = gaps.year
+
+            # Join with voyages.
+            LEFT JOIN flattened_voyages AS voyages ON ( 
+                vessel_start.vessel_id = voyages.vessel_id
+                AND (voyages.trip_start < start_timestamp OR voyages.trip_start IS NULL)
+                AND voyages.trip_end > end_timestamp 
+            )
+
+            # Join with port port visits.
+            LEFT JOIN port_visit_source AS vessel_trip_end_anchorages ON
+                voyages.trip_end_visit_id = vessel_trip_end_anchorages.visit_id
+    ),
+
+    #
+    # Finally, enhance the event with info related to regions and distances.
+    #
+    total_events AS (
+        SELECT
+            event_id,
+            event_type,
+            vessel_id,
+            seg_id,
+            event_start,
+            event_end,
+            lat_mean,
+            lon_mean,
+            lat_min,
+            lon_min,
+            lat_max,
+            lon_max,
+            event_info,
+            event_vessels,
+            ST_GEOGPOINT(lon_mean, lat_mean) as geo,
+            S2_CELLIDFROMPOINT(ST_GEOGPOINT(lon_mean, lat_mean), s2_level()) as s2_cell,
+            convert_m_to_km(start_distance_from_shore_m) AS start_distance_from_shore_km,
+            convert_m_to_km(end_distance_from_shore_m) AS end_distance_from_shore_km,
+            convert_m_to_km(start_distance_from_port_m) AS start_distance_from_port_km,
+            convert_m_to_km(end_distance_from_port_m) AS end_distance_from_port_km,
+        FROM
+            base_gap_event
+    ),
+
+    # Match events with regions geographically.
+    create_event_region_matches AS (
+        SELECT
+            events.event_id,
+            id,
+            layer,
+        FROM
+            total_events AS events
+            JOIN gridded_regions r ON events.s2_cell = r.s2_cell
+        WHERE ST_INTERSECTS(events.geo, r.geo)
+    ),
+
+    # Group events by event_id, layer, and id
+    event_by_layer_by_id AS (
+        SELECT
+            event_id,
+            layer,
+            id
+        FROM create_event_region_matches
+        GROUP BY
+            1,
+            2,
+            3
+    ),
+
+    # Group events by layer.
+    events_by_layer AS (
+        SELECT
+            event_id, CONCAT('"', layer, '":' ,TO_JSON_STRING(array_agg(id))) AS json_frament
+        FROM event_by_layer_by_id
+        GROUP BY
+            event_id,
+            layer
+    ),
+
+    # Enrich events with regions.
+    event_with_region AS (
+        SELECT
+            event_id,
+            parse_regions_to_struct(CONCAT( "{", STRING_AGG(json_frament, ","), "}")) AS regions
+        FROM events_by_layer
+        GROUP BY
+            1
+    )
+
+    # Enrich events with regions.
+    SELECT
+        total_events.* EXCEPT (s2_cell, geo),
+        event_with_region.regions AS regions_mean_position
+    FROM
+        total_events
+        LEFT JOIN event_with_region USING (event_id)
