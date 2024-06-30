@@ -1,0 +1,39 @@
+services:
+  dev:
+    image: gfw/pipe-gaps-dev
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    volumes:
+      - ".:/opt/project"
+      - "gcp:/root/.config/"
+    entrypoint: "./scripts/run.sh"
+
+  test:
+    image: gfw/pipe-gaps-dev
+    environment:
+      BIGQUERY_HOST: bigquery
+      INTEGRATION_TESTS: true
+    volumes:
+      - ".:/opt/project"
+    entrypoint: "pytest"
+    depends_on:
+      - bigquery
+
+  gcloud:
+    image: google/cloud-sdk:latest
+    entrypoint: gcloud
+    volumes:
+      - "gcp:/root/.config/"
+
+  bigquery:
+    ports:
+      - 9050:9050
+    image: ghcr.io/goccy/bigquery-emulator:latest
+    command: --project=test_project --dataset=test_dataset
+
+# Volume to hold GCP authentication
+volumes:
+  gcp:
+    external: true
