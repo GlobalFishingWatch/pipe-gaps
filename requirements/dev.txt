@@ -1,4 +1,7 @@
-pip-tools~=7.4
+pip-tools~=7.0
 flake8~=7.0
+memory_profiler~=0.6
+matplotlib~=3.0
+snakeviz~=2.0
 
 -r test.txt

@@ -25,7 +25,7 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
-        'rich<14',
+        'rich~=13.0',
     ],
     entry_points={
         'console_scripts': [

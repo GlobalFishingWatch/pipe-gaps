@@ -53,3 +53,6 @@ coverage.xml
 
 # pycharm
 .idea/
+
+# Profiling
+*.prof
