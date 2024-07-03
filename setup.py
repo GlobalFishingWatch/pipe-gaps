@@ -26,6 +26,7 @@ setuptools.setup(
     ],
     install_requires=[
         'rich~=13.0',
+        'ciso8601~=2.0'
     ],
     entry_points={
         'console_scripts': [
