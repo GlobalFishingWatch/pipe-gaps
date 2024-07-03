@@ -2,6 +2,8 @@
 import logging
 from datetime import timedelta, datetime
 
+from rich.progress import track
+
 logger = logging.getLogger()
 
 
@@ -21,15 +23,18 @@ def detect(messages: list[dict], threshold: timedelta = THRESHOLD) -> list[tuple
     Returns:
         list: gaps as 2d-tuple with (start, end) messages.
     """
-    logger.info("Amount of messages: {}".format(len(messages)))
+    n = len(messages)
+    logger.info("Amount of messages: {}".format(n))
 
     logger.info("Sorting messages by timestamp...")
     messages_sorted = sorted(messages, key=lambda x: x["timestamp"])
 
     logger.info("Detecting gaps...")
     gaps = zip(messages_sorted[:-1], messages_sorted[1:])
-    # gaps = list(filter(lambda x: _filter_condition(x, threshold), gaps))
-    gaps = tuple(gap for gap in gaps if _filter_condition(gap, threshold))
+    gaps = tuple(
+        gap for gap in track(gaps, total=n, description="Filtering gaps:")
+        if _filter_condition(gap, threshold)
+    )
 
     logger.info("Amount of gaps found: {}".format(len(gaps)))
 
