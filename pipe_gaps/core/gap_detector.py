@@ -1,7 +1,6 @@
 """This module encapsulates the gap detection core algorithm."""
 import logging
 from datetime import timedelta
-import ciso8601
 
 from rich.progress import track
 
@@ -14,7 +13,7 @@ THRESHOLD = timedelta(hours=12, minutes=0, seconds=0)
 def detect(messages: list[dict], threshold: timedelta = THRESHOLD) -> list[tuple[dict, dict]]:
     """Detects time gaps between AIS position messages.
 
-    Currently takes about 4 seconds to process 10M messages (i7-1355U 5.0GHz).
+    Currently takes about 2 seconds to process 10M messages (i7-1355U 5.0GHz).
 
     Args:
         messages: List of AIS messages.
@@ -31,9 +30,11 @@ def detect(messages: list[dict], threshold: timedelta = THRESHOLD) -> list[tuple
 
     logger.info("Detecting gaps...")
     gaps = zip(messages_sorted[:-1], messages_sorted[1:])
+
+    threshold_in_seconds = threshold.total_seconds()
     gaps = tuple(
         gap for gap in track(gaps, total=n, description="Filtering gaps:")
-        if _filter_condition(gap, threshold)
+        if _filter_condition(gap, threshold_in_seconds)
     )
 
     logger.info("Amount of gaps found: {}".format(len(gaps)))
@@ -41,8 +42,5 @@ def detect(messages: list[dict], threshold: timedelta = THRESHOLD) -> list[tuple
     return gaps
 
 
-def _filter_condition(gap: tuple[dict, dict], threshold: timedelta) -> bool:
-    start_dt = ciso8601.parse_datetime(gap[0]["timestamp"].replace(" UTC", ""))
-    end_dt = ciso8601.parse_datetime(gap[1]["timestamp"].replace(" UTC", ""))
-
-    return (end_dt - start_dt) > threshold
+def _filter_condition(gap: tuple[dict, dict], threshold: float) -> bool:
+    return (gap[1]["timestamp"]) - gap[0]["timestamp"] > threshold

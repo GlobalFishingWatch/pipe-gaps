@@ -7,8 +7,8 @@ TEST_DATA_DIR = "tests/data"
 
 
 def get_messages():
-    DATA_FILE = os.path.join(TEST_DATA_DIR, "messages.json")
-    with open(DATA_FILE) as file:
+    data_file = os.path.join(TEST_DATA_DIR, "messages.json")
+    with open(data_file) as file:
         return json.load(file)
 
 
