@@ -5,7 +5,7 @@
     <img alt="Coverage" src="https://codecov.io/gh/GlobalFishingWatch/pipe-gaps/branch/develop/graph/badge.svg?token=OO2L9SXVG0">
   </a>
   <a>
-    <img alt="Python versions" src="https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue">
+    <img alt="Python versions" src="https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue">
   </a>
   <a>
     <img alt="Last release" src="https://img.shields.io/github/v/release/GlobalFishingWatch/pipe-gaps">
@@ -56,15 +56,62 @@ unauthorized transshipments [[1]](#1)[[2]](#2).
 ## Definition of gap
 
 We define an **AIS** gap event when the period of time between
-consecutive known good **AIS** positions from a single vessel
-, after de-noise and de-spoofing),
+consecutive known good **AIS** positions from a single vessel,
+after de-noise and de-spoofing),
 exceeds a configured `gap_threshold` (typically 12 hours).
 
 When the period of time between **last** known good position
 and the present time exceeds the `gap_threshold`,
 we call it an **opened** gap event.
 
-</div>
+## Usage
+
+### Core gap detector
+
+> **Note**  
+> Currently, the core algorithm takes about `(1.75 ± 0.01)` seconds to process 10M messages.  
+  Tested on a i7-1355U 5.0GHz processor.
+
+#### Installation:
+```shell
+pip install pipe-gaps
+```
+
+#### Using from python code:
+```python
+from pipe_gaps.core import gap_detector as gd
+from datetime import timedelta
+
+gaps = gd.detect(messages, threshold=timedelta(hours=1, minutes=20))
+```
+
+Where `messages` is a list of AIS position messages with the format:
+```python
+{
+    "ssvid": "226013750",
+    "seg_id": "226013750-2023-01-01T00:10:37.000000Z",
+    "msgid": "295fa26f-cee9-1d86-8d28-d5ed96c32835",
+    "timestamp": "2024-01-04 20:48:40.000000 UTC",
+    "lat": "44.556666666666665",
+    "lon": "-0.24666666666666667",
+    "course": "511.0",
+    "speed_knots": "0.0",
+    "type": "AIS.27",
+    "receiver_type": "satellite",
+    "distance_from_shore_m": "0.0",
+    "distance_from_port_m": "40112.82"
+}
+```
+
+#### Using from CLI code:
+
+Not yet implemented.
+
+### Apache Beam integration
+
+Not yet implemented.
+
+
 
 ## References
 <a id="1">[1]</a> Welch H., Clavelle T., White T. D., Cimino M. A., Van Osdel J., Hochberg T., et al. (2022). Hot spots of unseen fishing vessels. Sci. Adv. 8 (44), eabq2109. doi: 10.1126/sciadv.abq2109

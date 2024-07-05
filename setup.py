@@ -16,7 +16,6 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     include_package_data=True,
     classifiers=[
-        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
@@ -25,7 +24,9 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
-        'rich<14',
+        'rich~=13.0',
+        'py-cpuinfo~=9.0',
+        'importlib-resources~=6.0'
     ],
     entry_points={
         'console_scripts': [

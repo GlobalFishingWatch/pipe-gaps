@@ -63,5 +63,8 @@ testintegration:
 testdocker:
 	docker compose run test
 
+profile:
+	python -m cProfile -o gaps.prof tests/benchmark.py 10e6
 
-.PHONY: help gcp build dockershell reqs upgrade-reqs venv install test testintegration testdocker
+
+.PHONY: help gcp build dockershell reqs upgrade-reqs venv install test testintegration testdocker profile
