@@ -69,7 +69,7 @@ we call it an **opened** gap event.
 ### Core gap detector
 
 > **Note**  
-> Currently, the core algorithm takes about `(1.90 ± 0.01)` seconds to process 10M messages.  
+> Currently, the core algorithm takes about `(1.75 ± 0.01)` seconds to process 10M messages.  
   Tested on a i7-1355U 5.0GHz processor.
 
 #### Installation:
