@@ -58,5 +58,6 @@
         "minimum": 1.5088715553283691,
         "sem": 0.012715362371360301
     },
-    "input_size": 10000000
+    "input_size": 10000000,
+    "cpu_info": "13th Gen Intel(R) Core(TM) i7-1355U"
 }

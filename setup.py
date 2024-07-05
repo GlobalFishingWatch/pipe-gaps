@@ -25,6 +25,8 @@ setuptools.setup(
     ],
     install_requires=[
         'rich~=13.0',
+        'py-cpuinfo~=9.0',
+        'importlib-resources~=6.0'
     ],
     entry_points={
         'console_scripts': [

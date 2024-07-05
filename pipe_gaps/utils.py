@@ -1,6 +1,10 @@
+import json
+import logging
+
+from importlib_resources import files
+
 from time import time
 from functools import wraps
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -19,3 +23,13 @@ def timing(f, quiet=False):
 
         return result, elapsed_time
     return wrap
+
+
+def get_sample_messages():
+    # Reads contents with UTF-8 encoding and returns str.
+    return json_load(files('pipe_gaps.data').joinpath("sample_messages.json"))
+
+
+def json_load(path):
+    with open(path) as file:
+        return json.load(file)

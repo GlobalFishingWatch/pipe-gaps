@@ -3,36 +3,37 @@ import os
 import sys
 import math
 import json
-import pathlib
 import logging
 import argparse
 import statistics
 from dataclasses import dataclass
-
 from random import shuffle
 from datetime import timedelta
+from pathlib import Path
 
-from pipe_gaps.utils import timing
+import cpuinfo
+
 from pipe_gaps.log import setup_logger
 from pipe_gaps.core import gap_detector as gd
+from pipe_gaps.utils import timing, get_sample_messages
 
-from tests import conftest
-
-setup_logger()
 logger = logging.getLogger('Benchmark')
 
 NAME = "bench"
-DESCRIPTION = "Run benchmarks for core algorithm."
+DESCRIPTION = "Run benchmarks with simple statistics."
 
 HELP_RUN = "runs benchmark."
 HELP_STATS = "recomputes stats with an existing measurement file."
 
 HELP_SIZE = "size of the input."
-HELP_REPS = "number of repetitions."
-HELP_FILE = "filepath to measurements file."
+HELP_REPS = "number of repetitions (default: %(default)s)."
+HELP_OUTPUT_DIR = "directory in which to save the outputs (default: %(default)s)."
+HELP_FILE = "filepath of measurements file."
+
+HELP_SKIP_CPU_INFO = "if true, doesn't retrieve CPU info (takes 1 sec)."
 
 STATS_FILENAME = "measurement-size-{size}-reps-{reps}.json"
-BENCHMARKS_DATA_DIR = "benchmarks/data"
+OUTPUT_DIR = "benchmarks/"
 
 
 @dataclass
@@ -44,34 +45,32 @@ class Stats:
 
 
 class Measurement:
-    def __init__(self, measurements: list[float], input_size: int, path: str = None):
+    """Encapsulates a benchmark measurement."""
+    def __init__(self, measurements: list[float], input_size: int, cpu_info: str = None):
         self.measurements = measurements
         self.input_size = input_size
         self.reps = len(self.measurements)
-
-        self.path = path
-        if path is None:
-            self.path = pathlib.Path(BENCHMARKS_DATA_DIR).joinpath(
-                STATS_FILENAME.format(size=self.input_size, reps=self.reps))
+        self.cpu_info = cpu_info
 
         self.stats = self.compute_stats()
 
     @classmethod
-    def from_path(cls, path):
+    def from_path(cls, path, **kwargs):
         with open(path, 'r') as f:
             measurement = json.load(f)
 
         return cls(
             measurements=measurement["measurements"],
             input_size=measurement["input_size"],
-            path=path
+            cpu_info=measurement["cpu_info"]
         )
 
     def to_dict(self):
         return dict(
             measurements=self.measurements,
             statistics=self.stats.__dict__,
-            input_size=self.input_size
+            input_size=self.input_size,
+            cpu_info=self.cpu_info
         )
 
     def compute_stats(self):
@@ -93,14 +92,14 @@ class Measurement:
         logger.info("Standard Dev: {} sec".format(round(self.stats.std, 3)))
         logger.info("SEM: {} sec".format(round(self.stats.sem, 3)))
 
-    def save(self):
-        with open(self.path, 'w') as f:
+    def save(self, path):
+        with open(path, 'w') as f:
             json.dump(self.to_dict(), f, indent=4)
 
 
 def _build_input_messages(n: int = 1000) -> list[dict]:
     logger.debug("Constructing messages...")
-    test_messages = conftest.get_messages().copy()
+    test_messages = get_sample_messages().copy()
     q, mod = divmod(n, len(test_messages))
     messages = test_messages * q + test_messages[:mod]
 
@@ -110,26 +109,39 @@ def _build_input_messages(n: int = 1000) -> list[dict]:
     return messages
 
 
-def _core_gap_detector(messages: list[dict]) -> None:
+def _run_process(messages: list[dict]) -> None:
     """Benchmark for core gap detector."""
     gd.detect(messages, threshold=timedelta(hours=1, minutes=20))
 
 
-def stats(path: pathlib.Path):
+def stats(path: Path):
+    """Recomputes stats with existing measurement file."""
     measurement = Measurement.from_path(path)
-    measurement.save()
+    measurement.save(path)
 
 
-def run_benchmark(input_size: int = 1000, reps: int = 10) -> Measurement:
+def run_benchmark(
+    input_size: int = 1000,
+    reps: int = 10,
+    output_dir: Path = Path(OUTPUT_DIR),
+    skip_cpu_info: str = True
+) -> Measurement:
     """Runs benchmark and writes output with measurements and statistics.
 
     Args:
         input_size: amount of input messages.
         reps: number of repetitions.
+        output_dir: directory in which to save the outputs.
+        skip_cpu_info: if true, doesn't retrieve CPU info (takes 1 sec).
+
+    TODO: pass generic _build_input_messages as parameter.
+    TODO: pass generic _run_process to as parameter.
+    TODO: or pass a generic object with those two methods.
 
     Returns:
-        the measuremnt.
+        the measurement.
     """
+    input_size = int(input_size)
     logger.info("Size of the input: {}".format(input_size))
     logger.info("Number of repetitions: {}".format(reps))
 
@@ -137,41 +149,53 @@ def run_benchmark(input_size: int = 1000, reps: int = 10) -> Measurement:
     times = []
     for rep in range(1, reps + 1):
         messages = _build_input_messages(input_size)
-        _, elapsed = timing(_core_gap_detector, quiet=True)(messages)
+        _, elapsed = timing(_run_process, quiet=True)(messages)
         logger.info("Repetition {}; duration: {} sec".format(rep, round(elapsed, 3)))
         times.append(elapsed)
 
-    measurement = Measurement(times, input_size=input_size)
+    filename = STATS_FILENAME.format(size=input_size, reps=reps)
+    path = output_dir.joinpath(filename)
+
+    cpu_info = None
+    if not skip_cpu_info:
+        cpu_info = cpuinfo.get_cpu_info()['brand_raw']
+
+    measurement = Measurement(times, input_size, cpu_info=cpu_info)
     measurement.log_stats()
-    measurement.save()
+    measurement.save(path)
 
     return measurement
 
 
 def main(args):
     """CLI for benchmark tool."""
-    os.makedirs(BENCHMARKS_DATA_DIR, exist_ok=True)
+    setup_logger()
+
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
     parser = argparse.ArgumentParser(prog=NAME, description=DESCRIPTION)
     subparsers = parser.add_subparsers(dest='command', help='available commands')
 
     p = subparsers.add_parser("run", help=HELP_RUN)
+    p.set_defaults(func=run_benchmark)
     p.add_argument('-n', '--input_size', type=float, required=True, metavar='\b', help=HELP_SIZE)
     p.add_argument('-r', '--reps', type=int, default=10, metavar='\b', help=HELP_REPS)
+    p.add_argument(
+        '-o', '--output_dir', type=Path, default=Path(OUTPUT_DIR), metavar='\b', help=HELP_REPS)
 
-    p = subparsers.add_parser("stats", help=HELP_STATS)
-    p.add_argument('-f', '--path', type=pathlib.Path, required=True, metavar='\b', help=HELP_SIZE)
+    p.add_argument('--skip-cpu-info', action='store_true', help=HELP_SKIP_CPU_INFO)
+
+    s = subparsers.add_parser("stats", help=HELP_STATS)
+    s.set_defaults(func=stats)
+    s.add_argument('-f', '--path', type=Path, required=True, metavar='\b', help=HELP_SIZE)
 
     args = parser.parse_args(args=args or ['--help'])
 
-    command = args.command
+    # command = args.command
+    command = args.func
     del args.command
+    del args.func
 
-    if command == "run":
-        args.input_size = int(args.input_size)
-        run_benchmark(**vars(args))
-
-    if command == "stats":
-        stats(**vars(args))
+    return command(**vars(args))
 
 
 if __name__ == '__main__':
