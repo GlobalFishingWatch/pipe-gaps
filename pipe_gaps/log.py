@@ -25,7 +25,6 @@ def setup_logger(
         handlers=[RichHandler(level="NOTSET")],
         force=force
     )
-    # force = True is needed if some other library is setting the root logger.
 
     for module in warning_level:
         logging.getLogger(module).setLevel(logging.WARNING)
