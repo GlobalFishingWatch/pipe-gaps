@@ -28,9 +28,6 @@ def detect(
     Returns:
         list: gaps as 2d-tuple with (start, end) messages.
     """
-    n = len(messages)
-    logger.debug("Amount of messages: {}".format(n))
-
     logger.debug("Sorting messages by timestamp...")
     timestamp_key = operator.itemgetter(MESSAGE_TIMESTAMP_KEY)
     messages_sorted = sorted(messages, key=timestamp_key)
@@ -39,11 +36,9 @@ def detect(
     gaps = zip(messages_sorted[:-1], messages_sorted[1:])
 
     if show_progress:
-        gaps = _build_progress_bar(gaps, n)
+        gaps = _build_progress_bar(gaps, len(messages_sorted))
 
     gaps = tuple(gap for gap in gaps if _filter_condition(gap, threshold_in_seconds))
-
-    logger.debug("Amount of gaps found: {}".format(len(gaps)))
 
     return gaps
 
@@ -54,4 +49,4 @@ def _build_progress_bar(gaps, total):
 
 
 def _filter_condition(gap: tuple[dict, dict], threshold: float) -> bool:
-    return (gap[1]["timestamp"]) - gap[0]["timestamp"] > threshold
+    return (gap[1]["timestamp"] - gap[0]["timestamp"]) > threshold

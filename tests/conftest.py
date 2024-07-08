@@ -1,6 +1,6 @@
 import pytest
 
-from pipe_gaps.utils import get_sample_messages
+from pipe_gaps.data import get_sample_messages
 
 
 @pytest.fixture(scope="module")

@@ -1,14 +1,16 @@
 import logging
+
 from rich.logging import RichHandler
 
-LOG_FORMAT = '%(name)s - %(message)s'
+
+_DEFAULT_LOG_FORMAT = "%(name)s - %(message)s"
 
 
 def setup_logger(
     level: str = logging.INFO,
-    format_: str = LOG_FORMAT,
+    format_: str = _DEFAULT_LOG_FORMAT,
     warning_level: tuple = (),
-    force: bool = False
+    force: bool = False,
 ) -> None:
     """Configures the root logger.
 
@@ -20,10 +22,7 @@ def setup_logger(
     """
 
     logging.basicConfig(
-        level=level,
-        format=format_,
-        handlers=[RichHandler(level="NOTSET")],
-        force=force
+        level=level, format=format_, handlers=[RichHandler(level="NOTSET")], force=force
     )
 
     for module in warning_level:

@@ -56,3 +56,6 @@ coverage.xml
 
 # Profiling
 *.prof
+
+# Temporary files
+workdir
