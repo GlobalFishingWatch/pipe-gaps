@@ -1,5 +1,6 @@
 import json
 import logging
+from typing import Callable
 
 from importlib_resources import files
 
@@ -9,7 +10,7 @@ from functools import wraps
 logger = logging.getLogger(__name__)
 
 
-def timing(f, quiet=False):
+def timing(f, quiet=False) -> Callable:
     """Decorator to measure execution time of a function."""
     @wraps(f)
     def wrap(*args, **kw):
@@ -25,11 +26,12 @@ def timing(f, quiet=False):
     return wrap
 
 
-def get_sample_messages():
-    # Reads contents with UTF-8 encoding and returns str.
+def get_sample_messages() -> dict:
+    """Opens sample input messages."""
     return json_load(files('pipe_gaps.data').joinpath("sample_messages.json"))
 
 
-def json_load(path):
+def json_load(path) -> dict:
+    """Opens JSON file."""
     with open(path) as file:
         return json.load(file)
