@@ -66,47 +66,92 @@ we call it an **opened** gap event.
 
 ## Usage
 
-### Core gap detector
+### Installation
+```shell
+pip install pipe-gaps
+```
+
+### Using from python code
+
+#### Core gap detector
 
 > **Note**  
 > Currently, the core algorithm takes about `(1.75 ± 0.01)` seconds to process 10M messages.  
   Tested on a i7-1355U 5.0GHz processor.
 
-#### Installation:
-```shell
-pip install pipe-gaps
-```
 
-#### Using from python code:
 ```python
 from pipe_gaps.core import gap_detector as gd
 from datetime import timedelta
 
-gaps = gd.detect(messages, threshold=timedelta(hours=1, minutes=20))
-```
-
-Where `messages` is a list of AIS position messages with the format:
-```python
-{
+# Required fields
+messages = [{
     "ssvid": "226013750",
-    "seg_id": "226013750-2023-01-01T00:10:37.000000Z",
     "msgid": "295fa26f-cee9-1d86-8d28-d5ed96c32835",
     "timestamp": "2024-01-04 20:48:40.000000 UTC",
-    "lat": "44.556666666666665",
-    "lon": "-0.24666666666666667",
-    "course": "511.0",
-    "speed_knots": "0.0",
-    "type": "AIS.27",
-    "receiver_type": "satellite",
-    "distance_from_shore_m": "0.0",
-    "distance_from_port_m": "40112.82"
-}
+}]
+
+gaps = gd.detect(messages, threshold=timedelta(hours=1, minutes=20), show_progress=True)
 ```
 
-#### Using from CLI code:
+#### BigQuery integration
 
-Not yet implemented.
+First, authenticate to bigquery and configure project:
+```shell
+docker compose run gcloud auth application-default login
+docker compose run gcloud config set project world-fishing-827
+docker compose run gcloud auth application-default set-quota-project world-fishing-827
+```
 
+Then you can do:
+```python
+from datetime import datetime, timedelta
+
+from pipe_gaps import pipe
+from pipe_gaps.utils import setup_logger
+
+setup_logger()
+
+query_params = {
+    "start_date": datetime(2024, 1, 1).date(),
+    "end_date": datetime(2024, 1, 5).date(),
+    "ssvids": ["243042594"]
+}
+
+gaps_by_ssvid = pipe.run(
+    query_params=query_params,
+    show_progress=True,
+    threshold=timedelta(hours=0, minutes=5)
+)
+```
+
+
+### Using from CLI:
+
+```shell
+(.venv) $ pipe-gaps
+usage: pipe-gaps [-h] [-i ] [--threshold ] [--start-date ] [--end-date ] [--ssvids   [ ...]] [--show-progress] [--mock-db-client] [--save] [--work-dir ] [-v]
+
+    Detects time gaps in AIS position messages.
+    The definition of a gap is configurable by a time threshold.
+
+    If input-file is provided, all Query parameters are ignored.
+
+options:
+  -h, --help            show this help message and exit
+  -i  , --input-file    JSON file with input messages to use (default: None).
+  --threshold           Minimum time difference (hours) to start considering gaps (default: 12:00:00).
+  --start-date          Query filter: messages after this dete, e.g., '2024-01-01' (default: None).
+  --end-date            Query filter: messages before this date, e.g., '2024-01-02' (default: None).
+  --ssvids   [  ...]    Query filter: list of ssvids (default: None).
+  --show-progress       If True, renders a progress bar (default: False).
+  --mock-db-client      If True, mocks the DB client. Useful for development and testing.
+  --save                If True, saves the results in JSON file (default: False).
+  --work-dir            Directory to use as working directory (default: workdir).
+  -v, --verbose         Set logger level to DEBUG (default: False).
+
+Example: pipe-gaps --start-date 2024-01-01 --end-date 2024-01-02' --threshold 0.1 --ssvids 243042594 235053248 413539620
+```
 ### Apache Beam integration
 
 Not yet implemented.
