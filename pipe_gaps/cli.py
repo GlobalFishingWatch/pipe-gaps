@@ -13,10 +13,12 @@ from pipe_gaps import constants as ct
 logger = logging.getLogger(__name__)
 
 
-NAME = "pipe-ais-gaps"
+NAME = "pipe-gaps"
 DESCRIPTION = """
     Detects time gaps in AIS position messages.
     The definition of a gap is configurable by a time threshold.
+
+    If input-file is provided, all Query parameters are ignored.
 """
 EPILOG = (
     "Example: pipe-gaps --start-date 2024-01-01 --end-date 2024-01-02' --threshold 0.1"
@@ -24,17 +26,16 @@ EPILOG = (
 )
 
 _DEFAULT = "(default: %(default)s)"
-HELP_START_DATE = "process messages after this dete, e.g., '2024-01-01'."
-HELP_END_DATE = "process messages before this date, e.g., '2024-01-02'."
-HELP_WORK_DIR = f"directory to use as working directory {_DEFAULT}."
-HELP_THRESHOLD = f"minimum time difference (hours) to start considering gaps {_DEFAULT}."
-HELP_SHOW_PROGRESS = f"if true, renders a progress bar {_DEFAULT}."
-HELP_SSVIDS = f"list of ssvids to filter {_DEFAULT}."
-HELP_INPUT_FILE = f"JSON file with input messages to use {_DEFAULT}.."
-HELP_VERBOSE = f"set logger level to DEBUG {_DEFAULT}."
-HELP_MOCK_DB_CLIENT = "if true, mocks the DB client. Useful for development and testing."
-
-HELP_FILE = "filepath of measurements file."
+HELP_INPUT_FILE = f"JSON file with input messages to use {_DEFAULT}."
+HELP_THRESHOLD = f"Minimum time difference (hours) to start considering gaps {_DEFAULT}."
+HELP_START_DATE = f"Query filter: messages after this dete, e.g., '2024-01-01' {_DEFAULT}."
+HELP_END_DATE = f"Query filter: messages before this date, e.g., '2024-01-02' {_DEFAULT}."
+HELP_SSVIDS = f"Query filter: list of ssvids {_DEFAULT}."
+HELP_SHOW_PROGRESS = f"If True, renders a progress bar {_DEFAULT}."
+HELP_MOCK_DB_CLIENT = "If True, mocks the DB client. Useful for development and testing."
+HELP_SAVE = f"If True, saves the results in JSON file {_DEFAULT}."
+HELP_WORK_DIR = f"Directory to use as working directory {_DEFAULT}."
+HELP_VERBOSE = f"Set logger level to DEBUG {_DEFAULT}."
 
 
 def formatter():
@@ -73,9 +74,10 @@ def cli(args):
     add("--start-date", type=_date, metavar=" ", help=HELP_START_DATE)
     add("--end-date", type=_date, metavar=" ", help=HELP_END_DATE)
     add("--ssvids", type=str, nargs="+", metavar=" ", help=HELP_SSVIDS)
-    add("--work-dir", type=Path, default=Path(ct.WORK_DIR), metavar=" ", help=HELP_WORK_DIR)
-    add("--mock-db-client", action="store_true", help=HELP_THRESHOLD)
     add("--show-progress", action="store_true", help=HELP_SHOW_PROGRESS)
+    add("--mock-db-client", action="store_true", help=HELP_MOCK_DB_CLIENT)
+    add("--save", action="store_true", help=HELP_SAVE)
+    add("--work-dir", type=Path, default=Path(ct.WORK_DIR), metavar=" ", help=HELP_WORK_DIR)
     add("-v", "--verbose", action="store_true", help=HELP_VERBOSE)
 
     args = p.parse_args(args=args or ["--help"])

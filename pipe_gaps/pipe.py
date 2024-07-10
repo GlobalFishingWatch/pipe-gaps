@@ -26,6 +26,7 @@ def run(
     query_params: dict = None,
     mock_db_client: bool = False,
     work_dir: Path = ct.WORK_DIR,
+    save: bool = False,
     **kwargs
 ) -> dict[str, list]:
     """Runs AIS gap detector.
@@ -35,13 +36,14 @@ def run(
         query_params: query parameters. Ignored if input_file exists.
         mock_db_client: if true, mocks the database client.
         work_dir: working directory to use.
+        save: if True, saves the results in JSON file.
         **kwargs: extra arguments for the core gap detector.
     """
 
     if input_file is None and not query_params:
         raise ValueError("You need to provide input_file OR query parameters.")
 
-    if query_params is not None:
+    if input_file is None and query_params is not None:
         _validate_query_params(**query_params)
 
     logger.info("Starting pipe-gaps pipeline...")
@@ -76,8 +78,9 @@ def run(
     total_n_gaps = sum(len(g) for g in gaps_by_ssvid.values())
     logger.info("Total amount of gaps detected: {}".format(total_n_gaps))
 
-    output_path = work_dir.joinpath("gaps.json")
-    json_save(gaps_by_ssvid, output_path)
-    logger.info("Output saved in {}".format(output_path.resolve()))
+    if save:
+        output_path = work_dir.joinpath("gaps.json")
+        json_save(gaps_by_ssvid, output_path)
+        logger.info("Output saved in {}".format(output_path.resolve()))
 
     return gaps_by_ssvid
