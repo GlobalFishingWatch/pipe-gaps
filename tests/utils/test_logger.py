@@ -1,4 +1,4 @@
-from pipe_gaps.log import setup_logger
+from pipe_gaps.utils import setup_logger
 
 
 def test_setup_logger():

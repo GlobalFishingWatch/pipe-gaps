@@ -13,11 +13,11 @@ from pathlib import Path
 
 import cpuinfo
 
-from pipe_gaps.log import setup_logger
+from pipe_gaps.data import get_sample_messages
 from pipe_gaps.core import gap_detector as gd
-from pipe_gaps.utils import timing, get_sample_messages
+from pipe_gaps.utils import setup_logger, timing
 
-logger = logging.getLogger('Benchmark')
+logger = logging.getLogger("Benchmark")
 
 NAME = "bench"
 DESCRIPTION = "Run benchmarks with simple statistics."
@@ -46,6 +46,7 @@ class Stats:
 
 class Measurement:
     """Encapsulates a benchmark measurement."""
+
     def __init__(self, measurements: list[float], input_size: int, cpu_info: str = None):
         self.measurements = measurements
         self.input_size = input_size
@@ -56,13 +57,13 @@ class Measurement:
 
     @classmethod
     def from_path(cls, path, **kwargs):
-        with open(path, 'r') as f:
+        with open(path, "r") as f:
             measurement = json.load(f)
 
         return cls(
             measurements=measurement["measurements"],
             input_size=measurement["input_size"],
-            cpu_info=measurement["cpu_info"]
+            cpu_info=measurement["cpu_info"],
         )
 
     def to_dict(self):
@@ -70,7 +71,7 @@ class Measurement:
             measurements=self.measurements,
             statistics=self.stats.__dict__,
             input_size=self.input_size,
-            cpu_info=self.cpu_info
+            cpu_info=self.cpu_info,
         )
 
     def compute_stats(self):
@@ -78,7 +79,7 @@ class Measurement:
             mean=statistics.mean(self.measurements),
             std=statistics.stdev(self.measurements),
             median=statistics.median(self.measurements),
-            minimum=min(self.measurements)
+            minimum=min(self.measurements),
         )
         stats.sem = stats.std / math.sqrt(len(self.measurements))
 
@@ -93,7 +94,7 @@ class Measurement:
         logger.info("SEM: {} sec".format(round(self.stats.sem, 3)))
 
     def save(self, path):
-        with open(path, 'w') as f:
+        with open(path, "w") as f:
             json.dump(self.to_dict(), f, indent=4)
 
 
@@ -124,7 +125,7 @@ def run_benchmark(
     input_size: int = 1000,
     reps: int = 10,
     output_dir: Path = Path(OUTPUT_DIR),
-    skip_cpu_info: str = True
+    skip_cpu_info: str = True,
 ) -> Measurement:
     """Runs benchmark and writes output with measurements and statistics.
 
@@ -158,7 +159,7 @@ def run_benchmark(
 
     cpu_info = None
     if not skip_cpu_info:
-        cpu_info = cpuinfo.get_cpu_info()['brand_raw']
+        cpu_info = cpuinfo.get_cpu_info()["brand_raw"]
 
     measurement = Measurement(times, input_size, cpu_info=cpu_info)
     measurement.log_stats()
@@ -173,22 +174,23 @@ def main(args):
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     parser = argparse.ArgumentParser(prog=NAME, description=DESCRIPTION)
-    subparsers = parser.add_subparsers(dest='command', help='available commands')
+    subparsers = parser.add_subparsers(dest="command", help="available commands")
 
     p = subparsers.add_parser("run", help=HELP_RUN)
     p.set_defaults(func=run_benchmark)
-    p.add_argument('-n', '--input_size', type=float, required=True, metavar='\b', help=HELP_SIZE)
-    p.add_argument('-r', '--reps', type=int, default=10, metavar='\b', help=HELP_REPS)
+    p.add_argument("-n", "--input_size", type=float, required=True, metavar="\b", help=HELP_SIZE)
+    p.add_argument("-r", "--reps", type=int, default=10, metavar="\b", help=HELP_REPS)
     p.add_argument(
-        '-o', '--output_dir', type=Path, default=Path(OUTPUT_DIR), metavar='\b', help=HELP_REPS)
+        "-o", "--output_dir", type=Path, default=Path(OUTPUT_DIR), metavar="\b", help=HELP_REPS
+    )
 
-    p.add_argument('--skip-cpu-info', action='store_true', help=HELP_SKIP_CPU_INFO)
+    p.add_argument("--skip-cpu-info", action="store_true", help=HELP_SKIP_CPU_INFO)
 
     s = subparsers.add_parser("stats", help=HELP_STATS)
     s.set_defaults(func=stats)
-    s.add_argument('-f', '--path', type=Path, required=True, metavar='\b', help=HELP_SIZE)
+    s.add_argument("-f", "--path", type=Path, required=True, metavar="\b", help=HELP_SIZE)
 
-    args = parser.parse_args(args=args or ['--help'])
+    args = parser.parse_args(args=args or ["--help"])
 
     # command = args.command
     command = args.func
@@ -198,5 +200,5 @@ def main(args):
     return command(**vars(args))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(sys.argv[1:])

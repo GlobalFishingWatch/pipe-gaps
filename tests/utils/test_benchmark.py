@@ -1,7 +1,7 @@
 import pytest
 import cpuinfo
 
-from pipe_gaps import benchmark
+from pipe_gaps.utils import benchmark
 
 
 def test_measurement(tmp_path):
