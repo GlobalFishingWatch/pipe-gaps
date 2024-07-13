@@ -24,14 +24,17 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
-        'importlib-resources~=6.0',
-        'google-cloud-bigquery~=3.0',
-        'py-cpuinfo~=9.0',
-        'rich~=13.0',
+        "importlib-resources~=6.0",
+        "google-cloud-bigquery~=3.0",
+        "py-cpuinfo~=9.0",
+        "rich~=13.0",
     ],
+    extras_require={
+        "beam": ["apache-beam[gcp, dataframe]~=2.0"],
+    },
     entry_points={
-        'console_scripts': [
-            'pipe-gaps = pipe_gaps.cli:main',
+        "console_scripts": [
+            "pipe-gaps = pipe_gaps.cli:main",
         ]
     },
 )

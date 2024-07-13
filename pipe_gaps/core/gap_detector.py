@@ -38,14 +38,17 @@ def detect(
     if show_progress:
         gaps = _build_progress_bar(gaps, len(messages_sorted))
 
-    gaps = tuple(gap for gap in gaps if _filter_condition(gap, threshold_in_seconds))
+    gaps = list(
+        dict(OFF=start, ON=end)
+        for start, end in gaps
+        if _filter_condition((start, end), threshold_in_seconds)
+    )
 
     return gaps
 
 
 def _build_progress_bar(gaps, total):
-    return track(
-        gaps, total=total, description=PROGRESS_BAR_DESCRIPTION)
+    return track(gaps, total=total, description=PROGRESS_BAR_DESCRIPTION)
 
 
 def _filter_condition(gap: tuple[dict, dict], threshold: float) -> bool:

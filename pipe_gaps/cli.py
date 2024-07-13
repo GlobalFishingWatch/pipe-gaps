@@ -34,6 +34,7 @@ HELP_SSVIDS = f"Query filter: list of ssvids {_DEFAULT}."
 HELP_SHOW_PROGRESS = f"If True, renders a progress bar {_DEFAULT}."
 HELP_MOCK_DB_CLIENT = "If True, mocks the DB client. Useful for development and testing."
 HELP_SAVE = f"If True, saves the results in JSON file {_DEFAULT}."
+HELP_PIPE_TYPE = f"Pipeline type: ['naive', 'beam'] {_DEFAULT}."
 HELP_WORK_DIR = f"Directory to use as working directory {_DEFAULT}."
 HELP_VERBOSE = f"Set logger level to DEBUG {_DEFAULT}."
 
@@ -71,10 +72,11 @@ def cli(args):
     add = p.add_argument
     add("-i", "--input-file", type=Path, metavar=" ", help=HELP_INPUT_FILE)
     add("--threshold", type=threshold, default=_threshold, metavar=" ", help=HELP_THRESHOLD)
+    add("--show-progress", action="store_true", help=HELP_SHOW_PROGRESS)
     add("--start-date", type=_date, metavar=" ", help=HELP_START_DATE)
     add("--end-date", type=_date, metavar=" ", help=HELP_END_DATE)
     add("--ssvids", type=str, nargs="+", metavar=" ", help=HELP_SSVIDS)
-    add("--show-progress", action="store_true", help=HELP_SHOW_PROGRESS)
+    add("--pipe-type", type=str, metavar=" ", default="naive", help=HELP_PIPE_TYPE)
     add("--mock-db-client", action="store_true", help=HELP_MOCK_DB_CLIENT)
     add("--save", action="store_true", help=HELP_SAVE)
     add("--work-dir", type=Path, default=Path(ct.WORK_DIR), metavar=" ", help=HELP_WORK_DIR)
@@ -103,6 +105,7 @@ def cli(args):
         command(query_params=query_params, **args)
     except ValueError as e:
         logger.error(e)
+        raise e
 
 
 def main():
