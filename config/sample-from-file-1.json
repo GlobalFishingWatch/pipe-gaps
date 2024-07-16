@@ -1,0 +1,12 @@
+{
+    "input_file": "pipe_gaps/data/sample_messages.json",
+    "threshold": 1.3,
+    "show_progress": false,
+    "start_date": null,
+    "end_date": null,
+    "ssvids": null,
+    "pipe_type": "naive",
+    "mock_db_client": false,
+    "save_json": true,
+    "work_dir": null
+}

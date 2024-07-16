@@ -38,7 +38,8 @@ class QueryTemplate:
 
 
 DB_PROJECT = "world-fishing-827"
-DB_TABLE_MESSAGES = "pipe_production_v20201001.research_messages"
+# DB_TABLE_MESSAGES = "pipe_production_v20201001.research_messages"
+DB_TABLE_MESSAGES = "pipe_ais_v3_published.messages"
 
 
 @dataclass
@@ -109,9 +110,6 @@ class AISMessagesQuery:
             AISMessagesQueryError: when the query failed for some reason.
         """
         query = self.render_query(**query_params)
-        logger.debug("Query for AIS messages: ")
-        logger.debug(query)
-
         try:
             query_job = self._client.query(query)
             row_iterator = query_job.result()
@@ -136,5 +134,8 @@ class AISMessagesQuery:
         if ssvids is not None:
             ssvid_filter = ",".join(f'"{s}"' for s in ssvids)
             query = f"{query} AND ssvid IN ({ssvid_filter})"
+
+        logger.debug("Rendered Query for AIS messages: ")
+        logger.debug(query)
 
         return query

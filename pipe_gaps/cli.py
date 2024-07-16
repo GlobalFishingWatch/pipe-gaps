@@ -26,6 +26,8 @@ EPILOG = (
 )
 
 _DEFAULT = "(default: %(default)s)"
+# TODO: try to get this descriptions from docstrings, so we don´t duplicate them.
+HELP_CONFIG_FILE = "JSON config file to use (optional)."
 HELP_INPUT_FILE = f"JSON file with input messages to use {_DEFAULT}."
 HELP_THRESHOLD = f"Minimum time difference (hours) to start considering gaps {_DEFAULT}."
 HELP_START_DATE = f"Query filter: messages after this dete, e.g., '2024-01-01' {_DEFAULT}."
@@ -33,7 +35,7 @@ HELP_END_DATE = f"Query filter: messages before this date, e.g., '2024-01-02' {_
 HELP_SSVIDS = f"Query filter: list of ssvids {_DEFAULT}."
 HELP_SHOW_PROGRESS = f"If True, renders a progress bar {_DEFAULT}."
 HELP_MOCK_DB_CLIENT = "If True, mocks the DB client. Useful for development and testing."
-HELP_SAVE = f"If True, saves the results in JSON file {_DEFAULT}."
+HELP_SAVE_JSON = f"If True, saves the results in JSON file {_DEFAULT}."
 HELP_PIPE_TYPE = f"Pipeline type: ['naive', 'beam'] {_DEFAULT}."
 HELP_WORK_DIR = f"Directory to use as working directory {_DEFAULT}."
 HELP_VERBOSE = f"Set logger level to DEBUG {_DEFAULT}."
@@ -68,41 +70,66 @@ def cli(args):
 
     p.set_defaults(func=pipe.run)
 
-    _threshold = timedelta(hours=12)
+    # _threshold = timedelta(hours=12)
     add = p.add_argument
+    add("-c", "--config-file", type=Path, metavar=" ", help=HELP_CONFIG_FILE)
     add("-i", "--input-file", type=Path, metavar=" ", help=HELP_INPUT_FILE)
-    add("--threshold", type=threshold, default=_threshold, metavar=" ", help=HELP_THRESHOLD)
+    add("--threshold", type=float, metavar=" ", help=HELP_THRESHOLD)
     add("--show-progress", action="store_true", help=HELP_SHOW_PROGRESS)
     add("--start-date", type=_date, metavar=" ", help=HELP_START_DATE)
     add("--end-date", type=_date, metavar=" ", help=HELP_END_DATE)
     add("--ssvids", type=str, nargs="+", metavar=" ", help=HELP_SSVIDS)
-    add("--pipe-type", type=str, metavar=" ", default="naive", help=HELP_PIPE_TYPE)
+    add("--pipe-type", type=str, metavar=" ", help=HELP_PIPE_TYPE)
     add("--mock-db-client", action="store_true", help=HELP_MOCK_DB_CLIENT)
-    add("--save", action="store_true", help=HELP_SAVE)
+    add("--save-json", action="store_true", help=HELP_SAVE_JSON)
     add("--work-dir", type=Path, default=Path(ct.WORK_DIR), metavar=" ", help=HELP_WORK_DIR)
     add("-v", "--verbose", action="store_true", help=HELP_VERBOSE)
 
-    args = p.parse_args(args=args or ["--help"])
+    ns = p.parse_args(args=args or ["--help"])
 
-    if args.verbose:
+    command = ns.func
+    config_file = ns.config_file
+    verbose = ns.verbose
+
+    # Delete CLI configuration already used.
+    del ns.func
+    del ns.verbose
+    del ns.config_file
+
+    if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    command = args.func
-    del args.func
-    del args.verbose
+    # Load config file if exists.
+    config = {}
+    if config_file is not None:
+        config = utils.json_load(config_file)
 
-    args = vars(args)
+    # Validate config_file.
+    for k in config:
+        if k not in ns:
+            raise ValueError("Invalid key: '{}' in config file: {}".format(k, config_file))
 
-    # TODO: abstract this as a function of particular command.
+    # Convert namespace of args to dict.
+    args_dict = vars(ns)
+
+    # Override config file with CLI params
+    for k, v in args_dict.items():
+        if v is not None:
+            config[k] = v
+
+    # Group query parameters in single parameter.
+    # TODO: should be done here?
     query_params_keys = ["start_date", "end_date", "ssvids"]
     query_params = {}
     for k in query_params_keys:
-        if args[k] is not None:
-            query_params[k] = args[k]
-        del args[k]
+        param = config.pop(k, None)
+        if param is not None:
+            query_params[k] = param
+
+    config["query_params"] = query_params
 
     try:
-        command(query_params=query_params, **args)
+        command(**config)
     except ValueError as e:
         logger.error(e)
         raise e

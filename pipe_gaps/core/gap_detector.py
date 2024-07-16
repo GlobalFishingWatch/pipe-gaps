@@ -3,6 +3,8 @@ import logging
 import operator
 from datetime import timedelta
 
+from typing import Union
+
 from rich.progress import track
 
 logger = logging.getLogger(__name__)
@@ -14,8 +16,10 @@ MESSAGE_TIMESTAMP_KEY = "timestamp"
 
 
 def detect(
-    messages: list[dict], threshold: timedelta = THRESHOLD, show_progress: bool = False
-) -> list[tuple[dict, dict]]:
+    messages: list[dict],
+    threshold: Union[int, float, timedelta] = THRESHOLD,
+    show_progress: bool = False,
+) -> dict:
     """Detects time gaps between AIS position messages.
 
     Currently takes (1.75 ± 0.01) seconds to process 10M messages (i7-1355U 5.0GHz).
@@ -23,11 +27,16 @@ def detect(
     Args:
         messages: List of AIS messages.
         threshold: Any gap whose (end-start) is less than this threshold is discarded.
+            Can be hours as a float number or a timedelta object.
         show_progress: If true, renders a progress bar.
 
     Returns:
-        list: gaps as 2d-tuple with (start, end) messages.
+        Result of gap detection process.
     """
+
+    if isinstance(threshold, (int, float)):
+        threshold = timedelta(hours=threshold)
+
     logger.debug("Sorting messages by timestamp...")
     timestamp_key = operator.itemgetter(MESSAGE_TIMESTAMP_KEY)
     messages_sorted = sorted(messages, key=timestamp_key)
@@ -38,6 +47,7 @@ def detect(
     if show_progress:
         gaps = _build_progress_bar(gaps, len(messages_sorted))
 
+    logger.debug("Detecting gaps with distance greater than threshold: {}...".format(threshold))
     gaps = list(
         dict(OFF=start, ON=end)
         for start, end in gaps

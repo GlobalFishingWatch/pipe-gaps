@@ -33,9 +33,9 @@ def test_pipe_saved_file(tmp_path):
     json_save(messages, input_file)
 
     # Without saving results.
-    pipe.run(input_file=input_file, work_dir=tmp_path, save=False)
+    pipe.run(input_file=input_file, work_dir=tmp_path, save_json=False)
 
     # Saving results.
-    pipe.run(input_file=input_file, work_dir=tmp_path, save=True)
+    pipe.run(input_file=input_file, work_dir=tmp_path, save_json=True)
     output_path = tmp_path.joinpath(f"{pipe.OUTPUT_PREFIX}-{input_file.stem}.json")
     assert output_path.is_file()

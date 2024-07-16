@@ -18,8 +18,9 @@ def run(
     query_params: dict = None,
     mock_db_client: bool = False,
     work_dir: str = ct.WORK_DIR,
-    save: bool = False,
-    **core_config,
+    save_json: bool = False,
+    pipe_config=None,
+    core_config=None,
 ) -> dict[str, list]:
     """Naive gap detection pipeline."""
 
@@ -54,7 +55,7 @@ def run(
     total_n_gaps = sum(len(g) for g in gaps_by_ssvid.values())
     logger.info("Total amount of gaps detected: {}".format(total_n_gaps))
 
-    if save:
+    if save_json:
         output_path = work_dir.joinpath(f"{ct.OUTPUT_PREFIX}-{output_stem}.json")
         json_save(gaps_by_ssvid, output_path)
         logger.info("Output saved in {}".format(output_path.resolve()))
