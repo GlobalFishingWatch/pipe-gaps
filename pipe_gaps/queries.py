@@ -28,18 +28,27 @@ class QueryTemplate:
       # type,
       # receiver_type,
       # regions,
-      # distance_from_shore_m,
+      distance_from_shore_m,
       # distance_from_port_m
     FROM
       `{source_messages}`
     WHERE
-      (timestamp BETWEEN "{start_date}" AND "{end_date}")
+      (DATE(timestamp) >= "{start_date}" AND DATE(timestamp) <= "{end_date}")
+      AND seg_id IN (
+        SELECT
+          seg_id
+        FROM
+          `{source_segments}`
+        WHERE
+          good_seg
+          and not overlapping_and_short)
     """
 
 
 DB_PROJECT = "world-fishing-827"
 # DB_TABLE_MESSAGES = "pipe_production_v20201001.research_messages"
 DB_TABLE_MESSAGES = "pipe_ais_v3_published.messages"
+DB_TABLE_SEGMENTS = "pipe_ais_v3_published.segs_activity"
 
 
 @dataclass
@@ -128,7 +137,10 @@ class AISMessagesQuery:
             ssvids: list of ssvdis to filter.
         """
         query = QueryTemplate.AIS_MESSAGES.format(
-            source_messages=DB_TABLE_MESSAGES, start_date=start_date, end_date=end_date
+            source_messages=DB_TABLE_MESSAGES,
+            source_segments=DB_TABLE_SEGMENTS,
+            start_date=start_date,
+            end_date=end_date,
         )
 
         if ssvids is not None:

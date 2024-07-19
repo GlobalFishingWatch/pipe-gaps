@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 THRESHOLD = timedelta(hours=12, minutes=0, seconds=0)
 PROGRESS_BAR_DESCRIPTION = "Detecting gaps:"
-MESSAGE_TIMESTAMP_KEY = "timestamp"
+TIMESTAMP_KEY = "timestamp"
 
 
 def detect(
@@ -38,7 +38,7 @@ def detect(
         threshold = timedelta(hours=threshold)
 
     logger.debug("Sorting messages by timestamp...")
-    timestamp_key = operator.itemgetter(MESSAGE_TIMESTAMP_KEY)
+    timestamp_key = operator.itemgetter(TIMESTAMP_KEY)
     messages_sorted = sorted(messages, key=timestamp_key)
 
     threshold_in_seconds = threshold.total_seconds()
@@ -47,7 +47,7 @@ def detect(
     if show_progress:
         gaps = _build_progress_bar(gaps, len(messages_sorted))
 
-    logger.debug("Detecting gaps with distance greater than threshold: {}...".format(threshold))
+    logger.debug("Detecting gaps with time diff greater than threshold: {}...".format(threshold))
     gaps = list(
         dict(OFF=start, ON=end)
         for start, end in gaps
@@ -62,4 +62,8 @@ def _build_progress_bar(gaps, total):
 
 
 def _filter_condition(gap: tuple[dict, dict], threshold: float) -> bool:
-    return (gap[1]["timestamp"] - gap[0]["timestamp"]) > threshold
+    return (
+        (gap[1][TIMESTAMP_KEY] - gap[0][TIMESTAMP_KEY]) > threshold
+        and gap[0]["distance_from_shore_m"] > 0
+        and gap[1]["distance_from_shore_m"] > 0
+    )

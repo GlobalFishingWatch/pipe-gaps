@@ -1,13 +1,15 @@
 {
-    "input_file": null,
-    "threshold": 6,
-    "show_progress": false,
-    "start_date": "2023-01-01",
-    "end_date": "2023-12-31",
+    "core": {
+        "threshold": 0.08,
+        "show_progress": false
+    },
     "pipe_type": "beam",
-    "mock_db_client": false,
+    "input_file": null,
     "save_json": false,
     "work_dir": null,
+    "mock_db_client": false,
+    "start_date": "2023-01-01",
+    "end_date": "2023-12-31",
     "ssvids": [
         412331104,
         477334300,

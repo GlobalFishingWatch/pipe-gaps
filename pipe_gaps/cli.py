@@ -7,7 +7,7 @@ from datetime import timedelta, date
 from pathlib import Path
 
 from pipe_gaps import utils
-from pipe_gaps import pipe
+from pipe_gaps import pipeline
 from pipe_gaps import constants as ct
 
 logger = logging.getLogger(__name__)
@@ -68,18 +68,16 @@ def cli(args):
         prog=NAME, description=DESCRIPTION, epilog=EPILOG, formatter_class=formatter()
     )
 
-    p.set_defaults(func=pipe.run)
-
     # _threshold = timedelta(hours=12)
     add = p.add_argument
     add("-c", "--config-file", type=Path, metavar=" ", help=HELP_CONFIG_FILE)
     add("-i", "--input-file", type=Path, metavar=" ", help=HELP_INPUT_FILE)
+    add("--pipe-type", type=str, metavar=" ", help=HELP_PIPE_TYPE)
     add("--threshold", type=float, metavar=" ", help=HELP_THRESHOLD)
     add("--show-progress", action="store_true", help=HELP_SHOW_PROGRESS)
-    add("--start-date", type=_date, metavar=" ", help=HELP_START_DATE)
-    add("--end-date", type=_date, metavar=" ", help=HELP_END_DATE)
+    add("--start-date", type=str, metavar=" ", help=HELP_START_DATE)
+    add("--end-date", type=str, metavar=" ", help=HELP_END_DATE)
     add("--ssvids", type=str, nargs="+", metavar=" ", help=HELP_SSVIDS)
-    add("--pipe-type", type=str, metavar=" ", help=HELP_PIPE_TYPE)
     add("--mock-db-client", action="store_true", help=HELP_MOCK_DB_CLIENT)
     add("--save-json", action="store_true", help=HELP_SAVE_JSON)
     add("--work-dir", type=Path, default=Path(ct.WORK_DIR), metavar=" ", help=HELP_WORK_DIR)
@@ -87,12 +85,10 @@ def cli(args):
 
     ns = p.parse_args(args=args or ["--help"])
 
-    command = ns.func
     config_file = ns.config_file
     verbose = ns.verbose
 
     # Delete CLI configuration already used.
-    del ns.func
     del ns.verbose
     del ns.config_file
 
@@ -105,9 +101,9 @@ def cli(args):
         config = utils.json_load(config_file)
 
     # Validate config_file.
-    for k in config:
-        if k not in ns:
-            raise ValueError("Invalid key: '{}' in config file: {}".format(k, config_file))
+    # for k in config:
+    #    if k not in ns:
+    #        raise ValueError("Invalid key: '{}' in config file: {}".format(k, config_file))
 
     # Convert namespace of args to dict.
     args_dict = vars(ns)
@@ -126,13 +122,20 @@ def cli(args):
         if param is not None:
             query_params[k] = param
 
+    core_params_keys = ["threshold", "show_progress"]
+    core_config = {}
+    for k in core_params_keys:
+        param = config.pop(k, None)
+        if param is not None:
+            core_config[k] = param
+
     config["query_params"] = query_params
 
+    # Run pipeline with parsed config.
     try:
-        command(**config)
-    except ValueError as e:
+        pipeline.run(config)
+    except pipeline.PipelineError as e:
         logger.error(e)
-        raise e
 
 
 def main():

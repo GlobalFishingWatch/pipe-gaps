@@ -1,7 +1,9 @@
 {
     "input_file": null,
-    "threshold": 1,
-    "show-progress": false,
+    "core_config": {
+        "threshold": 6,
+        "show_progress": false
+    },
     "start-date": null,
     "end-date": null,
     "ssvids": null,
