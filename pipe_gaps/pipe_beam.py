@@ -3,6 +3,7 @@ import typing
 import logging
 
 from datetime import datetime
+from dataclasses import dataclass
 
 import apache_beam as beam
 
@@ -18,11 +19,19 @@ from pipe_gaps import queries
 logger = logging.getLogger(__name__)
 
 
-class ProcessingUnitKey(typing.NamedTuple):
-    """Schema for the key of processing units."""
+@dataclass(eq=True, frozen=True)
+class ProcessingUnitKey:
+    """Encapsulates the key to group by processing units."""
 
     ssvid: str
     year: str
+
+    @classmethod
+    def from_dict(cls, item: dict) -> "ProcessingUnitKey":
+        return cls(
+            ssvid=item["ssvid"],
+            year=str(datetime.fromtimestamp(item["timestamp"]).year)
+        )
 
 
 class Message(typing.NamedTuple):
@@ -72,9 +81,7 @@ class CoreFn(beam.DoFn):
 
     @staticmethod
     def parallelization_unit(item):
-        return ProcessingUnitKey(
-            item["ssvid"], str(datetime.fromtimestamp(item["timestamp"]).year)
-        )
+        return ProcessingUnitKey.from_dict(item)
 
 
 def run(
@@ -121,7 +128,7 @@ def run(
             | beam.FlatMapTuple(lambda k, v: v).with_output_types(CoreFn.type())
         )
 
-        outputs | beam.LogElements()
+        # outputs | beam.LogElements()
 
         prefix = f"beam-{ct.OUTPUT_PREFIX}-{output_stem}"
         if save_json:

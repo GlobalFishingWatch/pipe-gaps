@@ -1,5 +1,8 @@
 """This module encapsulates the "naive" local pipeline."""
 import logging
+import itertools
+from datetime import datetime
+from dataclasses import dataclass, fields
 
 from pipe_gaps.core import gap_detector as gd
 from pipe_gaps.utils import json_load, json_save
@@ -11,6 +14,28 @@ logger = logging.getLogger(__name__)
 
 class NoMessagesFound(Exception):
     pass
+
+
+@dataclass(eq=True, frozen=True)
+class ProcessingUnitKey:
+    """Encapsulates the key to group by processing units."""
+
+    ssvid: str
+    year: str
+
+    def to_filename(self):
+        return f"{self.ssvid}-{self.year}"
+
+    @classmethod
+    def fields(cls):
+        return [x.name for x in fields(cls)]
+
+    @classmethod
+    def from_dict(cls, item: dict) -> "ProcessingUnitKey":
+        return cls(
+            ssvid=item["ssvid"],
+            year=str(datetime.fromtimestamp(item["timestamp"]).year)
+        )
 
 
 def run(
@@ -38,26 +63,21 @@ def run(
         raise NoMessagesFound("No messages found with filters provided.")
 
     logger.info("Total amount of input messages: {}".format(len(messages)))
-    logger.info("Grouping messages by SSVID...")
-    msgs_by_ssvid = {}
-    for msg in messages:
-        msgs_by_ssvid.setdefault(msg["ssvid"], []).append(msg)
+    grouped_messages = itertools.groupby(messages, key=ProcessingUnitKey.from_dict)
 
-    gaps_by_ssvid = {}
-    for ssvid, messages in msgs_by_ssvid.items():
-        logger.info("SSVID: {}. Amount of messages: {}".format(ssvid, len(messages)))
-        logger.info("Detecting gaps...")
+    logger.info(f"Detecting gaps in messages grouped by {ProcessingUnitKey.fields()}...")
+    gaps_by_key = {}
+    for key, messages in grouped_messages:
         gaps = gd.detect(messages, **core_config)
+        logger.info("Found {} gaps for key={}".format(len(gaps), key))
+        gaps_by_key[key] = gaps
 
-        logger.info("SSVID: {}. Amount of gaps detected: {}".format(ssvid, len(gaps)))
-        gaps_by_ssvid[ssvid] = gaps
-
-    total_n_gaps = sum(len(g) for g in gaps_by_ssvid.values())
+    total_n_gaps = sum(len(g) for g in gaps_by_key.values())
     logger.info("Total amount of gaps detected: {}".format(total_n_gaps))
 
     if save_json:
         output_path = work_dir.joinpath(f"{ct.OUTPUT_PREFIX}-{output_stem}.json")
-        json_save(gaps_by_ssvid, output_path)
+        json_save(list(gaps_by_key.values()), output_path)
         logger.info("Output saved in {}".format(output_path.resolve()))
 
-    return gaps_by_ssvid
+    return gaps_by_key
