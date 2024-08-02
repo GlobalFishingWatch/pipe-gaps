@@ -1,6 +1,5 @@
-from .read_from_json import ReadFromJson
-from .read_from_query import ReadFromQuery
-from .write_json import WriteJson
 from .core import Core
+from .sinks import WriteJson
+from .sources import ReadFromQuery, ReadFromJson
 
-__all__ = [ReadFromJson, ReadFromQuery, WriteJson, Core]
+__all__ = [Core, ReadFromJson, ReadFromQuery, WriteJson]
