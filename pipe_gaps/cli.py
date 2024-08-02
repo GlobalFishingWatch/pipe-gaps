@@ -8,7 +8,6 @@ from pathlib import Path
 
 from pipe_gaps import utils
 from pipe_gaps import pipeline
-from pipe_gaps import constants as ct
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +79,7 @@ def cli(args):
     add("--ssvids", type=str, nargs="+", metavar=" ", help=HELP_SSVIDS)
     add("--mock-db-client", action="store_true", help=HELP_MOCK_DB_CLIENT)
     add("--save-json", action="store_true", help=HELP_SAVE_JSON)
-    add("--work-dir", type=Path, default=Path(ct.WORK_DIR), metavar=" ", help=HELP_WORK_DIR)
+    add("--work-dir", type=Path, metavar=" ", help=HELP_WORK_DIR)
     add("-v", "--verbose", action="store_true", help=HELP_VERBOSE)
 
     ns = p.parse_args(args=args or ["--help"])
@@ -132,6 +131,7 @@ def cli(args):
     config["query_params"] = query_params
 
     # Run pipeline with parsed config.
+    print(config)
     try:
         pipeline.create(**config).run()
     except pipeline.PipelineError as e:

@@ -6,7 +6,6 @@ import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions
 
 from pipe_gaps import queries
-from pipe_gaps import constants as ct
 from pipe_gaps.pipeline import base
 from pipe_gaps.pipeline.schemas import Message
 from pipe_gaps.pipeline.beam.transforms import ReadFromJson, ReadFromQuery, WriteJson, Core
@@ -33,7 +32,7 @@ class BeamPipeline(base.Pipeline):
     @classmethod
     def _build(cls, config: base.Config):
         # This is the only method of the class that has concrete class implementations for Gaps.
-        # Like AISMessagesQuery, DetectGapsFn, Message.
+        # Like AISMessagesQuery, DetectGapsFn, Message, output_prefix
         # The rest of the class is generic.
 
         if config.input_file is not None:
@@ -56,7 +55,7 @@ class BeamPipeline(base.Pipeline):
         sinks = []
 
         if config.save_json:
-            output_prefix = f"{cls.name}-{ct.OUTPUT_PREFIX}-{input_id}"
+            output_prefix = f"{cls.name}-gaps-{input_id}"
             sinks.append(WriteJson(config.work_dir, output_prefix=output_prefix))
 
         return cls(read_inputs, core, sinks, **config.options)

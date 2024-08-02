@@ -6,7 +6,6 @@ from datetime import datetime
 from dataclasses import dataclass, fields
 
 from pipe_gaps import queries
-from pipe_gaps import constants as ct
 from pipe_gaps.pipeline import base
 from pipe_gaps.core import gap_detector as gd
 from pipe_gaps.utils import json_load, json_save
@@ -71,7 +70,7 @@ class NaivePipeline(base.Pipeline):
         total_n_gaps = sum(len(g) for g in gaps_by_key.values())
         logger.info("Total amount of gaps detected: {}".format(total_n_gaps))
 
-        output_path = self.config.work_dir.joinpath(f"{ct.OUTPUT_PREFIX}-{output_stem}.json")
+        output_path = self.config.work_dir.joinpath(f"{self.name}-gaps-{output_stem}.json")
         output_path_stats = self.config.work_dir.joinpath(f"stats-{output_stem}")
 
         if self.config.save_json:

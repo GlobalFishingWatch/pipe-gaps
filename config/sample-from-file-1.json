@@ -6,7 +6,6 @@
     "pipe_type": "naive",
     "input_file": "pipe_gaps/data/sample_messages.json",
     "save_json": true,
-    "work_dir": null,
     "mock_db_client": false,
     "start_date": null,
     "end_date": null,

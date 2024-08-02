@@ -3,17 +3,18 @@ from __future__ import annotations
 import os
 import logging
 
-from pathlib import Path
-
 from abc import ABC, abstractmethod
+
+# from typing import Unpack  # Supported from python 3.11
+from pathlib import Path
 from dataclasses import field
 
 from pydantic import BaseModel
 
-from pipe_gaps import constants as ct
-
-
 logger = logging.getLogger(__name__)
+
+
+DEFAULT_WORK_DIR = "workdir"
 
 
 class PipelineError(Exception):
@@ -29,7 +30,7 @@ class ConfigError(PipelineError):
 
 
 class Config(BaseModel):
-    """Encapsulates pipeline configuration.
+    """Encapsulates Pipeline configuration.
 
     Args:
         input_file: Input file to process.
@@ -42,7 +43,7 @@ class Config(BaseModel):
     """
 
     input_file: Path = None
-    work_dir: Path = Path(ct.WORK_DIR)
+    work_dir: Path = Path(DEFAULT_WORK_DIR)
     mock_db_client: bool = False
     save_json: bool = False
     save_stats: bool = False
@@ -50,15 +51,15 @@ class Config(BaseModel):
     core: dict = field(default_factory=dict)
     options: dict = field(default_factory=dict)
 
+    def to_json(self):
+        return self.model_dump_json(indent=4)
+
     def validate(self):
         if self.input_file is None and self.query_params is None:
             raise ConfigError("You need to provide input_file OR query parameters.")
 
         if self.input_file is None:
             self.validate_query_params(**self.query_params)
-
-    def to_json(self):
-        return self.model_dump_json(indent=4)
 
     @staticmethod
     def validate_query_params(start_date=None, end_date=None, ssvids=None):
@@ -70,14 +71,16 @@ class Pipeline(ABC):
     """Base class for pipelines."""
 
     @classmethod
-    def build(cls, **kwargs) -> Pipeline:
+    def build(cls, **kwargs: dict) -> Pipeline:
+        #  def build(cls, **kwargs: Unpack[Config]) -> Pipeline:
+
         """Builds a Pipeline instance.
 
         Args:
-            **kwargs: arguments for Config class.
+            **kwargs: keyword arguments for Config class.
 
         Returns:
-            Pipeline: Description
+            Pipeline: the built instance.
         """
         config = Config(**kwargs)
         config.validate()
@@ -96,4 +99,6 @@ class Pipeline(ABC):
 
     @classmethod
     def _build(cls, config: Config = Config()):
-        raise NotImplementedError("Implement this in subclass.")
+        raise NotImplementedError(
+            "You can't call directly build method from base class. Use one of its subclasses."
+        )
