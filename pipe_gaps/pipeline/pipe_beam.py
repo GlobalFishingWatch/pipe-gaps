@@ -1,5 +1,7 @@
 """This module encapsulates the apache beam integrated pipeline."""
+import json
 import logging
+
 from dataclasses import replace
 
 import apache_beam as beam
@@ -66,14 +68,20 @@ class BeamPipeline(base.Pipeline):
         with beam.Pipeline(options=self._options) as p:
             inputs = p | self._read_inputs
 
-            # inputs | beam.LogElements()
-
             outputs = inputs | self._core_transform
-
-            # outputs | beam.LogElements()
 
             for sink_transform in self._sinks:
                 outputs | sink_transform
+
+            self._debug_n_elements(inputs, n=1, message="Sample Input")
+            self._debug_n_elements(outputs, n=1, message="Sample Output")
+
+    def _debug_n_elements(self, elements, n=1, message=""):
+        def debug(elem):
+            for e in elem:
+                logger.debug(f"{message}: {json.dumps(e, indent=4)}")
+
+        elements | message >> (beam.combiners.Sample.FixedSizeGlobally(n) | beam.Map(debug))
 
     @staticmethod
     def default_options():

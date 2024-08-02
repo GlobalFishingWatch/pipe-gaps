@@ -62,7 +62,7 @@ def threshold(s) -> timedelta:
 
 def cli(args):
     """CLI for gaps pipeline."""
-    utils.setup_logger()
+    utils.setup_logger(warning_level=["apache_beam"])
 
     p = argparse.ArgumentParser(
         prog=NAME, description=DESCRIPTION, epilog=EPILOG, formatter_class=formatter()
