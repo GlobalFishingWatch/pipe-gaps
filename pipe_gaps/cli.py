@@ -133,7 +133,7 @@ def cli(args):
 
     # Run pipeline with parsed config.
     try:
-        pipeline.run(config)
+        pipeline.create(**config).run()
     except pipeline.PipelineError as e:
         logger.error(e)
 

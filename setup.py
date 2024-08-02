@@ -27,6 +27,7 @@ setuptools.setup(
         "importlib-resources~=6.0",
         "google-cloud-bigquery~=3.0",
         "py-cpuinfo~=9.0",
+        "pydantic~=2.0",
         "rich~=13.0",
     ],
     extras_require={
