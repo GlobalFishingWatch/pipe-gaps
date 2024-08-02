@@ -53,7 +53,7 @@ class NaivePipeline(base.Pipeline):
             output_stem = "from-query"
 
         if len(messages) == 0:
-            raise base.NoMessagesFound("No messages found with filters provided.")
+            raise base.NoInputsFound("No messages found with filters provided.")
 
         logger.info("Total amount of input messages: {}".format(len(messages)))
         logger.info(f"Grouping messages by {ProcessingUnitKey.fields()}...")

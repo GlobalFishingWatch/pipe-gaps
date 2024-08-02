@@ -131,7 +131,6 @@ def cli(args):
     config["query_params"] = query_params
 
     # Run pipeline with parsed config.
-    print(config)
     try:
         pipeline.create(**config).run()
     except pipeline.PipelineError as e:

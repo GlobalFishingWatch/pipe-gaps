@@ -6,65 +6,18 @@ import logging
 from abc import ABC, abstractmethod
 
 # from typing import Unpack  # Supported from python 3.11
-from pathlib import Path
-from dataclasses import field
 
-from pydantic import BaseModel
+from pipe_gaps.pipeline.config import Config
 
 logger = logging.getLogger(__name__)
-
-
-DEFAULT_WORK_DIR = "workdir"
 
 
 class PipelineError(Exception):
     pass
 
 
-class NoMessagesFound(PipelineError):
+class NoInputsFound(PipelineError):
     pass
-
-
-class ConfigError(PipelineError):
-    pass
-
-
-class Config(BaseModel):
-    """Encapsulates Pipeline configuration.
-
-    Args:
-        input_file: Input file to process.
-        query_params: Query parameters. Ignored if input_file exists.
-        mock_db_client: If True, mocks the DB client. Useful for development and testing.
-        work_dir: Working directory to use for saving outputs.
-        save_json: If True, saves the results in JSON file.
-        save_stats: If True, computes and saves basic statistics.
-        core: Extra arguments for the core process.
-    """
-
-    input_file: Path = None
-    work_dir: Path = Path(DEFAULT_WORK_DIR)
-    mock_db_client: bool = False
-    save_json: bool = False
-    save_stats: bool = False
-    query_params: dict = None
-    core: dict = field(default_factory=dict)
-    options: dict = field(default_factory=dict)
-
-    def to_json(self):
-        return self.model_dump_json(indent=4)
-
-    def validate(self):
-        if self.input_file is None and self.query_params is None:
-            raise ConfigError("You need to provide input_file OR query parameters.")
-
-        if self.input_file is None:
-            self.validate_query_params(**self.query_params)
-
-    @staticmethod
-    def validate_query_params(start_date=None, end_date=None, ssvids=None):
-        if start_date is None or end_date is None:
-            raise ConfigError("You need to provide both start_date and end_date parameters.")
 
 
 class Pipeline(ABC):

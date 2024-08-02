@@ -1,6 +1,7 @@
 import warnings
 
-from pipe_gaps.pipeline.base import Pipeline, PipelineError, NoMessagesFound, Config, ConfigError
+from pipe_gaps.pipeline.base import Pipeline, PipelineError, NoInputsFound
+from pipe_gaps.pipeline.config import Config, ConfigError
 from pipe_gaps.pipeline.factory import create, PipelineFactoryError
 from pipe_gaps.pipeline.pipe_naive import NaivePipeline
 
@@ -9,7 +10,7 @@ __all__ = [
     PipelineFactoryError,
     Pipeline,
     PipelineError,
-    NoMessagesFound,
+    NoInputsFound,
     Config,
     ConfigError,
     NaivePipeline,

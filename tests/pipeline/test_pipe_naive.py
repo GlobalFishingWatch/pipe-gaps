@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime
 
-from pipe_gaps.pipeline import NaivePipeline, NoMessagesFound
+from pipe_gaps.pipeline import NaivePipeline, NoInputsFound
 from pipe_gaps.utils import json_save
 
 
@@ -10,7 +10,7 @@ def test_no_messages(tmp_path, messages):
     json_save([], input_file)
 
     pipe = NaivePipeline.build(input_file=input_file)
-    with pytest.raises(NoMessagesFound):
+    with pytest.raises(NoInputsFound):
         pipe.run()
 
 
