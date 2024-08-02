@@ -2,8 +2,6 @@
 import json
 import logging
 
-from dataclasses import replace
-
 import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions
 
@@ -33,11 +31,10 @@ class BeamPipeline(base.Pipeline):
         self._options = PipelineOptions(flags=[], **beam_options)
 
     @classmethod
-    def build(cls, config: base.Config = base.Config(), **kwargs):
+    def _build(cls, config: base.Config):
         # This is the only method of the class that has concrete class implementations for Gaps.
         # Like AISMessagesQuery, DetectGapsFn, Message.
-        config = replace(config, **kwargs)
-        config.validate()
+        # The rest of the class is generic.
 
         if config.input_file is not None:
             input_id = config.input_file.stem

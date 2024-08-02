@@ -81,7 +81,7 @@ class Pipeline(ABC):
 
     @classmethod
     def subclasses_map(cls):
-        """Returns name attribute of subclasses."""
+        """Returns a map of name -> subclass."""
         subclasses = {}
         for subclass in cls.__subclasses__():
             subclasses[subclass.name] = subclass
@@ -90,7 +90,7 @@ class Pipeline(ABC):
 
     @classmethod
     def create(cls, pipe_type="naive", config: Config = Config(), **kwargs):
-        """Builds an instance of Pipeline."""
+        """Factory for Pipelines subclasses."""
         subclasses = cls.subclasses_map()
 
         if pipe_type == "beam" and not pipeline.is_beam_installed:
@@ -99,6 +99,16 @@ class Pipeline(ABC):
         if pipe_type not in subclasses:
             raise PipelineError("Pipeline type '{}' not implemented".format(pipe_type))
 
+        return subclasses[pipe_type].build(config, **kwargs)
+
+    @classmethod
+    def build(cls, config: Config = Config(), **kwargs):
+        """Builds a Pipeline instance.
+
+        Args:
+            config: pipeline configuration.
+            **kwargs: replacements for values provided in config.
+        """
         config = replace(config, **kwargs)
         config.validate()
 
@@ -108,15 +118,15 @@ class Pipeline(ABC):
         logger.info("Creating working directory {}...".format(config.work_dir.resolve()))
         os.makedirs(config.work_dir, exist_ok=True)
 
-        return subclasses[pipe_type].build(config)
-
-    @abstractmethod
-    def build(cls, config: Config = Config(), **kwargs):
-        """Builds the pipeline instance."""
+        return cls._build(config)
 
     @abstractmethod
     def run(self):
         """Runs the pipeline."""
+
+    @classmethod
+    def _build(cls, config: Config = Config(), **kwargs):
+        raise NotImplementedError("Implement this in subclass.")
 
 
 def run(config: dict):

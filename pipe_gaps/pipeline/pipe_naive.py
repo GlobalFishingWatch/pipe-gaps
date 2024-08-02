@@ -3,7 +3,7 @@ import csv
 import logging
 import itertools
 from datetime import datetime
-from dataclasses import dataclass, fields, replace
+from dataclasses import dataclass, fields
 
 from pipe_gaps import queries
 from pipe_gaps import constants as ct
@@ -39,10 +39,7 @@ class NaivePipeline(base.Pipeline):
         self.config = config
 
     @classmethod
-    def build(cls, config: base.Config = base.Config(), **kwargs):
-        config = replace(config, **kwargs)
-        config.validate()
-
+    def _build(cls, config: base.Config):
         return cls(config)
 
     def run(self):
