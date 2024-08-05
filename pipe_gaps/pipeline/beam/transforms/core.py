@@ -8,10 +8,10 @@ class Core(beam.PTransform):
     def __init__(self, core_fn: BaseFn):
         """A core beam transform for pipelines.
 
-        This transform:
-            1. Groups by a parallelization unit defined in Fn object.
-            2. Process groups with Fn.
-            3. Ungroups the results and assigns the schema defined in Fn object.
+        This transform will:
+            1. Groups input p-collection by a key defined in core_fn.
+            2. Process groups in parallel, applying core_fn.
+            3. Ungroups the results and assigns the schema defined in core_fn.
 
         Args:
             core_fn: The Fn that encapsulates the core transform.

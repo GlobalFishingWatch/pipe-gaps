@@ -6,7 +6,6 @@
     "pipe_type": "beam",
     "input_file": null,
     "save_json": false,
-    "work_dir": null,
     "mock_db_client": false,
     "start_date": "2019-02-01",
     "end_date": "2019-03-01",

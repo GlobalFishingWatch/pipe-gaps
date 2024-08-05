@@ -9,5 +9,8 @@
     "mock_db_client": false,
     "start_date": null,
     "end_date": null,
-    "ssvids": null
+    "ssvids": null,
+    "options": {
+        "runner": "direct"
+    }
 }

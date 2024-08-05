@@ -99,6 +99,7 @@ class AISMessagesQuery:
             The instance of AISMessagesQuery.
         """
         if mock_client:
+            logger.warning("Using MOCK BigQuery client.")
             return cls(client=mocks.BigQueryClientMock(project=project))
 
         job_config = bigquery.QueryJobConfig()

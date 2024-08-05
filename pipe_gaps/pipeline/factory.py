@@ -7,7 +7,7 @@ class PipelineFactoryError(PipelineError):
 
 
 def get_subclasses_map():
-    """Returns a map of name -> subclass."""
+    """Returns a map of name -> subclass of Pipeline."""
     subclasses = {}
     for subclass in Pipeline.__subclasses__():
         subclasses[subclass.name] = subclass

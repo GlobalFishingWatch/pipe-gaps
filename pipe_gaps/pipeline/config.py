@@ -1,6 +1,6 @@
 from pathlib import Path
 from dataclasses import field
-
+from typing import Optional
 from pydantic import BaseModel
 
 
@@ -25,12 +25,12 @@ class Config(BaseModel):
         options: Extra arguments for the pipeline.
     """
 
-    input_file: Path = None
-    work_dir: Path = Path(DEFAULT_WORK_DIR)
+    input_file: Optional[Path] = None
+    query_params: Optional[dict] = None
     mock_db_client: bool = False
+    work_dir: Path = Path(DEFAULT_WORK_DIR)
     save_json: bool = False
     save_stats: bool = False
-    query_params: dict = None
     core: dict = field(default_factory=dict)
     options: dict = field(default_factory=dict)
 

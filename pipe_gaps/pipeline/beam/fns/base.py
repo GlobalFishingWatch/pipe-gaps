@@ -1,19 +1,10 @@
 """This modules defines a base Fn useful to wire core algorithms with apache beam."""
 from typing import NamedTuple
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 
 import apache_beam as beam
 
-
-@dataclass(eq=True, frozen=True)
-class ProcessingUnit:
-    """Defines a key to group by input pcollections."""
-
-    @classmethod
-    @abstractmethod
-    def from_dict(cls, item: dict) -> "ProcessingUnit":
-        """Creates an instance from a dictionary."""
+from pipe_gaps.pipeline.common import ProcessingUnitKey
 
 
 class BaseFn(beam.DoFn, ABC):
@@ -37,13 +28,13 @@ class BaseFn(beam.DoFn, ABC):
 
     @staticmethod
     @abstractmethod
-    def parallelization_unit(item) -> ProcessingUnit:
-        """Defines the parallelization unit for this Fn.
+    def parallelization_unit(item: dict) -> ProcessingUnitKey:
+        """Defines the parallelization unit to group by inputs of this Fn.
+            Meant to be used in a beam.GroupBy transform.
 
         Args:
-            item: Description
+            item: An item to be processed by this Fn.
 
         Returns:
-            TYPE: Description
+            The processing unit key.
         """
-        return ProcessingUnit.from_dict(item)
