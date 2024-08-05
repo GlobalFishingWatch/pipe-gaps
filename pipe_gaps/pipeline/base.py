@@ -4,7 +4,6 @@ import os
 import logging
 
 from abc import ABC, abstractmethod
-
 # from typing import Unpack  # Supported from python 3.11
 
 from pipe_gaps.pipeline.config import Config
@@ -23,10 +22,9 @@ class NoInputsFound(PipelineError):
 class Pipeline(ABC):
     """Base class for pipelines."""
 
+    #  def build(cls, **kwargs: Unpack[Config]) -> Pipeline:  # Supported from python 3.11
     @classmethod
     def build(cls, **kwargs: dict) -> Pipeline:
-        #  def build(cls, **kwargs: Unpack[Config]) -> Pipeline:
-
         """Builds a Pipeline instance.
 
         Args:

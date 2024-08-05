@@ -22,6 +22,7 @@ class Config(BaseModel):
         save_json: If True, saves the results in JSON file.
         save_stats: If True, computes and saves basic statistics.
         core: Extra arguments for the core process.
+        options: Extra arguments for the pipeline.
     """
 
     input_file: Path = None
