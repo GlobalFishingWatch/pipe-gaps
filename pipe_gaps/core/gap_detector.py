@@ -16,6 +16,14 @@ KEY_TIMESTAMP = "timestamp"
 KEY_DISTANCE_FROM_SHORE = "distance_from_shore_m"
 
 
+class GapDetectionError(Exception):
+    pass
+
+
+def mandatory_keys():
+    return [KEY_TIMESTAMP, KEY_DISTANCE_FROM_SHORE]
+
+
 def detect(
     messages: list[dict],
     threshold: Union[int, float, timedelta] = THRESHOLD,
@@ -37,27 +45,35 @@ def detect(
                 "OFF": <the AIS position message when the gap starts>
                 "ON": <the AIS position message when the gap ends>
             }
+
+    Raises:
+        GapDetectionError: When input messages are missing a mandatory key.
     """
 
     if isinstance(threshold, (int, float)):
         threshold = timedelta(hours=threshold)
 
-    logger.debug("Sorting messages by timestamp...")
-    timestamp_key = operator.itemgetter(KEY_TIMESTAMP)
-    messages_sorted = sorted(messages, key=timestamp_key)
+    logger.debug("Using threshold: {}".format(threshold))
 
-    threshold_in_seconds = threshold.total_seconds()
-    gaps = zip(messages_sorted[:-1], messages_sorted[1:])
+    try:
+        logger.debug("Sorting messages by timestamp...")
+        timestamp_key = operator.itemgetter(KEY_TIMESTAMP)
 
-    if show_progress:
-        gaps = _build_progress_bar(gaps, len(messages_sorted))
+        messages_sorted = sorted(messages, key=timestamp_key)
+        threshold_in_seconds = threshold.total_seconds()
+        gaps = zip(messages_sorted[:-1], messages_sorted[1:])
 
-    logger.debug("Detecting gaps with time diff greater than threshold: {}...".format(threshold))
-    gaps = list(
-        dict(OFF=start, ON=end)
-        for start, end in gaps
-        if _filter_condition((start, end), threshold_in_seconds)
-    )
+        if show_progress:
+            gaps = _build_progress_bar(gaps, len(messages_sorted))
+
+        logger.debug("Detecting gaps...")
+        gaps = list(
+            dict(OFF=start, ON=end)
+            for start, end in gaps
+            if _filter_condition((start, end), threshold_in_seconds)
+        )
+    except KeyError as e:
+        raise GapDetectionError("Missing key in input messages: '{}'".format(e.args[0]))
 
     return gaps
 
