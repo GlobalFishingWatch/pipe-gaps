@@ -7,9 +7,7 @@
     "input_file": "pipe_gaps/data/sample_messages.json",
     "save_json": true,
     "mock_db_client": false,
-    "start_date": null,
-    "end_date": null,
-    "ssvids": null,
+    "query_params": null,
     "options": {
         "runner": "direct"
     }

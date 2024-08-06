@@ -85,7 +85,7 @@ def cli(args):
     config_file = ns.config_file
     verbose = ns.verbose
 
-    # Delete CLI configuration already used.
+    # Delete CLI configuration from parsed namespace.
     del ns.verbose
     del ns.config_file
 
@@ -98,18 +98,17 @@ def cli(args):
         config = utils.json_load(config_file)
 
     # Convert namespace of args to dict.
-    args_dict = vars(ns)
+    cli_args = vars(ns)
 
     # Group parameters.
-    for k in list(args_dict):
+    for k in list(cli_args):
         for group, keys in GROUPS_KEYS.items():
             if k in keys:
-                args_dict.setdefault(group, {})[k] = args_dict.pop(k)
+                cli_args.setdefault(group, {})[k] = cli_args.pop(k)
 
     # Override config file with CLI params
-    config.update(args_dict)
+    config.update(cli_args)
 
-    print(config)
     # Run pipeline with parsed config.
     try:
         pipeline.create(**config).run()

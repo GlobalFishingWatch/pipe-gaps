@@ -1,7 +1,7 @@
 from pathlib import Path
 from dataclasses import field
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 DEFAULT_WORK_DIR = "workdir"
@@ -24,6 +24,7 @@ class Config(BaseModel):
         core: Extra arguments for the core process.
         options: Extra arguments for the pipeline.
     """
+    model_config = ConfigDict(extra='forbid')
 
     input_file: Optional[Path] = None
     query_params: Optional[dict] = None
