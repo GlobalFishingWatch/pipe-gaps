@@ -1,3 +1,4 @@
+"""Module with base class for pipelines."""
 from __future__ import annotations
 
 import os
@@ -8,7 +9,7 @@ from dataclasses import dataclass, fields
 
 # from typing import Unpack  # Supported from python 3.11
 
-from pipe_gaps.pipeline.config import Config
+from pipe_gaps.pipeline.config import PipelineConfig
 
 logger = logging.getLogger(__name__)
 
@@ -24,18 +25,19 @@ class NoInputsFound(PipelineError):
 class Pipeline(ABC):
     """Base class for pipelines."""
 
-    #  def build(cls, **kwargs: Unpack[Config]) -> Pipeline:  # Supported from python 3.11
     @classmethod
-    def build(cls, **kwargs: dict) -> Pipeline:
-        """Builds a Pipeline instance.
+    #  def build(cls, **kwargs: Unpack[Config]) -> Pipeline:  # Supported from python 3.11
+    def build(cls, config: PipelineConfig = PipelineConfig(), **kwargs) -> Pipeline:
+        """Builds a Pipeline instance from a config.
 
         Args:
-            **kwargs: keyword arguments for Config class.
+            config: object with pipeline configuration.
+            **kwargs: keyword arguments for PipelineConfig class.
 
         Returns:
             Pipeline: the built instance.
         """
-        config = Config(**kwargs)
+        config = config.model_copy(update=kwargs)
         config.validate()
 
         logger.info("Using following configuration: ")
@@ -51,7 +53,7 @@ class Pipeline(ABC):
         """Runs the pipeline."""
 
     @classmethod
-    def _build(cls, config: Config = Config()):
+    def _build(cls, config: PipelineConfig = PipelineConfig()):
         raise NotImplementedError(
             "You can't call directly build method from base class. Use one of its subclasses."
         )
@@ -59,7 +61,7 @@ class Pipeline(ABC):
 
 @dataclass(eq=True, frozen=True)
 class ProcessingUnitKey(ABC):
-    """Defines a key to group inputs by rocessing units."""
+    """Defines a key to group inputs by processing units."""
 
     @classmethod
     @abstractmethod

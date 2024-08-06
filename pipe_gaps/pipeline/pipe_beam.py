@@ -3,8 +3,8 @@ import json
 import logging
 
 import apache_beam as beam
-from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam import PTransform
+from apache_beam.options.pipeline_options import PipelineOptions
 
 from pipe_gaps import queries
 from pipe_gaps.pipeline import base
@@ -83,7 +83,7 @@ class BeamPipeline(base.Pipeline):
         )
 
     @classmethod
-    def _build(cls, config: base.Config):
+    def _build(cls, config: base.PipelineConfig):
         # This is the only method of the class that uses concrete implementations for Gaps.
         # AISMessagesQuery, DetectGapsFn, Message, output_prefix
         # The rest of the class is generic.
@@ -95,7 +95,7 @@ class BeamPipeline(base.Pipeline):
             sources.append(ReadFromJson(config.input_file, schema=Message))
         else:
             input_id = "from-query"
-            query = queries.AISMessagesQuery.render_query(**config.query_params)
+            query = queries.AISMessagesQuery.render_query(**config.input_query)
 
             sources.append(
                 ReadFromQuery(

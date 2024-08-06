@@ -17,11 +17,11 @@ class NaivePipeline(base.Pipeline):
 
     name = "naive"
 
-    def __init__(self, config: base.Config):
+    def __init__(self, config: base.PipelineConfig):
         self.config = config
 
     @classmethod
-    def _build(cls, config: base.Config):
+    def _build(cls, config: base.PipelineConfig):
         return cls(config)
 
     def run(self):
@@ -33,7 +33,7 @@ class NaivePipeline(base.Pipeline):
         else:
             logger.info("Fetching messages from database...")
             messages_query = queries.AISMessagesQuery.build(mock_client=self.config.mock_db_client)
-            messages = messages_query.run(**self.config.query_params)
+            messages = messages_query.run(**self.config.input_query)
             output_stem = "from-query"
 
         if len(messages) == 0:

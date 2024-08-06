@@ -1,3 +1,4 @@
+"""Module with re-usable subclass implementations."""
 from datetime import datetime
 from dataclasses import dataclass
 

@@ -1,22 +1,22 @@
 import pytest
 
-from pipe_gaps.pipeline import Config, ConfigError, Pipeline
+from pipe_gaps.pipeline import PipelineConfig, PipeConfigError, Pipeline
 
 
 def test_config(tmp_path):
-    with pytest.raises(ConfigError):
-        config = Config()
+    with pytest.raises(PipeConfigError):
+        config = PipelineConfig()
         config.validate()
 
-    config = Config(input_file=str(tmp_path.joinpath("test.json")))
+    config = PipelineConfig(input_file=str(tmp_path.joinpath("test.json")))
     config.validate()
     config.to_json()
 
-    with pytest.raises(ConfigError):
-        config = Config(query_params=dict(start_date="2024-01-01"))
+    with pytest.raises(PipeConfigError):
+        config = PipelineConfig(input_query=dict(start_date="2024-01-01"))
         config.validate()
 
-    config = Config(query_params=dict(start_date="2024-01-01", end_date="2024-01-01"))
+    config = PipelineConfig(input_query=dict(start_date="2024-01-01", end_date="2024-01-01"))
     config.validate()
     config.to_json()
 

@@ -1,14 +1,16 @@
 {
-    "core": {
-        "threshold": 1.2,
-        "show_progress": true
-    },
     "pipe_type": "naive",
-    "input_file": "pipe_gaps/data/sample_messages.json",
-    "save_json": true,
-    "mock_db_client": false,
-    "query_params": null,
-    "options": {
-        "runner": "direct"
+    "pipe_config": {
+        "core": {
+            "threshold": 1.2,
+            "show_progress": true
+        },
+        "options": {
+            "runner": "direct"
+        },
+        "save_json": true,
+        "mock_db_client": false,
+        "input_file": "pipe_gaps/data/sample_messages.json",
+        "input_query": null
     }
 }

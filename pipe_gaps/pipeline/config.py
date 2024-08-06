@@ -7,16 +7,16 @@ from pydantic import BaseModel, ConfigDict
 DEFAULT_WORK_DIR = "workdir"
 
 
-class ConfigError(Exception):
+class PipeConfigError(Exception):
     pass
 
 
-class Config(BaseModel):
+class PipelineConfig(BaseModel):
     """Encapsulates Pipeline configuration.
 
     Args:
         input_file: Input file to process.
-        query_params: Query parameters. Ignored if input_file exists.
+        input_query: Input query parameters. Ignored if input_file exists.
         mock_db_client: If True, mocks the DB client. Useful for development and testing.
         work_dir: Working directory to use for saving outputs.
         save_json: If True, saves the results in JSON file.
@@ -27,7 +27,7 @@ class Config(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
     input_file: Optional[Path] = None
-    query_params: Optional[dict] = None
+    input_query: Optional[dict] = None
     mock_db_client: bool = False
     work_dir: Path = Path(DEFAULT_WORK_DIR)
     save_json: bool = False
@@ -39,13 +39,13 @@ class Config(BaseModel):
         return self.model_dump_json(indent=4)
 
     def validate(self):
-        if self.input_file is None and self.query_params is None:
-            raise ConfigError("You need to provide input_file OR query parameters.")
+        if self.input_file is None and self.input_query is None:
+            raise PipeConfigError("You need to provide input_file OR query parameters.")
 
         if self.input_file is None:
-            self.validate_query_params(**self.query_params)
+            self.validate_query_params(**self.input_query)
 
     @staticmethod
     def validate_query_params(start_date=None, end_date=None, ssvids=None):
         if start_date is None or end_date is None:
-            raise ConfigError("You need to provide both start_date and end_date parameters.")
+            raise PipeConfigError("You need to provide both start_date and end_date parameters.")

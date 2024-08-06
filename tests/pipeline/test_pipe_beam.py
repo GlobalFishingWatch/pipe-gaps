@@ -20,13 +20,13 @@ def test_with_input_file(tmp_path):
     pipe.run()
 
 
-def test_with_query_params():
-    query_params = {
+def test_with_input_params():
+    input_query = {
         "start_date": datetime(2024, 1, 1).date().isoformat(),
         "end_date": datetime(2024, 1, 1).date().isoformat(),
     }
 
-    pipe = BeamPipeline.build(mock_db_client=True, query_params=query_params)
+    pipe = BeamPipeline.build(mock_db_client=True, input_query=input_query)
     pipe.run()
 
 

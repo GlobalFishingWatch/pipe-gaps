@@ -22,13 +22,13 @@ def test_with_input_file(tmp_path, messages):
     pipe.run()
 
 
-def test_with_query_params():
-    query_params = dict(
+def test_with_input_query():
+    input_query = dict(
         start_date=datetime(2024, 1, 1).date().isoformat(),
         end_date=datetime(2024, 1, 1).date().isoformat(),
     )
 
-    pipe = NaivePipeline.build(mock_db_client=True, query_params=query_params)
+    pipe = NaivePipeline.build(mock_db_client=True, input_query=input_query)
     pipe.run()
 
 

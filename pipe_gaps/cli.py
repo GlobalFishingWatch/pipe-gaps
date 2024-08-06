@@ -2,6 +2,7 @@
 import sys
 import logging
 import argparse
+import collections
 
 from pathlib import Path
 
@@ -48,6 +49,16 @@ def formatter():
     return formatter
 
 
+def dict_update(d, u):
+    """Updates a nested dictionary."""
+    for k, v in u.items():
+        if isinstance(v, collections.abc.Mapping):
+            d[k] = dict_update(d.get(k) or {}, v)
+        else:
+            d[k] = v
+    return d
+
+
 def cli(args):
     """CLI for gaps pipeline."""
     utils.setup_logger(
@@ -83,11 +94,11 @@ def cli(args):
     add("--mock-db-client", action="store_true", help=HELP_MOCK_DB_CLIENT)
 
     GROUPS_KEYS = {
-        "query_params": ["start_date", "end_date", "ssvids"],
+        "input_query": ["start_date", "end_date", "ssvids"],
         "core": ["threshold", "show_progress"]
     }
 
-    ns = p.parse_args(args=args or ["--help"])
+    ns, _ = p.parse_known_args(args=args or ["--help"])
 
     config_file = ns.config_file
     verbose = ns.verbose
@@ -113,12 +124,16 @@ def cli(args):
             if k in keys:
                 cli_args.setdefault(group, {})[k] = cli_args.pop(k)
 
+    cli_config = {}
+    cli_config["pipe_type"] = cli_args.pop("pipe_type", "naive")
+    cli_config["pipe_config"] = cli_args
+
     # Override config file with CLI params
-    config.update(cli_args)
+    config = dict_update(config, cli_config)
 
     # Run pipeline with parsed config.
     try:
-        pipeline.create(**config).run()
+        pipeline.factory.from_config(config).run()
     except pipeline.PipelineError as e:
         logger.error(e)
 
