@@ -1,21 +1,7 @@
-from abc import ABC, abstractmethod
 from datetime import datetime
-from dataclasses import dataclass, fields
+from dataclasses import dataclass
 
-
-@dataclass(eq=True, frozen=True)
-class ProcessingUnitKey(ABC):
-    """Defines a key to group inputs by rocessing units."""
-
-    @classmethod
-    @abstractmethod
-    def from_dict(cls, item: dict) -> "ProcessingUnitKey":
-        """Creates an instance from a dictionary."""
-
-    @classmethod
-    def attributes(cls):
-        """Returns a list with the names of the attributes in the class."""
-        return [x.name for x in fields(cls)]
+from pipe_gaps.pipeline.base import ProcessingUnitKey
 
 
 @dataclass(eq=True, frozen=True)

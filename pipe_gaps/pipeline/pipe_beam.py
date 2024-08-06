@@ -19,9 +19,9 @@ class BeamPipeline(base.Pipeline):
     """Beam integrated pipeline.
 
     Args:
-        sources: list of read transforms.
+        sources: list of sources transforms to read pipeline inputs.
         core_transform: the core transform.
-        sinks: list of sinks transforms.
+        sinks: list of sinks transforms to write pipeline outputs.
         **options: extra arguments for PipelineOptions.
 
     This pipeline will:
@@ -87,7 +87,7 @@ class BeamPipeline(base.Pipeline):
         # This is the only method of the class that uses concrete implementations for Gaps.
         # AISMessagesQuery, DetectGapsFn, Message, output_prefix
         # The rest of the class is generic.
-        # TODO: put this in a concrete subclass GapsBeamPipeline.
+        # TODO: Use factories to make this method also generic and define transforms by config.
 
         sources = []
         if config.input_file is not None:
@@ -102,8 +102,7 @@ class BeamPipeline(base.Pipeline):
                     query=query,
                     schema=Message,
                     mock_db_client=config.mock_db_client,
-                    use_standard_sql=True,
-                    # gcs_location="gs://pipe-temp-us-central-ttl7/dataflow_temp",
+                    use_standard_sql=True
                 )
             )
 

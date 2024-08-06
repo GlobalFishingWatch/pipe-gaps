@@ -16,7 +16,7 @@ DESCRIPTION = """
     Detects time gaps in AIS position messages.
     The definition of a gap is configurable by a time threshold.
 
-    If input-file is provided, all Query parameters are ignored.
+    If input-file is provided, all query parameters are ignored.
 """
 EPILOG = (
     "Example: pipe-gaps --start-date 2024-01-01 --end-date 2024-01-02' --threshold 0.1"
@@ -50,10 +50,17 @@ def formatter():
 
 def cli(args):
     """CLI for gaps pipeline."""
-    utils.setup_logger(warning_level=[])
+    utils.setup_logger(
+        warning_level=[
+            "apache_beam.io.gcp.bigquery_tools",
+        ]
+    )
 
     p = argparse.ArgumentParser(
-        prog=NAME, description=DESCRIPTION, epilog=EPILOG, formatter_class=formatter(),
+        prog=NAME,
+        description=DESCRIPTION,
+        epilog=EPILOG,
+        formatter_class=formatter(),
         argument_default=argparse.SUPPRESS
     )
 
