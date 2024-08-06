@@ -13,8 +13,8 @@ def test_detect_gaps(messages, tmp_path):
         inputs = p | beam.Create(messages).with_output_types(Message)
         inputs | WriteJson(output_dir=tmp_path, output_prefix="test")
 
-    output_file = Path(tmp_path).joinpath("test-00000-of-00001.json")
+    output_file = Path(tmp_path).joinpath("test.json")
     assert Path(output_file).is_file()
 
-    output_messages = json_load(output_file)
+    output_messages = json_load(output_file, lines=True)
     assert len(output_messages) == len(messages)

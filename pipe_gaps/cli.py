@@ -99,8 +99,8 @@ def cli(args):
 
     # Convert namespace of args to dict.
     args_dict = vars(ns)
-    # Group parameters.
 
+    # Group parameters.
     for k in list(args_dict):
         for group, keys in GROUPS_KEYS.items():
             if k in keys:
@@ -109,6 +109,7 @@ def cli(args):
     # Override config file with CLI params
     config.update(args_dict)
 
+    print(config)
     # Run pipeline with parsed config.
     try:
         pipeline.create(**config).run()
