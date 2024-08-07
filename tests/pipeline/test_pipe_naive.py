@@ -36,8 +36,13 @@ def test_save_json(tmp_path, messages):
     input_file = tmp_path.joinpath("test.json")
     json_save(messages, input_file)
 
-    pipe = NaivePipeline.build(input_file=input_file, save_json=True)
+    pipe = NaivePipeline.build(input_file=input_file, work_dir=tmp_path, save_json=True)
     pipe.run()
+
+    output_file = f"naive-gaps-{input_file.stem}.json"
+    output_path = tmp_path.joinpath(output_file)
+
+    assert output_path.is_file()
 
 
 def test_save_stats(tmp_path, messages):
