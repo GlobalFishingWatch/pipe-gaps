@@ -67,8 +67,18 @@ we call it an **opened** gap event.
 ## Usage
 
 ### Installation
+
+We still don't have a package in PYPI.
+First, clone the repository.
+
+Then
 ```shell
-pip install pipe-gaps
+pip install .
+```
+
+If you want to use apache beam integration:
+```shell
+pip install .[beam]
 ```
 
 ### Using from python code
@@ -81,17 +91,28 @@ pip install pipe-gaps
 
 
 ```python
+from pprint import pprint
+from datetime import timedelta, datetime
+
 from pipe_gaps.core import gap_detector as gd
-from datetime import timedelta
 
-# Required fields
-messages = [{
-    "ssvid": "226013750",
-    "msgid": "295fa26f-cee9-1d86-8d28-d5ed96c32835",
-    "timestamp": "2024-01-04 20:48:40.000000 UTC",
-}]
+messages = [
+    {
+        "ssvid": "226013750",
+        "msgid": "295fa26f-cee9-1d86-8d28-d5ed96c32835",
+        "timestamp": datetime(2024, 1, 1, 0).timestamp(),
+        "distance_from_shore_m": 1
+    },
+    {
+        "ssvid": "226013750",
+        "msgid": "295fa26f-cee9-1d86-8d28-d5ed96c32835",
+        "timestamp": datetime(2024, 1, 1, 1).timestamp(),
+        "distance_from_shore_m": 1
+    }
+]
 
-gaps = gd.detect(messages, threshold=timedelta(hours=1, minutes=20), show_progress=True)
+gaps = gd.detect(messages, threshold=timedelta(hours=0, minutes=50), show_progress=True)
+pprint(gaps)
 ```
 
 #### BigQuery integration
@@ -105,24 +126,28 @@ docker compose run gcloud auth application-default set-quota-project world-fishi
 
 Then you can do:
 ```python
-from datetime import datetime, timedelta
+from datetime import timedelta, datetime
 
-from pipe_gaps import pipe
+from pipe_gaps import pipeline
 from pipe_gaps.utils import setup_logger
 
 setup_logger()
 
-query_params = {
-    "start_date": datetime(2024, 1, 1).date(),
-    "end_date": datetime(2024, 1, 5).date(),
-    "ssvids": ["243042594"]
-}
-
-gaps_by_ssvid = pipe.run(
-    query_params=query_params,
-    show_progress=True,
-    threshold=timedelta(hours=0, minutes=5)
+config = dict(
+    input_query=dict(
+        start_date=datetime(2019, 2, 1).date(),
+        end_date=datetime(2019, 2, 2).date(),
+        ssvids=[412331104, 477334300]
+    ),
+    core=dict(
+        threshold=timedelta(hours=0.1),
+        show_progress=True
+    ),
+    save_json=True
 )
+
+pipe = pipeline.create(**config)
+pipe.run()
 ```
 
 
@@ -130,32 +155,47 @@ gaps_by_ssvid = pipe.run(
 
 ```shell
 (.venv) $ pipe-gaps
-usage: pipe-gaps [-h] [-i ] [--threshold ] [--start-date ] [--end-date ] [--ssvids   [ ...]] [--show-progress] [--mock-db-client] [--save] [--work-dir ] [-v]
+usage: pipe-gaps [-h] [-c ] [-i ] [--pipe-type ] [--save-json] [--work-dir ] [-v] [--threshold ] [--show-progress] [--start-date ] [--end-date ] [--ssvids   [ ...]] [--mock-db-client]
 
     Detects time gaps in AIS position messages.
     The definition of a gap is configurable by a time threshold.
 
-    If input-file is provided, all Query parameters are ignored.
+    If input-file is provided, all query parameters are ignored.
 
 options:
-  -h, --help            show this help message and exit
-  -i  , --input-file    JSON file with input messages to use (default: None).
-  --threshold           Minimum time difference (hours) to start considering gaps (default: 12:00:00).
-  --start-date          Query filter: messages after this dete, e.g., '2024-01-01' (default: None).
-  --end-date            Query filter: messages before this date, e.g., '2024-01-02' (default: None).
-  --ssvids   [  ...]    Query filter: list of ssvids (default: None).
-  --show-progress       If True, renders a progress bar (default: False).
-  --mock-db-client      If True, mocks the DB client. Useful for development and testing.
-  --save                If True, saves the results in JSON file (default: False).
-  --work-dir            Directory to use as working directory (default: workdir).
-  -v, --verbose         Set logger level to DEBUG (default: False).
+  -h, --help             show this help message and exit
+  -c  , --config-file    JSON file with pipeline configuration (default: None).
+  -i  , --input-file     JSON file with input messages to use.
+  --pipe-type            Pipeline type: ['naive', 'beam'].
+  --save-json            If passed, saves the results in JSON file.
+  --work-dir             Directory to use as working directory.
+  -v, --verbose          Set logger level to DEBUG.
 
-Example: pipe-gaps --start-date 2024-01-01 --end-date 2024-01-02' --threshold 0.1 --ssvids 243042594 235053248 413539620
+core algorithm:
+  --threshold            Minimum time difference (hours) to start considering gaps.
+  --show-progress        If passed, renders a progress bar.
+
+query parameters:
+  --start-date           Query filter: messages after this dete, e.g., '2024-01-01'.
+  --end-date             Query filter: messages before this date, e.g., '2024-01-02'.
+  --ssvids   [  ...]     Query filter: list of ssvids.
+  --mock-db-client       If passed, mocks the DB client. Useful for development and testing.
+
+Examples: 
+    pipe-gaps --start-date 2019-01-02 --end-date 2019-01-03 --threshold 0.1 --ssvids 412331104 477334300
+    pipe-gaps -c config/sample-from-file-1.json --threshold 1.3
 ```
 ### Apache Beam integration
 
-Not yet implemented.
+Just use `--pipe-type beam` option:
+```
+pipe-gaps --pipe-type beam --start-date 2019-01-02 --end-date 2019-01-03 --threshold 0.1 --ssvids 412331104 477334300
+```
+This will run by default with DirectRunner.
+To run on DataFlow, add `--runner dataflow` option.
 
+Beam integrated pipeline will parallelize grouping inputs by SSVID and year.
+Border cases between years and open gaps are not handled in this version.
 
 
 ## References

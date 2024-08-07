@@ -38,11 +38,11 @@ dockershell:
 
 reqs:
 	docker compose run --entrypoint /bin/bash -it ${DOCKER_IMAGE_DEV} -c \
-		'pip-compile -o ${REQS_PROD_TXT} ${REQS_PROD_IN} -v'
+		'pip-compile -o ${REQS_PROD_TXT} setup.py -v'
 
 upgrade-reqs:
 	docker compose run --entrypoint /bin/bash -it ${DOCKER_IMAGE_DEV} -c \
-	'pip-compile -o ${REQS_PROD_TXT} -U ${REQS_PROD_IN} -v'
+	'pip-compile -o ${REQS_PROD_TXT} -U setup.py -v'
 
 venv:
 	python3 -m venv ${VENV_NAME}

@@ -1,0 +1,44 @@
+"""Module with beam transforms for writing output pcollections."""
+import json
+from pathlib import Path
+
+import apache_beam as beam
+# from apache_beam.io.fileio import default_file_naming
+
+
+class WriteJson(beam.PTransform):
+    """Writes p-collection as JSON.
+
+    Args:
+        output_dir: Output directory.
+        output_prefix: Prefix to use in filename/s.
+    """
+    def __init__(self, output_dir: Path, output_prefix: str = ""):
+        self._output_dir = output_dir
+        self._output_prefix = output_prefix
+
+    def expand(self, pcoll):
+        path = self._output_dir.joinpath(self._output_prefix).as_posix()
+        return pcoll | 'WriteToJson' >> (
+            beam.Map(json.dumps) |
+            beam.io.WriteToText(path, shard_name_template='', file_name_suffix=".json")
+        )
+
+        """
+        beam.io.WriteToJson pTransform is more direct but has issues writing locally.
+        Raises an error because interprets the filepath as an invalid gcs_location...
+        It works when you use ReadFromBigQuery and set the gcs_location there (very rare behavior).
+        It uses pandas under the hood.
+        https://beam.apache.org/releases/pydoc/current/apache_beam.io.textio.html#apache_beam.io.textio.WriteToJson.
+
+        beam.io.WriteToText pTransform is more predictable.
+        https://beam.apache.org/releases/pydoc/current/apache_beam.io.textio.html#apache_beam.io.textio.WriteToText.
+
+        file_naming = default_file_naming(prefix=self._output_prefix, suffix=".json")
+        return pcoll | beam.io.WriteToJson(
+            self._output_dir.as_posix(),
+            file_naming=default_file_naming(prefix=self._output_prefix, suffix=".json"),
+            lines=False,  # TODO: consider using JSON Lines format (lines=True).
+            indent=4,
+        )
+        """

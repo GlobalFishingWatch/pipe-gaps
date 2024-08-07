@@ -10,10 +10,15 @@ from .timing import timing
 __all__ = [setup_logger, timing]  # functions importable directly from package.
 
 
-def json_load(path) -> dict:
+def json_load(path, lines=False) -> dict:
     """Opens JSON file."""
-    with open(path) as file:
-        return json.load(file)
+
+    if not lines:
+        with open(path) as file:
+            return json.load(file)
+
+    with open(path, "r") as f2r:
+        return [json.loads(each_line) for each_line in f2r]
 
 
 def json_save(data, path, indent=4) -> dict:
