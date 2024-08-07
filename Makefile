@@ -49,7 +49,7 @@ venv:
 
 install:
 	pip install -r ${REQS_DEV}
-	pip install -e .
+	pip install -e .[beam]
 
 test:
 	pytest
