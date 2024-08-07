@@ -98,7 +98,7 @@ def cli(args):
         "core": ["threshold", "show_progress"]
     }
 
-    ns, _ = p.parse_known_args(args=args or ["--help"])
+    ns, unknown = p.parse_known_args(args=args or ["--help"])
 
     config_file = ns.config_file
     verbose = ns.verbose
@@ -118,6 +118,10 @@ def cli(args):
     # Convert namespace of args to dict.
     cli_args = vars(ns)
 
+    # Parse unknown arguments to dict.
+    options = dict(zip(unknown[:-1:2], unknown[1::2]))
+    options = {k.replace("--", ""): v for k, v in options.items()}
+
     # Group parameters.
     for k in list(cli_args):
         for group, keys in GROUPS_KEYS.items():
@@ -127,6 +131,7 @@ def cli(args):
     cli_config = {}
     cli_config["pipe_type"] = cli_args.pop("pipe_type", "naive")
     cli_config["pipe_config"] = cli_args
+    cli_config["pipe_config"]["options"] = options
 
     # Override config file with CLI params
     config = dict_update(config, cli_config)
