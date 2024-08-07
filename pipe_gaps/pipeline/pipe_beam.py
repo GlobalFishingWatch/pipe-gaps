@@ -95,7 +95,7 @@ class BeamPipeline(base.Pipeline):
             sources.append(ReadFromJson(config.input_file, schema=Message))
         else:
             input_id = "from-query"
-            query = queries.AISMessagesQuery.render_query(**config.input_query)
+            query = queries.AISMessagesQuery(**config.input_query).render()
 
             sources.append(
                 ReadFromQuery(

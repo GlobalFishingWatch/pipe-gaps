@@ -4,6 +4,7 @@ import logging
 import itertools
 
 from pipe_gaps import queries
+from pipe_gaps.bq_client import BigQueryClient
 from pipe_gaps.pipeline import base
 from pipe_gaps.core import gap_detector as gd
 from pipe_gaps.utils import json_load, json_save
@@ -32,8 +33,8 @@ class NaivePipeline(base.Pipeline):
             output_stem = self.config.input_file.stem
         else:
             logger.info("Fetching messages from database...")
-            messages_query = queries.AISMessagesQuery.build(mock_client=self.config.mock_db_client)
-            messages = messages_query.run(**self.config.input_query)
+            client = BigQueryClient.build(mock_client=self.config.mock_db_client)
+            messages = client.run_query(queries.AISMessagesQuery(**self.config.input_query))
             output_stem = "from-query"
 
         if len(messages) == 0:
