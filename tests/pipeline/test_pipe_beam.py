@@ -4,19 +4,11 @@ from pipe_gaps.pipeline import BeamPipeline
 from pipe_gaps.utils import json_save
 
 
-def test_with_input_file(tmp_path):
-    messages = [
-        {
-            "ssvid": "226013750",
-            "msgid": "295fa26f-cee9-1d86-8d28-d5ed96c32835",
-            "timestamp": 1704412120.0,
-        }
-    ]
-
+def test_with_input_file(tmp_path, messages):
     input_file = tmp_path.joinpath("test.json")
     json_save(messages, input_file)
 
-    pipe = BeamPipeline.build(input_file=input_file)
+    pipe = BeamPipeline.build(input_file=input_file, core=dict(threshold=0.5))
     pipe.run()
 
 
