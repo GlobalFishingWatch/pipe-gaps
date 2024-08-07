@@ -46,6 +46,6 @@ class PipelineConfig(BaseModel):
             self.validate_query_params(**self.input_query)
 
     @staticmethod
-    def validate_query_params(start_date=None, end_date=None, ssvids=None):
+    def validate_query_params(start_date=None, end_date=None, **kwargs):
         if start_date is None or end_date is None:
             raise PipeConfigError("You need to provide both start_date and end_date parameters.")

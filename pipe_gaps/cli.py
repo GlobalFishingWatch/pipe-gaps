@@ -20,8 +20,11 @@ DESCRIPTION = """
     If input-file is provided, all query parameters are ignored.
 """
 EPILOG = (
-    "Example: pipe-gaps --start-date 2024-01-01 --end-date 2024-01-02' --threshold 0.1"
-    " --ssvids 243042594 235053248 413539620"
+    "Examples: \n"
+    "    pipe-gaps --start-date 2019-01-02 --end-date 2019-01-03 --threshold 0.1 "
+    "--ssvids 412331104 477334300"
+    "\n"
+    "    pipe-gaps -c config/sample-from-file-1.json --threshold 1.3"
 )
 
 _DEFAULT = "(default: %(default)s)"

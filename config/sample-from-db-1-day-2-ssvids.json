@@ -2,7 +2,7 @@
     "pipe_type": "naive",
     "pipe_config": {
         "core": {
-            "threshold": 0.01,
+            "threshold": 1,
             "show_progress": true
         },
         "save_json": true,
@@ -11,7 +11,7 @@
         "input_query": {
             "start_date": "2024-01-01",
             "end_date": "2024-01-02",
-            "ssvids": [243042594, 235053248]
+            "ssvids": [412331104, 477334300]
         }
     }
 }

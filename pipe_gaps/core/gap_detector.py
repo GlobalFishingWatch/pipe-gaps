@@ -64,7 +64,7 @@ def detect(
         gaps = zip(messages_sorted[:-1], messages_sorted[1:])
 
         if show_progress:
-            gaps = _build_progress_bar(gaps, len(messages_sorted))
+            gaps = _build_progress_bar(gaps, len(messages_sorted) - 1)
 
         logger.debug("Detecting gaps...")
         gaps = list(
