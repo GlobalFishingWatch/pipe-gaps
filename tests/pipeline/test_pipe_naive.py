@@ -2,7 +2,8 @@ import pytest
 from datetime import datetime
 
 from pipe_gaps.pipeline import NaivePipeline, NoInputsFound
-from pipe_gaps.utils import json_save
+from pipe_gaps.utils import json_save, json_load
+from tests.conftest import TestCases
 
 
 def test_no_messages(tmp_path, messages):
@@ -39,10 +40,7 @@ def test_save_json(tmp_path, messages):
     pipe = NaivePipeline.build(input_file=input_file, work_dir=tmp_path, save_json=True)
     pipe.run()
 
-    output_file = f"naive-gaps-{input_file.stem}.json"
-    output_path = tmp_path.joinpath(output_file)
-
-    assert output_path.is_file()
+    assert pipe.output_path.is_file()
 
 
 def test_save_stats(tmp_path, messages):
@@ -51,3 +49,29 @@ def test_save_stats(tmp_path, messages):
 
     pipe = NaivePipeline.build(input_file=input_file, save_stats=True)
     pipe.run()
+
+
+@pytest.mark.parametrize(
+    "messages, expected_gaps",
+    [
+        pytest.param(
+            case["messages"],
+            case["expected_gaps"],
+            id=case["id"]
+        )
+        for case in TestCases.GAP_BETWEEN_YEARS
+    ],
+)
+def test_gap_between_years(tmp_path, messages, expected_gaps):
+    # Checks that a gap between years is properly detected.
+
+    input_file = tmp_path.joinpath("test-border-cases.json")
+    json_save(messages, input_file)
+
+    pipe = NaivePipeline.build(
+        input_file=input_file, work_dir=tmp_path, core=dict(threshold=1), save_json=True
+    )
+    pipe.run()
+
+    gaps = json_load(pipe.output_path, lines=False)
+    assert len(gaps) == expected_gaps
