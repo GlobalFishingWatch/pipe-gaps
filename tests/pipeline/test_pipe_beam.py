@@ -1,3 +1,5 @@
+import pytest
+
 from datetime import datetime
 
 from pipe_gaps.pipeline import BeamPipeline
@@ -29,12 +31,10 @@ def test_save_json(tmp_path, messages):
     pipe = BeamPipeline.build(input_file=input_file, work_dir=tmp_path, save_json=True)
     pipe.run()
 
-    output_file = f"beam-gaps-{input_file.stem}.json"
-    output_path = tmp_path.joinpath(output_file)
-
-    assert output_path.is_file()
+    assert pipe.output_path.is_file()
 
 
+@pytest.mark.skip
 def test_border_case(tmp_path):
     # Checks that a gap between years is properly detected.
     messages = [

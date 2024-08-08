@@ -17,11 +17,20 @@ class WriteJson(beam.PTransform):
         self._output_dir = output_dir
         self._output_prefix = output_prefix
 
+        self._prefix = self._output_dir.joinpath(self._output_prefix).as_posix()
+        self._shard_name_template = ''
+        self._suffix = ".json"
+
+        self.path = Path(''.join([self._prefix, self._shard_name_template, self._suffix]))
+
     def expand(self, pcoll):
-        path = self._output_dir.joinpath(self._output_prefix).as_posix()
         return pcoll | 'WriteToJson' >> (
             beam.Map(json.dumps) |
-            beam.io.WriteToText(path, shard_name_template='', file_name_suffix=".json")
+            beam.io.WriteToText(
+                self._prefix,
+                shard_name_template=self._shard_name_template,
+                file_name_suffix=self._suffix
+            )
         )
 
         """

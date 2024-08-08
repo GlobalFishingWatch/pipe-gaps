@@ -26,13 +26,6 @@ class NaivePipeline(base.Pipeline):
     def _build(cls, config: base.PipelineConfig):
         return cls(config)
 
-    @property
-    def output_path(self):
-        if self._output_path is None:
-            raise ValueError("You didn't configured the pipeline to save the output.")
-
-        return self._output_path
-
     def run(self):
         # TODO: split this into sources, core, and sinks operations.
         if self.config.input_file is not None:
