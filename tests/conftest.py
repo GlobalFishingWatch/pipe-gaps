@@ -10,7 +10,6 @@ def messages():
 
 
 class TestCases:
-    # Cases with gap between years.
     GAP_BETWEEN_YEARS = [
         {
             "messages": [
@@ -25,8 +24,9 @@ class TestCases:
                     "distance_from_shore_m": 1
                 }
             ],
+            "threshold": 1,
             "expected_gaps": 0,
-            "id": "gap_between_years_different_ssvid"
+            "id": "different_ssvid"
         },
         {
             "messages": [
@@ -41,7 +41,8 @@ class TestCases:
                     "distance_from_shore_m": 1
                 }
             ],
+            "threshold": 1,
             "expected_gaps": 1,
-            "id": "gap_between_years_same_ssvid"
+            "id": "same_ssvid"
         }
     ]

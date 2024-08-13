@@ -52,24 +52,28 @@ def test_save_stats(tmp_path, messages):
 
 
 @pytest.mark.parametrize(
-    "messages, expected_gaps",
+    "messages, threshold, expected_gaps",
     [
         pytest.param(
             case["messages"],
+            case["threshold"],
             case["expected_gaps"],
             id=case["id"]
         )
         for case in TestCases.GAP_BETWEEN_YEARS
     ],
 )
-def test_gap_between_years(tmp_path, messages, expected_gaps):
+def test_gap_between_years(tmp_path, messages, threshold, expected_gaps):
     # Checks that a gap between years is properly detected.
 
     input_file = tmp_path.joinpath("test-border-cases.json")
     json_save(messages, input_file)
 
     pipe = NaivePipeline.build(
-        input_file=input_file, work_dir=tmp_path, core=dict(threshold=1), save_json=True
+        input_file=input_file,
+        work_dir=tmp_path,
+        core=dict(threshold=threshold),
+        save_json=True
     )
     pipe.run()
 

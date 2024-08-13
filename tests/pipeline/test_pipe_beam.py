@@ -1,7 +1,10 @@
+import pytest
 from datetime import datetime
 
 from pipe_gaps.pipeline import BeamPipeline
 from pipe_gaps.utils import json_save, json_load
+
+from tests.conftest import TestCases
 
 
 def test_with_input_file(tmp_path, messages):
@@ -32,37 +35,31 @@ def test_save_json(tmp_path, messages):
     assert pipe.output_path.is_file()
 
 
-def test_border_case(tmp_path):
+@pytest.mark.parametrize(
+    "messages, threshold, expected_gaps",
+    [
+        pytest.param(
+            case["messages"],
+            case["threshold"],
+            case["expected_gaps"],
+            id=case["id"]
+        )
+        for case in TestCases.GAP_BETWEEN_YEARS
+    ],
+)
+def test_gap_between_years(tmp_path, messages, threshold, expected_gaps):
     # Checks that a gap between years is properly detected.
-    messages = [
-        {
-            "ssvid": "226013750",
-            "msgid": "295fa26f-cee9-1d86-8d28-d5ed96c32835",
-            "timestamp": datetime(2023, 12, 31, 22).timestamp(),
-            "distance_from_shore_m": 1
-        },
-        {
-            "ssvid": "226013750",
-            "msgid": "295fa26f-cee9-1d86-8d28-d5ed96c32835",
-            "timestamp": datetime(2023, 12, 31, 23).timestamp(),
-            "distance_from_shore_m": 1
-        },
-        {
-            "ssvid": "226013750",
-            "msgid": "295fa26f-cee9-1d86-8d28-d5ed96c32835",
-            "timestamp": datetime(2024, 1, 1, 1).timestamp(),
-            "distance_from_shore_m": 1
-        }
-    ]
 
     input_file = tmp_path.joinpath("test.json")
     json_save(messages, input_file)
 
     pipe = BeamPipeline.build(
-        input_file=input_file, work_dir=tmp_path, core=dict(threshold=1), save_json=True
+        input_file=input_file,
+        work_dir=tmp_path,
+        core=dict(threshold=threshold),
+        save_json=True
     )
     pipe.run()
 
     gaps = json_load(pipe.output_path, lines=True)
-
-    assert len(gaps) == 1
+    assert len(gaps) == expected_gaps
