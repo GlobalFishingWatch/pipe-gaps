@@ -28,8 +28,8 @@ class BaseFn(beam.DoFn, ABC):
 
     @staticmethod
     @abstractmethod
-    def parallelization_unit(item: dict) -> ProcessingUnitKey:
-        """Defines the parallelization unit to group by inputs of this Fn.
+    def processing_unit_key(item: dict) -> ProcessingUnitKey:
+        """Defines the processing unit key to group by inputs of this Fn.
             Meant to be used in a beam.GroupBy transform.
 
         Args:

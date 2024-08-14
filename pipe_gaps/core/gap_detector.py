@@ -54,7 +54,6 @@ def detect(
         threshold = timedelta(hours=threshold)
 
     logger.debug("Using threshold: {}".format(threshold))
-
     try:
         logger.debug("Sorting messages by timestamp...")
         timestamp_key = operator.itemgetter(KEY_TIMESTAMP)

@@ -10,4 +10,4 @@ def test_detect_gaps(messages):
 
     with TestPipeline() as p:
         inputs = p | beam.Create(messages).with_output_types(Message)
-        inputs | beam.GroupBy(fn.parallelization_unit) | beam.ParDo(fn)
+        inputs | beam.GroupBy(fn.processing_unit_key) | beam.ParDo(fn)

@@ -1,40 +1,11 @@
 """Module with beam transforms for processing input pcollections."""
 
+import logging
 import apache_beam as beam
 
 from ..fns.base import BaseFn
 
-import logging
-import operator
-from pipe_gaps.core import gap_detector as gd
-
-
 logger = logging.getLogger(__name__)
-
-
-def get_boundaries(item):
-    key, messages = item
-    minimum = min(messages, key=lambda x: x["timestamp"])
-    maximum = max(messages, key=lambda x: x["timestamp"])
-
-    return {"ssvid": key.ssvid, "year": key.year, "borders": (minimum, maximum)}
-
-
-def process_boundaries(item):
-    key, items = item
-
-    items_sorted = sorted(items, key=operator.itemgetter("year"))
-    pairs = zip(items_sorted[:-1], items_sorted[1:])
-
-    boundaries = {}
-    for left, right in pairs:
-        boundary_key = f"{left["year"]}-{right["year"]}"
-        boundaries[boundary_key] = [left["borders"][0], right["borders"][1]]
-
-    gaps = [gd.detect(messages) for messages in boundaries.values()]
-    logger.info(f"Found {len(gaps)} gaps analyzing boundaries for key={key}...")
-
-    return gaps
 
 
 class Core(beam.PTransform):
@@ -52,7 +23,7 @@ class Core(beam.PTransform):
         self._core_fn = core_fn
 
     def expand(self, pcoll):
-        groups = pcoll | "GroupBySsvidAndYear" >> beam.GroupBy(self._core_fn.parallelization_unit)
+        groups = pcoll | "GroupBySsvidAndYear" >> beam.GroupBy(self._core_fn.processing_unit_key)
 
         interior = (
             groups | "ProcessGroups" >> (
@@ -62,10 +33,10 @@ class Core(beam.PTransform):
         )
 
         boundaries = (
-            groups | "ProcessBoundaries" >> (
-                beam.Map(get_boundaries)
-                | beam.GroupBy(lambda item: item["ssvid"])
-                | beam.Map(process_boundaries)
+            groups | "ProcessGroupsBoundaries" >> (
+                beam.Map(self._core_fn.get_groups_boundaries)
+                | beam.GroupBy(self._core_fn.boundaries_key)
+                | beam.Map(self._core_fn.process_groups_boundaries)
                 | beam.FlatMap().with_output_types(self._core_fn.type())
             )
         )
