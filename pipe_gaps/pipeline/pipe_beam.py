@@ -53,7 +53,12 @@ class BeamPipeline(base.Pipeline):
 
     def run(self):
         with beam.Pipeline(options=self._options) as p:
-            inputs = [p | s for s in self._sources] | beam.Flatten()
+            inputs = [p | s for s in self._sources]
+
+            if len(inputs) > 1:
+                inputs = inputs | "JoinSources" >> beam.Flatten()
+            else:
+                inputs = inputs[0]
 
             outputs = inputs | self._core
 
