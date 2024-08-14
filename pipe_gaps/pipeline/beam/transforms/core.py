@@ -28,7 +28,7 @@ class Core(beam.PTransform):
         interior = (
             groups | "ProcessGroups" >> (
                 beam.ParDo(self._core_fn)
-                | beam.FlatMapTuple(lambda k, v: v).with_output_types(self._core_fn.type())
+                | beam.FlatMapTuple(lambda k, v: v)
             )
         )
 
@@ -37,8 +37,11 @@ class Core(beam.PTransform):
                 beam.Map(self._core_fn.get_groups_boundaries)
                 | beam.GroupBy(self._core_fn.boundaries_key)
                 | beam.Map(self._core_fn.process_groups_boundaries)
-                | beam.FlatMap().with_output_types(self._core_fn.type())
+                | beam.FlatMap()
             )
         )
 
-        return (interior, boundaries) | "JoinOutputs" >> beam.Flatten()
+        return (
+            (interior, boundaries)
+            | "JoinOutputs" >> beam.Flatten().with_output_types(self._core_fn.type())
+        )

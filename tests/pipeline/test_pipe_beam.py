@@ -15,6 +15,17 @@ def test_with_input_file(tmp_path, messages):
     pipe.run()
 
 
+def test_distance_from_shore_is_null(tmp_path, messages):
+    input_file = tmp_path.joinpath("test.json")
+    for m in messages:
+        m["distance_from_shore_m"] = None
+
+    json_save(messages, input_file)
+
+    pipe = BeamPipeline.build(input_file=input_file, core=dict(threshold=0.5))
+    pipe.run()
+
+
 def test_with_input_params():
     input_query = {
         "start_date": datetime(2024, 1, 1).date().isoformat(),
