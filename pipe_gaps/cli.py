@@ -66,7 +66,7 @@ def cli(args):
     """CLI for gaps pipeline."""
     utils.setup_logger(
         warning_level=[
-            "apache_beam.io.gcp.bigquery_tools",
+            "apache_beam",
         ]
     )
 
