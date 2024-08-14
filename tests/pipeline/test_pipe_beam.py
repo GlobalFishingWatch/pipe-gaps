@@ -2,6 +2,7 @@ import pytest
 from datetime import datetime
 
 from pipe_gaps.pipeline import BeamPipeline
+from pipe_gaps.pipeline import pipe_beam
 from pipe_gaps.utils import json_save, json_load
 
 from tests.conftest import TestCases
@@ -74,3 +75,14 @@ def test_gap_between_years(tmp_path, messages, threshold, expected_gaps):
 
     gaps = json_load(pipe.output_path, lines=True)
     assert len(gaps) == expected_gaps
+
+
+def test_verbose(tmp_path, messages):
+    input_file = tmp_path.joinpath("test.json")
+    json_save(messages, input_file)
+
+    import logging
+    pipe_beam.logger.setLevel(logging.DEBUG)
+
+    pipe = BeamPipeline.build(input_file=input_file, core=dict(threshold=0.5))
+    pipe.run()

@@ -1,5 +1,5 @@
 """This modules defines a base Fn useful to wire core algorithms with apache beam."""
-from typing import NamedTuple
+from typing import NamedTuple, Type
 from abc import ABC, abstractmethod
 
 import apache_beam as beam
@@ -28,13 +28,10 @@ class BaseFn(beam.DoFn, ABC):
 
     @staticmethod
     @abstractmethod
-    def processing_unit_key(item: dict) -> ProcessingUnitKey:
-        """Defines the processing unit key to group by inputs of this Fn.
-            Meant to be used in a beam.GroupBy transform.
-
-        Args:
-            item: An item to be processed by this Fn.
+    def processing_unit_key() -> Type[ProcessingUnitKey]:
+        """Returns the class with from_dict method that defines
+            the key to groupby inputs for this Fn. Meant to be used in a beam.GroupBy transform.
 
         Returns:
-            The processing unit key.
+            A ProcessingUnitKey class.
         """

@@ -1,12 +1,14 @@
 """This module encapsulates the apache beam DoFn gap process."""
 import logging
 import operator
+from typing import Type
 from dataclasses import dataclass
 
 from pipe_gaps.core import gap_detector as gd
 from pipe_gaps.pipeline.schemas import Gap, Message
 from pipe_gaps.pipeline.beam.fns import base
 from pipe_gaps.pipeline.common import SsvidAndYearKey
+
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +25,11 @@ class YearBoundaryMessages:
 class DetectGapsFn(base.BaseFn):
     """Fn to wire core gap detection process with apache beam.
 
+    TODO: this could be done differently. We could
+    1. build all gaps (pairs of consecutive messages) from groups and boundaries.
+    2. filter gaps without any grouping (beam decides, order is not important anymore),
+        based on threshold condition.
+
     Args:
         **config: keyword arguments for the core process.
     """
@@ -30,15 +37,17 @@ class DetectGapsFn(base.BaseFn):
     def __init__(self, **config):
         self._config = config
 
-    def process(self, element: tuple) -> list[tuple[SsvidAndYearKey, list[Gap]]]:
+    def process(self, element: tuple) -> list[Gap]:
+        """Receives AIS messages grouped by (ssvid, year) and returns gaps inside those groups."""
         key, messages = element
 
         gaps = gd.detect(messages=messages, **self._config)
         logger.info("Found {} gaps for key={}".format(len(gaps), key))
 
-        yield key, gaps
+        for gap in gaps:
+            yield gap
 
-    def get_groups_boundaries(self, element: tuple):
+    def get_boundaries(self, element: tuple) -> YearBoundaryMessages:
         """Receives messages grouped by (ssvid, year) and returns a YearBoundaryMessages object."""
         key, messages = element
         start = min(messages, key=lambda x: x["timestamp"])
@@ -46,16 +55,14 @@ class DetectGapsFn(base.BaseFn):
 
         return YearBoundaryMessages(ssvid=key.ssvid, year=key.year, start=start, end=end)
 
-    def process_groups_boundaries(self, element: tuple):
+    def process_boundaries(self, element: tuple) -> list[Gap]:
         """Receives YearBoundaryMessages objects grouped by ssvid and returns gaps."""
         key, year_boundaries = element
 
         year_boundaries = sorted(year_boundaries, key=operator.attrgetter("year"))
         consecutive_years = list(zip(year_boundaries[:-1], year_boundaries[1:]))
 
-        boundaries_messages = [
-            [left.end, right.start] for left, right in consecutive_years
-        ]
+        boundaries_messages = [[left.end, right.start] for left, right in consecutive_years]
 
         gaps = []
         for messages_pair in boundaries_messages:
@@ -63,15 +70,16 @@ class DetectGapsFn(base.BaseFn):
 
         logger.info(f"Found {len(gaps)} gaps analyzing year boundaries for key={key}...")
 
-        return gaps
+        for gap in gaps:
+            yield gap
 
     @staticmethod
     def type():
         return Gap
 
     @staticmethod
-    def processing_unit_key(item) -> SsvidAndYearKey:
-        return SsvidAndYearKey.from_dict(item)
+    def processing_unit_key() -> Type[SsvidAndYearKey]:
+        return SsvidAndYearKey
 
     @staticmethod
     def boundaries_key(item) -> str:
