@@ -55,17 +55,19 @@ class Core(beam.PTransform):
         groups = pcoll | "GroupBySsvidAndYear" >> beam.GroupBy(self._core_fn.parallelization_unit)
 
         interior = (
-            groups
-            | beam.ParDo(self._core_fn)
-            | beam.FlatMapTuple(lambda k, v: v).with_output_types(self._core_fn.type())
+            groups | "ProcessGroups" >> (
+                beam.ParDo(self._core_fn)
+                | beam.FlatMapTuple(lambda k, v: v).with_output_types(self._core_fn.type())
+            )
         )
 
         boundaries = (
-            groups
-            | beam.Map(get_boundaries)
-            | beam.GroupBy(lambda item: item["ssvid"])
-            | beam.Map(process_boundaries)
-            | beam.FlatMap().with_output_types(self._core_fn.type())
+            groups | "ProcessBoundaries" >> (
+                beam.Map(get_boundaries)
+                | beam.GroupBy(lambda item: item["ssvid"])
+                | beam.Map(process_boundaries)
+                | beam.FlatMap().with_output_types(self._core_fn.type())
+            )
         )
 
-        return (interior, boundaries) | beam.Flatten()
+        return (interior, boundaries) | "JoinOutputs" >> beam.Flatten()

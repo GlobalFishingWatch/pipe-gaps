@@ -65,8 +65,9 @@ class BeamPipeline(base.Pipeline):
             for sink_transform in self._sinks:
                 outputs | sink_transform
 
-            self._debug_n_elements(inputs, n=1, message="Sample Input")
-            self._debug_n_elements(outputs, n=1, message="Sample Output")
+            if logger.level == logging.DEBUG:
+                self._debug_n_elements(inputs, n=1, message="Sample Input")
+                self._debug_n_elements(outputs, n=1, message="Sample Output")
 
     def _debug_n_elements(self, elements, n=1, message=""):
         def debug(elem):
