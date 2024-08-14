@@ -2,6 +2,13 @@ import pytest
 from datetime import datetime
 
 from pipe_gaps.data import get_sample_messages
+from pipe_gaps import utils
+
+utils.setup_logger(
+    warning_level=[
+        "apache_beam",
+    ]
+)
 
 
 @pytest.fixture(scope="module")
