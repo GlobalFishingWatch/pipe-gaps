@@ -49,7 +49,7 @@ venv:
 
 install:
 	pip install -r ${REQS_DEV}
-	pip install -e .
+	pip install -e .[beam]
 
 test:
 	pytest
@@ -57,7 +57,7 @@ test:
 testintegration:
 	docker volume create --name ${GCP_DOCKER_VOLUME}
 	docker compose up bigquery --detach
-	INTEGRATION_TESTS=true pytest
+	INTEGRATION_TESTS=true python -m pytest
 	docker compose down bigquery
 
 testdocker:

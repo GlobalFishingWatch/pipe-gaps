@@ -11,14 +11,19 @@ __all__ = [setup_logger, timing]  # functions importable directly from package.
 
 
 def json_load(path, lines=False) -> dict:
-    """Opens JSON file."""
+    """Opens JSON file.
+
+    Args:
+        path: the filepath.
+        lines: If True, treats the file as a JSON Lines file.
+    """
 
     if not lines:
         with open(path) as file:
             return json.load(file)
 
-    with open(path, "r") as f2r:
-        return [json.loads(each_line) for each_line in f2r]
+    with open(path, "r") as file:
+        return [json.loads(each_line) for each_line in file]
 
 
 def json_save(data, path, indent=4) -> dict:

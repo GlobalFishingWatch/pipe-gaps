@@ -48,6 +48,13 @@ class Pipeline(ABC):
 
         return cls._build(config)
 
+    @property
+    def output_path(self):
+        if self._output_path is None:
+            raise PipelineError("You didn't configured the pipeline to save the output.")
+
+        return self._output_path
+
     @abstractmethod
     def run(self):
         """Runs the pipeline."""

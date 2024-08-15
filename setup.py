@@ -15,6 +15,7 @@ setuptools.setup(
     url="https://github.com/GlobalFishingWatch/pipe-gaps",
     packages=setuptools.find_packages(),
     include_package_data=True,
+    package_data={'pipe_gaps': ['data/*.json']},
     classifiers=[
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",

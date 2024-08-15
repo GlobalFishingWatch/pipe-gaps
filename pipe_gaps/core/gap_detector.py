@@ -54,7 +54,6 @@ def detect(
         threshold = timedelta(hours=threshold)
 
     logger.debug("Using threshold: {}".format(threshold))
-
     try:
         logger.debug("Sorting messages by timestamp...")
         timestamp_key = operator.itemgetter(KEY_TIMESTAMP)
@@ -83,8 +82,11 @@ def _build_progress_bar(gaps, total):
 
 
 def _filter_condition(gap: tuple[dict, dict], threshold: float) -> bool:
+    on_distance_from_shore = gap[0][KEY_DISTANCE_FROM_SHORE]
+    off_distance_from_shore = gap[1][KEY_DISTANCE_FROM_SHORE]
+
     return (
         (gap[1][KEY_TIMESTAMP] - gap[0][KEY_TIMESTAMP]) > threshold
-        and gap[0][KEY_DISTANCE_FROM_SHORE] > 0
-        and gap[1][KEY_DISTANCE_FROM_SHORE] > 0
+        and (on_distance_from_shore is None or on_distance_from_shore > 0)
+        and (off_distance_from_shore is None or off_distance_from_shore > 0)
     )

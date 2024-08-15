@@ -1,6 +1,7 @@
 """This module encapsulates the apache beam integrated pipeline."""
 import json
 import logging
+from pathlib import Path
 
 import apache_beam as beam
 from apache_beam import PTransform
@@ -33,11 +34,17 @@ class BeamPipeline(base.Pipeline):
     name = "beam"
 
     def __init__(
-        self, sources: list[PTransform], core: PTransform, sinks: list[PTransform], **options
+        self,
+        sources: list[PTransform],
+        core: PTransform,
+        sinks: list[PTransform],
+        output_path: Path = None,
+        **options
     ):
         self._sources = sources
         self._core = core
         self._sinks = sinks
+        self._output_path = output_path
 
         beam_options = self.default_options()
         beam_options.update(**options)
@@ -46,15 +53,21 @@ class BeamPipeline(base.Pipeline):
 
     def run(self):
         with beam.Pipeline(options=self._options) as p:
-            inputs = [p | s for s in self._sources] | beam.Flatten()
+            inputs = [p | s for s in self._sources]
+
+            if len(inputs) > 1:
+                inputs = inputs | "JoinSources" >> beam.Flatten()
+            else:
+                inputs = inputs[0]
 
             outputs = inputs | self._core
 
             for sink_transform in self._sinks:
                 outputs | sink_transform
 
-            self._debug_n_elements(inputs, n=1, message="Sample Input")
-            self._debug_n_elements(outputs, n=1, message="Sample Output")
+            if logger.level == logging.DEBUG:
+                self._debug_n_elements(inputs, n=1, message="Sample Input")
+                self._debug_n_elements(outputs, n=1, message="Sample Output")
 
     def _debug_n_elements(self, elements, n=1, message=""):
         def debug(elem):
@@ -95,11 +108,9 @@ class BeamPipeline(base.Pipeline):
             sources.append(ReadFromJson(config.input_file, schema=Message))
         else:
             input_id = "from-query"
-            query = queries.AISMessagesQuery(**config.input_query).render()
-
             sources.append(
                 ReadFromQuery(
-                    query=query,
+                    query=queries.AISMessagesQuery(**config.input_query).render(),
                     schema=Message,
                     mock_db_client=config.mock_db_client,
                     use_standard_sql=True
@@ -109,8 +120,11 @@ class BeamPipeline(base.Pipeline):
         core = Core(core_fn=DetectGapsFn(**config.core))
 
         sinks = []
+        output_path = None
         if config.save_json:
             output_prefix = f"{cls.name}-gaps-{input_id}"
-            sinks.append(WriteJson(config.work_dir, output_prefix=output_prefix))
+            write_json_sink = WriteJson(config.work_dir, output_prefix=output_prefix)
+            output_path = write_json_sink.path
+            sinks.append(write_json_sink)
 
-        return cls(sources, core, sinks, **config.options)
+        return cls(sources, core, sinks, output_path=output_path, **config.options)
