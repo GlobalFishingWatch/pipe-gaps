@@ -51,7 +51,7 @@ class Pipeline(ABC):
     @property
     def output_path(self):
         if self._output_path is None:
-            raise ValueError("You didn't configured the pipeline to save the output.")
+            raise PipelineError("You didn't configured the pipeline to save the output.")
 
         return self._output_path
 

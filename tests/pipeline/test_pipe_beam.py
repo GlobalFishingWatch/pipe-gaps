@@ -1,7 +1,10 @@
 import pytest
 from datetime import datetime
 
-from pipe_gaps.pipeline import BeamPipeline
+from pipe_gaps.pipeline.schemas import Message
+from pipe_gaps.pipeline.beam.fns import DetectGapsFn
+from pipe_gaps.pipeline.beam.transforms import Core, ReadFromJson
+from pipe_gaps.pipeline import BeamPipeline, PipelineError
 from pipe_gaps.pipeline import pipe_beam
 from pipe_gaps.utils import json_save, json_load
 
@@ -14,6 +17,30 @@ def test_with_input_file(tmp_path, messages):
 
     pipe = BeamPipeline.build(input_file=input_file, core=dict(threshold=0.5))
     pipe.run()
+
+
+def test_multiple_sources(tmp_path, messages):
+    input_file = tmp_path.joinpath("test.json")
+    json_save(messages, input_file)
+
+    core = Core(core_fn=DetectGapsFn())
+    read1 = "Read1" >> ReadFromJson(input_file, schema=Message)
+    read2 = "Read2" >> ReadFromJson(input_file, schema=Message)
+
+    sources = [read1, read2]
+    sinks = []
+
+    pipe = BeamPipeline(sources, core, sinks, output_path=input_file)
+    pipe.run()
+
+
+def test_no_output_path(tmp_path, messages):
+    input_file = tmp_path.joinpath("test.json")
+    json_save(messages, input_file)
+
+    pipe = BeamPipeline.build(input_file=input_file)
+    with pytest.raises(PipelineError):
+        pipe.output_path.is_file()
 
 
 def test_distance_from_shore_is_null(tmp_path, messages):
