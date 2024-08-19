@@ -77,7 +77,7 @@ class Measurement:
     def compute_stats(self):
         stats = Stats(
             mean=statistics.mean(self.measurements),
-            std=statistics.stdev(self.measurements),
+            std=statistics.stdev(self.measurements) if len(self.measurements) > 1 else 0,
             median=statistics.median(self.measurements),
             minimum=min(self.measurements),
         )
