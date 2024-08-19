@@ -6,10 +6,11 @@ import json
 import logging
 import argparse
 import statistics
-from dataclasses import dataclass
+
+from pathlib import Path
 from random import shuffle
 from datetime import timedelta
-from pathlib import Path
+from dataclasses import dataclass
 
 import cpuinfo
 
@@ -99,7 +100,7 @@ class Measurement:
             json.dump(self.to_dict(), f, indent=4)
 
 
-@profile  # noqa
+#  @profile  # noqa  # Uncomment to run memory profiler
 def _build_input_messages(n: int = 1000) -> list[dict]:
     logger.debug("Constructing messages...")
     test_messages = get_sample_messages().copy()
@@ -112,7 +113,7 @@ def _build_input_messages(n: int = 1000) -> list[dict]:
     return messages
 
 
-@profile  # noqa
+#  @profile  # noqa  # Uncomment to run memory profiler
 def _run_process(messages: list[dict]) -> None:
     """Benchmark for core gap detector."""
     gd.detect(messages, threshold=timedelta(hours=1, minutes=20))

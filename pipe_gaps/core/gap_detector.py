@@ -1,6 +1,7 @@
 """This module encapsulates the gap detection core algorithm."""
 import logging
 import operator
+import itertools
 from datetime import timedelta
 
 from typing import Union
@@ -22,6 +23,14 @@ class GapDetectionError(Exception):
 
 def mandatory_keys():
     return [KEY_TIMESTAMP, KEY_DISTANCE_FROM_SHORE]
+
+
+def pairwise(iterable):
+    # In itertools.pairwise from python 3.10.
+    a, b = itertools.tee(iterable)
+    next(b, None)
+
+    return zip(a, b)
 
 
 def detect(
@@ -55,17 +64,15 @@ def detect(
 
     logger.debug("Using threshold: {}".format(threshold))
     try:
-        logger.debug("Sorting messages by timestamp...")
-        timestamp_key = operator.itemgetter(KEY_TIMESTAMP)
 
-        messages_sorted = sorted(messages, key=timestamp_key)
-        threshold_in_seconds = threshold.total_seconds()
-        gaps = zip(messages_sorted[:-1], messages_sorted[1:])
+        sorted_messages = _sort_messages(messages)
+        gaps = pairwise(sorted_messages)
 
         if show_progress:
-            gaps = _build_progress_bar(gaps, len(messages_sorted) - 1)
+            gaps = _build_progress_bar(gaps, len(messages) - 1)
 
         logger.debug("Detecting gaps...")
+        threshold_in_seconds = threshold.total_seconds()
         gaps = list(
             dict(OFF=start, ON=end)
             for start, end in gaps
@@ -75,6 +82,13 @@ def detect(
         raise GapDetectionError("Missing key in input messages: '{}'".format(e.args[0]))
 
     return gaps
+
+
+#  @profile  # noqa  # Uncomment to run memory profiler
+def _sort_messages(messages):
+    logger.debug("Sorting messages by timestamp...")
+    messages.sort(key=operator.itemgetter(KEY_TIMESTAMP))
+    return messages
 
 
 def _build_progress_bar(gaps, total):
