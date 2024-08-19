@@ -17,6 +17,7 @@ from pipe_gaps.data import get_sample_messages
 from pipe_gaps.core import gap_detector as gd
 from pipe_gaps.utils import setup_logger, timing
 
+
 logger = logging.getLogger("Benchmark")
 
 NAME = "bench"
@@ -33,7 +34,7 @@ HELP_FILE = "filepath of measurements file."
 HELP_SKIP_CPU_INFO = "if true, doesn't retrieve CPU info (takes 1 sec)."
 
 STATS_FILENAME = "measurement-size-{size}-reps-{reps}.json"
-OUTPUT_DIR = "benchmarks/"
+OUTPUT_DIR = "workdir/"
 
 
 @dataclass
@@ -98,6 +99,7 @@ class Measurement:
             json.dump(self.to_dict(), f, indent=4)
 
 
+@profile  # noqa
 def _build_input_messages(n: int = 1000) -> list[dict]:
     logger.debug("Constructing messages...")
     test_messages = get_sample_messages().copy()
@@ -110,6 +112,7 @@ def _build_input_messages(n: int = 1000) -> list[dict]:
     return messages
 
 
+@profile  # noqa
 def _run_process(messages: list[dict]) -> None:
     """Benchmark for core gap detector."""
     gd.detect(messages, threshold=timedelta(hours=1, minutes=20))
