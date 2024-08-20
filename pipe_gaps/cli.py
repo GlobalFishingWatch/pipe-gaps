@@ -36,6 +36,7 @@ HELP_START_DATE = "Query filter: messages after this dete, e.g., '2024-01-01'."
 HELP_END_DATE = "Query filter: messages before this date, e.g., '2024-01-02'."
 HELP_SSVIDS = "Query filter: list of ssvids."
 HELP_SHOW_PROGRESS = "If passed, renders a progress bar."
+HELP_SORT_METHOD = "Sorting algorihtm."
 HELP_MOCK_DB_CLIENT = "If passed, mocks the DB client. Useful for development and testing."
 HELP_SAVE_JSON = "If passed, saves the results in JSON file."
 HELP_PIPE_TYPE = "Pipeline type: ['naive', 'beam']."
@@ -89,6 +90,7 @@ def cli(args):
     add = p.add_argument_group("core algorithm").add_argument
     add("--threshold", type=float, metavar=" ", help=HELP_THRESHOLD)
     add("--show-progress", action="store_true", help=HELP_SHOW_PROGRESS)
+    add("--sort-method", type=str, metavar=" ", help=HELP_SORT_METHOD)
 
     add = p.add_argument_group("query parameters").add_argument
     add("--start-date", type=str, metavar=" ", help=HELP_START_DATE)

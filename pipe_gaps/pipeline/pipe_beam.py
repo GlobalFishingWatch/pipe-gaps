@@ -81,7 +81,7 @@ class BeamPipeline(base.Pipeline):
         return dict(
             runner="DirectRunner",
             max_num_workers=100,
-            worker_machine_type="e2-standard-2",
+            worker_machine_type="e2-standard-2",  # 2 cores - 8GB
             disk_size_gb=25,
             no_use_public_ips=True,
             job_name="tom-test-gaps",

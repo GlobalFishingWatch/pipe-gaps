@@ -1,12 +1,11 @@
 """This module encapsulates the gap detection core algorithm."""
 import logging
-import operator
-import itertools
+from typing import Union
 from datetime import timedelta
 
-from typing import Union
-
 from rich.progress import track
+
+from pipe_gaps.utils import pairwise, list_sort
 
 logger = logging.getLogger(__name__)
 
@@ -25,18 +24,11 @@ def mandatory_keys():
     return [KEY_TIMESTAMP, KEY_DISTANCE_FROM_SHORE]
 
 
-def pairwise(iterable):
-    # In itertools.pairwise from python 3.10.
-    a, b = itertools.tee(iterable)
-    next(b, None)
-
-    return zip(a, b)
-
-
 def detect(
     messages: list[dict],
     threshold: Union[int, float, timedelta] = THRESHOLD,
     show_progress: bool = False,
+    sort_method: str = "timsort"
 ) -> list[dict]:
     """Detects time gaps between AIS position messages.
 
@@ -64,9 +56,10 @@ def detect(
 
     logger.debug("Using threshold: {}".format(threshold))
     try:
+        logger.debug(f"Sorting messages by timestamp ({sort_method} algorithm)...")
+        _sort_messages(messages, method=sort_method)
 
-        sorted_messages = _sort_messages(messages)
-        gaps = pairwise(sorted_messages)
+        gaps = pairwise(messages)
 
         if show_progress:
             gaps = _build_progress_bar(gaps, len(messages) - 1)
@@ -84,11 +77,9 @@ def detect(
     return gaps
 
 
-#  @profile  # noqa  # Uncomment to run memory profiler
-def _sort_messages(messages):
-    logger.debug("Sorting messages by timestamp...")
-    messages.sort(key=operator.itemgetter(KEY_TIMESTAMP))
-    return messages
+# @profile  # noqa  # Uncomment to run memory profiler
+def _sort_messages(messages, **kwargs):
+    list_sort(messages, key=KEY_TIMESTAMP, **kwargs)
 
 
 def _build_progress_bar(gaps, total):

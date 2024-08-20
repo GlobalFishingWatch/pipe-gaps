@@ -100,7 +100,7 @@ class Measurement:
             json.dump(self.to_dict(), f, indent=4)
 
 
-#  @profile  # noqa  # Uncomment to run memory profiler
+# @profile  # noqa  # Uncomment to run memory profiler
 def _build_input_messages(n: int = 1000) -> list[dict]:
     logger.debug("Constructing messages...")
     test_messages = get_sample_messages().copy()
@@ -113,10 +113,13 @@ def _build_input_messages(n: int = 1000) -> list[dict]:
     return messages
 
 
-#  @profile  # noqa  # Uncomment to run memory profiler
-def _run_process(messages: list[dict]) -> None:
+# @profile  # noqa  # Uncomment to run memory profiler
+def _run_process(input_size: int = 1000) -> None:
     """Benchmark for core gap detector."""
-    gd.detect(messages, threshold=timedelta(hours=1, minutes=20))
+    gd.detect(
+        _build_input_messages(input_size),
+        sort_method="heapsort_pd",
+        threshold=timedelta(hours=1, minutes=20))
 
 
 def stats(path: Path):
@@ -139,9 +142,7 @@ def run_benchmark(
         output_dir: directory in which to save the outputs.
         skip_cpu_info: if true, doesn't retrieve CPU info (takes 1 sec).
 
-    TODO: pass generic _build_input_messages as parameter.
     TODO: pass generic _run_process to as parameter.
-    TODO: or pass a generic object with those two methods.
 
     Returns:
         the measurement.
@@ -153,8 +154,7 @@ def run_benchmark(
     logger.info("========== MEASUREMENTS ==========")
     times = []
     for rep in range(1, reps + 1):
-        messages = _build_input_messages(input_size)
-        _, elapsed = timing(_run_process, quiet=True)(messages)
+        _, elapsed = timing(_run_process, quiet=True)(input_size)
         logger.info("Repetition {}; duration: {} sec".format(rep, round(elapsed, 3)))
         times.append(elapsed)
 
