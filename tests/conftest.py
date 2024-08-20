@@ -107,3 +107,35 @@ class TestCases:
             "id": "different_ssvid_three_gaps"
         }
     ]
+
+    OPEN_GAPS = [
+        {
+            "messages": [
+                {
+                    "ssvid": "226013750",
+                    "timestamp": datetime(2024, 8, 20, 12).timestamp(),
+                    "distance_from_shore_m": 1
+                },
+                {
+                    "ssvid": "446013750",
+                    "timestamp": datetime(2024, 1, 20, 13).timestamp(),
+                    "distance_from_shore_m": 1
+                }
+            ],
+            "threshold": 6,
+            "expected_gaps": 2,
+            "id": "different_ssvid_two_open_gaps"
+        },
+        {
+            "messages": [
+                {
+                    "ssvid": "226013750",
+                    "timestamp": datetime(2024, 8, 20, 20).timestamp(),
+                    "distance_from_shore_m": 1
+                }
+            ],
+            "threshold": 6,
+            "expected_gaps": 0,
+            "id": "one_ssvid_no_open_gap"
+        },
+    ]

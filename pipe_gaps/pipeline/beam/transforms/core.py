@@ -29,7 +29,7 @@ class Core(beam.PTransform):
 
         outputs = (
             groups | self.process_interior(),
-            groups | self.process_boundaries()
+            groups | self.process_boundaries(),
         )
 
         return outputs | self.join_outputs()

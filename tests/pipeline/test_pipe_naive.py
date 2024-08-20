@@ -79,3 +79,37 @@ def test_gap_between_years(tmp_path, messages, threshold, expected_gaps):
 
     gaps = json_load(pipe.output_path, lines=False)
     assert len(gaps) == expected_gaps
+
+
+@pytest.mark.parametrize(
+    "messages, threshold, expected_gaps",
+    [
+        pytest.param(
+            case["messages"],
+            case["threshold"],
+            case["expected_gaps"],
+            id=case["id"]
+        )
+        for case in TestCases.OPEN_GAPS
+    ],
+)
+def test_open_gaps(tmp_path, messages, threshold, expected_gaps):
+    # Checks that a gap between years is properly detected.
+
+    input_file = tmp_path.joinpath("test.json")
+    json_save(messages, input_file)
+
+    pipe = NaivePipeline.build(
+        input_file=input_file,
+        work_dir=tmp_path,
+        core=dict(threshold=threshold, eval_last=True),
+        save_json=True
+    )
+    pipe.run()
+
+    gaps = json_load(pipe.output_path, lines=False)
+    assert len(gaps) == expected_gaps
+
+    if len(gaps) > 0:
+        for gap in gaps:
+            assert gap["ON"] is None
