@@ -1,14 +1,16 @@
 import pytest
 
 from datetime import timedelta, datetime
-from pipe_gaps.core import gap_detector as gd
+from pipe_gaps.core import GapDetector, GapDetectionError
 
 
 def test_detect_correct_gaps(messages):
-    gaps = gd.detect(messages, threshold=timedelta(hours=1, minutes=20))
+    gd = GapDetector(threshold=timedelta(hours=1, minutes=20))
+    gaps = gd.detect(messages)
     assert len(gaps) == 7
 
-    gaps = gd.detect(messages, threshold=timedelta(hours=1, minutes=20), show_progress=True)
+    gd = GapDetector(threshold=timedelta(hours=1, minutes=20), show_progress=True)
+    gaps = gd.detect(messages)
     assert len(gaps) == 7
 
 
@@ -27,11 +29,11 @@ def test_missing_keys():
             "distance_from_shore_m": 1
         }
     ]
-
-    gaps = gd.detect(messages, threshold=0.5)
+    gd = GapDetector(threshold=0.5)
+    gaps = gd.detect(messages)
     assert len(gaps) == 1
 
     for key in gd.mandatory_keys():
         wrong_messages = [{k: v for k, v in m.items() if k != key} for m in messages]
-        with pytest.raises(gd.GapDetectionError):
-            gd.detect(wrong_messages, threshold=0.5)
+        with pytest.raises(GapDetectionError):
+            gd.detect(wrong_messages)

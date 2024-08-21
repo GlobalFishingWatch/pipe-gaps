@@ -3,13 +3,11 @@ import csv
 import logging
 import itertools
 
-from datetime import datetime, timedelta
-
 from pipe_gaps import queries
-from pipe_gaps.bq_client import BigQueryClient
-from pipe_gaps.pipeline import base
-from pipe_gaps.core import gap_detector as gd
+from pipe_gaps.core import GapDetector
 from pipe_gaps.utils import json_load, json_save
+from pipe_gaps.pipeline import base
+from pipe_gaps.bq_client import BigQueryClient
 from pipe_gaps.pipeline.common import SsvidAndYearKey
 
 logger = logging.getLogger(__name__)
@@ -40,10 +38,11 @@ class NaivePipeline(base.Pipeline):
             messages = client.run_query(queries.AISMessagesQuery(**self.config.input_query))
             input_id = "from-query"
 
+        eval_last = self.config.core.pop("eval_last", False)
+        gd = GapDetector(**self.config.core)
+
         if len(messages) == 0:
             raise base.NoInputsFound("No messages found with filters provided.")
-
-        eval_last = self.config.core.pop("eval_last", False)
 
         logger.info("Total amount of input messages: {}".format(len(messages)))
         logger.info(f"Grouping messages by {SsvidAndYearKey.attributes()}...")
@@ -61,7 +60,7 @@ class NaivePipeline(base.Pipeline):
             if prev_message is not None and prev_key.ssvid == key.ssvid:
                 messages.append(prev_message)
 
-            gaps = gd.detect(messages, **self.config.core)
+            gaps = gd.detect(messages)
             logger.info("Found {} gaps for key={}".format(len(gaps), key))
             gaps_by_key[key] = gaps
 
@@ -72,21 +71,10 @@ class NaivePipeline(base.Pipeline):
             last_messages = [(k, max(m, key=lambda x: x[gd.KEY_TIMESTAMP])) for k, m in groups]
 
             for key, last_m in last_messages:
-                last_m_date = datetime.fromtimestamp(last_m[gd.KEY_TIMESTAMP]).date()
-                next_m_date = last_m_date + timedelta(days=1)
-                next_m_datetime = datetime.combine(next_m_date, datetime.min.time())
+                open_gap = gd.eval_open_gap(last_m)
 
-                next_m = {
-                    gd.KEY_TIMESTAMP: next_m_datetime.timestamp(),
-                    "distance_from_shore_m": 1,
-                    }
-
-                open_gaps = gd.detect([last_m, next_m], **self.config.core)
-                assert len(open_gaps) <= 1, "I shouldn't find more than one open gap per vessel."
-
-                for open_gap in open_gaps:
+                if open_gap is not None:
                     logger.info(f"Found 1 open gap for key={key}...")
-                    open_gap["ON"] = None
                     gaps_by_key.setdefault(key, []).append(open_gap)
 
         total_n_gaps = sum(len(g) for g in gaps_by_key.values())

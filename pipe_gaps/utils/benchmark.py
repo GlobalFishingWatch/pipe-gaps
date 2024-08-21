@@ -15,7 +15,7 @@ from dataclasses import dataclass
 import cpuinfo
 
 from pipe_gaps.data import get_sample_messages
-from pipe_gaps.core import gap_detector as gd
+from pipe_gaps.core import GapDetector
 from pipe_gaps.utils import setup_logger, timing
 
 
@@ -116,10 +116,12 @@ def _build_input_messages(n: int = 1000) -> list[dict]:
 # @profile  # noqa  # Uncomment to run memory profiler
 def _run_process(input_size: int = 1000) -> None:
     """Benchmark for core gap detector."""
-    gd.detect(
-        _build_input_messages(input_size),
-        sort_method="heapsort_pd",
-        threshold=timedelta(hours=1, minutes=20))
+    gd = GapDetector(
+        sort_method="timsort",
+        threshold=timedelta(hours=1, minutes=20)
+    )
+
+    gd.detect(_build_input_messages(input_size))
 
 
 def stats(path: Path):

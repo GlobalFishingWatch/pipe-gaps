@@ -4,9 +4,7 @@ import operator
 from typing import Type
 from dataclasses import dataclass
 
-from datetime import datetime, timedelta
-
-from pipe_gaps.core import gap_detector as gd
+from pipe_gaps.core import GapDetector
 from pipe_gaps.pipeline.schemas import Gap, Message
 from pipe_gaps.pipeline.beam.fns import base
 from pipe_gaps.pipeline.common import SsvidAndYearKey
@@ -39,13 +37,13 @@ class DetectGapsFn(base.BaseFn):
 
     def __init__(self, eval_last=False, **config):
         self._eval_last = eval_last
-        self._config = config
+        self._gd = GapDetector(**config)
 
     def process(self, element: tuple) -> list[Gap]:
         """Receives AIS messages grouped by (ssvid, year) and returns gaps inside those groups."""
         key, messages = element
 
-        gaps = gd.detect(messages=messages, **self._config)
+        gaps = self._gd.detect(messages=messages)
         logger.info("Found {} gaps for key={}".format(len(gaps), key))
 
         for gap in gaps:
@@ -54,8 +52,8 @@ class DetectGapsFn(base.BaseFn):
     def get_boundaries(self, element: tuple) -> YearBoundaryMessages:
         """Receives messages grouped by (ssvid, year) and returns a YearBoundaryMessages object."""
         key, messages = element
-        start = min(messages, key=lambda x: x[gd.KEY_TIMESTAMP])
-        end = max(messages, key=lambda x: x[gd.KEY_TIMESTAMP])
+        start = min(messages, key=lambda x: x[self._gd.KEY_TIMESTAMP])
+        end = max(messages, key=lambda x: x[self._gd.KEY_TIMESTAMP])
 
         return YearBoundaryMessages(ssvid=key.ssvid, year=key.year, start=start, end=end)
 
@@ -70,29 +68,17 @@ class DetectGapsFn(base.BaseFn):
 
         gaps = []
         for messages_pair in boundaries_messages:
-            gaps.extend(gd.detect(messages_pair, **self._config))
+            gaps.extend(self._gd.detect(messages_pair))
 
         logger.info(f"Found {len(gaps)} gaps analyzing year boundaries for key={key}...")
 
         if self._eval_last:
             last_m = max(year_boundaries, key=operator.attrgetter("year")).end
-            last_m_date = datetime.fromtimestamp(last_m[gd.KEY_TIMESTAMP]).date()
-            next_m_date = last_m_date + timedelta(days=1)
-            next_m_datetime = datetime.combine(next_m_date, datetime.min.time())
+            open_gap = self._gd.eval_open_gap(last_m)
 
-            next_m = {
-                gd.KEY_TIMESTAMP: next_m_datetime.timestamp(),
-                "distance_from_shore_m": 1,
-            }
-
-            open_gaps = gd.detect([last_m, next_m], **self._config)
-            assert len(open_gaps) <= 1, "I shouldn't find more than one open gap per vessel."
-
-            for open_gap in open_gaps:
+            if open_gap is not None:
                 logger.info(f"Found 1 open gap for key={key}...")
-                open_gap["ON"] = None
-
-            gaps.extend(open_gaps)
+                gaps.append(open_gap)
 
         for gap in gaps:
             yield gap
