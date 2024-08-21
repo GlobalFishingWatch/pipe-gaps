@@ -42,14 +42,14 @@ class Core(beam.PTransform):
 
     def process_interior(self):
         """Returns the ProcessInterior pTransform."""
-        return "ProcessInterior" >> beam.ParDo(self._core_fn.process)
+        return "ProcessInterior" >> beam.FlatMap(self._core_fn.process)
 
     def process_boundaries(self):
         """Returns the ProcessBoundaries pTransform."""
         return "ProcessBoundaries" >> (
             beam.Map(self._core_fn.get_boundaries)
             | beam.GroupBy(self._core_fn.boundaries_key)
-            | beam.ParDo(self._core_fn.process_boundaries)
+            | beam.FlatMap(self._core_fn.process_boundaries)
         )
 
     def join_outputs(self):
