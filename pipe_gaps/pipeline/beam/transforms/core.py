@@ -20,7 +20,7 @@ class Core(beam.PTransform):
                 the output schema defined in core_fn.
 
         Args:
-            core_fn: The Fn that encapsulates the core transform.
+            core_fn: The Fn that encapsulates the core process.
         """
         self._core_fn = core_fn
 

@@ -86,7 +86,7 @@ class GapDetector:
         return gaps
 
     def eval_open_gap(self, message: dict):
-        """Evaluates a message and returns and open gap."""
+        """Evaluates a single message and returns and open gap."""
         last_m_date = datetime.fromtimestamp(message[self.KEY_TIMESTAMP]).date()
         next_m_date = last_m_date + timedelta(days=1)
         next_m_datetime = datetime.combine(next_m_date, datetime.min.time())
@@ -97,9 +97,9 @@ class GapDetector:
         }
 
         open_gap = None
-        open_gaps = self.detect([message, next_m])
-        if len(open_gaps) > 0:
-            open_gap = open_gaps[0]
+        gaps = self.detect([message, next_m])
+        if len(gaps) > 0:
+            open_gap = gaps[0]
             open_gap["ON"] = None
 
         return open_gap

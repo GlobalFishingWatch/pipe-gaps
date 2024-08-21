@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass(eq=True, frozen=True)
-class YearBoundaryMessages:
+class YearBoundary:
     """Defines start and end messages for a specific year and ssvid."""
     ssvid: str
     year: str
@@ -49,16 +49,16 @@ class DetectGapsFn(base.BaseFn):
         for gap in gaps:
             yield gap
 
-    def get_boundaries(self, element: tuple) -> YearBoundaryMessages:
-        """Receives messages grouped by (ssvid, year) and returns a YearBoundaryMessages object."""
+    def get_boundaries(self, element: tuple) -> YearBoundary:
+        """Receives messages grouped by (ssvid, year) and returns a YearBoundary object."""
         key, messages = element
         start = min(messages, key=lambda x: x[self._gd.KEY_TIMESTAMP])
         end = max(messages, key=lambda x: x[self._gd.KEY_TIMESTAMP])
 
-        return YearBoundaryMessages(ssvid=key.ssvid, year=key.year, start=start, end=end)
+        return YearBoundary(ssvid=key.ssvid, year=key.year, start=start, end=end)
 
     def process_boundaries(self, element: tuple) -> list[Gap]:
-        """Receives YearBoundaryMessages objects grouped by ssvid and returns gaps."""
+        """Receives YearBoundary objects grouped by ssvid and returns gaps."""
         key, year_boundaries = element
 
         year_boundaries = sorted(year_boundaries, key=operator.attrgetter("year"))
