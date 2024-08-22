@@ -10,7 +10,7 @@ from apache_beam.options.pipeline_options import PipelineOptions
 from pipe_gaps import queries
 from pipe_gaps.pipeline import base
 from pipe_gaps.pipeline.schemas import Message
-from pipe_gaps.pipeline.beam.fns import DetectGapsFn
+from pipe_gaps.pipeline.common import DetectGaps
 from pipe_gaps.pipeline.beam.transforms import ReadFromJson, ReadFromQuery, WriteJson, Core
 
 logger = logging.getLogger(__name__)
@@ -117,7 +117,7 @@ class BeamPipeline(base.Pipeline):
                 )
             )
 
-        core = Core(core_fn=DetectGapsFn(**config.core))
+        core = Core(core_process=DetectGaps.build(**config.core))
 
         sinks = []
         output_path = None

@@ -16,6 +16,14 @@ def messages():
     return get_sample_messages().copy()
 
 
+@pytest.fixture()
+def input_file(tmp_path, messages):
+    path = tmp_path.joinpath("test.json")
+    utils.json_save(messages, path)
+
+    return path
+
+
 class TestCases:
     GAP_BETWEEN_YEARS = [
         {

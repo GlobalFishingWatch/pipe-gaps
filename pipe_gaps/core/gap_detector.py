@@ -32,7 +32,8 @@ class GapDetector:
         self,
         threshold: Union[int, float, timedelta] = THRESHOLD,
         show_progress: bool = False,
-        sort_method: str = "timsort"
+        sort_method: str = "timsort",
+        eval_last: bool = False
     ):
         if isinstance(threshold, (int, float)):
             threshold = timedelta(hours=threshold)

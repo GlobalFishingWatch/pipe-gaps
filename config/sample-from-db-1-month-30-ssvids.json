@@ -3,7 +3,8 @@
     "pipe_config": {
         "core": {
             "threshold": 6,
-            "show_progress": false
+            "show_progress": false,
+            "eval_last": true
         },
         "save_json": false,
         "mock_db_client": false,

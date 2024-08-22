@@ -3,7 +3,8 @@
     "pipe_config": {
         "core": {
             "threshold": 1.2,
-            "show_progress": false
+            "show_progress": false,
+            "eval_last": true
         },
         "options": {
             "runner": "direct"

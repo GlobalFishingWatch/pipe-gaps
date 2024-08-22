@@ -6,7 +6,7 @@ from pipe_gaps.utils import json_save, json_load
 from tests.conftest import TestCases
 
 
-def test_no_messages(tmp_path, messages):
+def test_no_messages(tmp_path):
     input_file = tmp_path.joinpath("test.json")
     json_save([], input_file)
 
@@ -15,10 +15,7 @@ def test_no_messages(tmp_path, messages):
         pipe.run()
 
 
-def test_with_input_file(tmp_path, messages):
-    input_file = tmp_path.joinpath("test.json")
-    json_save(messages, input_file)
-
+def test_with_input_file(input_file):
     pipe = NaivePipeline.build(input_file=input_file)
     pipe.run()
 
@@ -33,20 +30,14 @@ def test_with_input_query():
     pipe.run()
 
 
-def test_save_json(tmp_path, messages):
-    input_file = tmp_path.joinpath("test.json")
-    json_save(messages, input_file)
-
+def test_save_json(tmp_path, input_file):
     pipe = NaivePipeline.build(input_file=input_file, work_dir=tmp_path, save_json=True)
     pipe.run()
 
     assert pipe.output_path.is_file()
 
 
-def test_save_stats(tmp_path, messages):
-    input_file = tmp_path.joinpath("test.json")
-    json_save(messages, input_file)
-
+def test_save_stats(input_file):
     pipe = NaivePipeline.build(input_file=input_file, save_stats=True)
     pipe.run()
 

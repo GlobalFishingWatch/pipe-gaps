@@ -3,32 +3,32 @@
 import logging
 import apache_beam as beam
 
-from ..fns.base import BaseFn
+from pipe_gaps.pipeline import CoreProcess
 
 logger = logging.getLogger(__name__)
 
 
 class Core(beam.PTransform):
-    def __init__(self, core_fn: BaseFn):
+    def __init__(self, core_process: CoreProcess):
         """A core beam transform for pipelines.
 
         This pTransform will:
-            1. Groups input p-collection by a key defined in core_fn.
-            2. Process groups in parallel, applying core_fn.
-            3. Process boundaries in parallel, applying core_fn.
+            1. Groups input p-collection by a key defined in core_process.
+            2. Process groups in parallel, applying core_process.
+            3. Process boundaries in parallel, applying core_process.
             4. Join outputs from groups and boundaries and assigns
-                the output schema defined in core_fn.
+                the output schema defined in core_process.
 
         Args:
-            core_fn: The Fn that encapsulates the core process.
+            core_process: The class that defines the core process.
         """
-        self._core_fn = core_fn
+        self._core_process = core_process
 
     def expand(self, pcoll):
         groups = pcoll | self.group_by()
 
         outputs = (
-            groups | self.process_interior(),
+            groups | self.process_groups(),
             groups | self.process_boundaries(),
         )
 
@@ -36,22 +36,22 @@ class Core(beam.PTransform):
 
     def group_by(self):
         """Returns the GroupBy pTransform."""
-        key_class = self._core_fn.processing_unit_key()
+        key_class = self._core_process.processing_unit_key()
 
         return f"GroupBy{key_class.name()}" >> beam.GroupBy(key_class.from_dict)
 
-    def process_interior(self):
-        """Returns the ProcessInterior pTransform."""
-        return "ProcessInterior" >> beam.FlatMap(self._core_fn.process)
+    def process_groups(self):
+        """Returns the ProcessGroups pTransform."""
+        return "ProcessGroups" >> beam.FlatMap(self._core_process.process_group)
 
     def process_boundaries(self):
         """Returns the ProcessBoundaries pTransform."""
         return "ProcessBoundaries" >> (
-            beam.Map(self._core_fn.get_boundaries)
-            | beam.GroupBy(self._core_fn.boundaries_key)
-            | beam.FlatMap(self._core_fn.process_boundaries)
+            beam.Map(self._core_process.get_group_boundaries)
+            | beam.GroupBy(self._core_process.boundaries_key)
+            | beam.FlatMap(self._core_process.process_boundaries)
         )
 
     def join_outputs(self):
         """Returns the JoinOutputs pTransform."""
-        return "JoinOutputs" >> beam.Flatten().with_output_types(self._core_fn.type())
+        return "JoinOutputs" >> beam.Flatten().with_output_types(self._core_process.type())
