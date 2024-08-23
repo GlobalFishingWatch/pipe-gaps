@@ -22,7 +22,7 @@ class BeamPipeline(base.Pipeline):
 
     Args:
         sources: list of sources transforms to read pipeline inputs.
-        core_transform: the core transform.
+        core: the core transform.
         sinks: list of sinks transforms to write pipeline outputs.
         **options: extra arguments for PipelineOptions.
 

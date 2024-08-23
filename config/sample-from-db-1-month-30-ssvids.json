@@ -6,15 +6,15 @@
             "show_progress": false,
             "eval_last": true
         },
-        "save_json": false,
-        "mock_db_client": false,
-        "input_file": null,
         "options": {
             "runner": "direct",
             "region": "us-east1",
             "network": "gfw-internal-network",
             "subnetwork": "regions/us-east1/subnetworks/gfw-internal-us-east1"
         },
+        "save_json": false,
+        "mock_db_client": false,
+        "input_file": null,
         "input_query": {
             "start_date": "2019-02-01",
             "end_date": "2019-03-01",
