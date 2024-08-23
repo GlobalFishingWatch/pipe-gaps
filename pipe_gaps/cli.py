@@ -69,6 +69,10 @@ def cli(args):
     utils.setup_logger(
         warning_level=[
             "apache_beam",
+        ],
+        error_level=[
+            "apache_beam.coders.coder_impl"
+            # to supress warning "Using fallback deterministic coder for type..."
         ]
     )
 

@@ -2,11 +2,11 @@
 import logging
 import operator
 import itertools
-from typing import Type
+from typing import Type, Iterable
 from datetime import datetime
 from dataclasses import dataclass
 
-from pipe_gaps.pipeline.base import CoreProcess, ProcessingUnitKey
+from pipe_gaps.pipeline.base import CoreProcess, Key
 from pipe_gaps.pipeline.schemas import Message
 
 from pipe_gaps.core import GapDetector
@@ -16,17 +16,22 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass(eq=True, frozen=True)
-class SsvidAndYearKey(ProcessingUnitKey):
+class SsvidAndYear(Key):
     ssvid: str
     year: str
 
-    @staticmethod
-    def name():
-        return "SsvidAndYear"
+    @classmethod
+    def from_dict(cls, item: dict) -> "SsvidAndYear":
+        return cls(ssvid=item["ssvid"], year=str(datetime.fromtimestamp(item["timestamp"]).year))
+
+
+@dataclass(eq=True, frozen=True)
+class Ssvid(Key):
+    ssvid: str
 
     @classmethod
-    def from_dict(cls, item: dict) -> "SsvidAndYearKey":
-        return cls(ssvid=item["ssvid"], year=str(datetime.fromtimestamp(item["timestamp"]).year))
+    def from_dict(cls, item: dict) -> "Ssvid":
+        return cls(ssvid=item["ssvid"])
 
 
 @dataclass(eq=True, frozen=True)
@@ -36,6 +41,9 @@ class YearBoundary:
     year: str
     start: Message
     end: Message
+
+    def __getitem__(self, key):
+        return self.__dict__[key]
 
     @classmethod
     def from_group(cls, element, timestamp_key="timestamp"):
@@ -64,18 +72,17 @@ class DetectGaps(CoreProcess):
         gd = GapDetector(**config)
         return cls(gd=gd, eval_last=eval_last)
 
-    def process(self, messages):
+    def process(self, elements: list) -> dict[str, list[Gap]]:
+        messages = elements
         logger.info("Total amount of input messages: {}".format(len(messages)))
 
         logger.info("Sorting messages...")
         sorted_messages = sorted(messages, key=lambda x: (x["ssvid"], x[self._gd.KEY_TIMESTAMP]))
 
-        logger.info(f"Grouping messages by {self.processing_unit_key().attributes()}...")
+        logger.info(f"Grouping messages by {self.groups_key().attributes()}...")
         grouped_messages = [
             (k, list(v))
-            for k, v in itertools.groupby(
-                sorted_messages,
-                key=self.processing_unit_key().from_dict)
+            for k, v in itertools.groupby(sorted_messages, key=self.groups_key().from_dict)
         ]
 
         logger.info("Detecting gaps in groups...")
@@ -90,14 +97,14 @@ class DetectGaps(CoreProcess):
             for group in grouped_messages
         ]
 
-        grouped_boundaries = itertools.groupby(boundaries, key=lambda x: (x.ssvid))
-        for ssvid, boundaries in grouped_boundaries:
-            gaps_in_boundaries = self.process_boundaries((ssvid, boundaries))
-            gaps_by_ssvid[ssvid].extend(gaps_in_boundaries)
+        grouped_boundaries = itertools.groupby(boundaries, key=self.boundaries_key().from_dict)
+        for key, boundaries in grouped_boundaries:
+            gaps_in_boundaries = self.process_boundaries((key.ssvid, boundaries))
+            gaps_by_ssvid[key.ssvid].extend(gaps_in_boundaries)
 
         return gaps_by_ssvid
 
-    def process_group(self, element: tuple, *args, **kwargs) -> list[Gap]:
+    def process_group(self, element: tuple, *args, **kwargs) -> Iterable[Gap]:
         key, messages = element
         gaps = self._gd.detect(messages=messages)
 
@@ -106,7 +113,7 @@ class DetectGaps(CoreProcess):
         for gap in gaps:
             yield gap
 
-    def process_boundaries(self, element: tuple) -> list[Gap]:
+    def process_boundaries(self, element: tuple) -> Iterable[Gap]:
         key, year_boundaries = element
 
         year_boundaries = sorted(year_boundaries, key=operator.attrgetter("year"))
@@ -139,9 +146,9 @@ class DetectGaps(CoreProcess):
         return Gap
 
     @staticmethod
-    def processing_unit_key() -> Type[SsvidAndYearKey]:
-        return SsvidAndYearKey
+    def groups_key() -> Type[SsvidAndYear]:
+        return SsvidAndYear
 
     @staticmethod
-    def boundaries_key(item) -> str:
-        return item.ssvid
+    def boundaries_key() -> Type[Ssvid]:
+        return Ssvid

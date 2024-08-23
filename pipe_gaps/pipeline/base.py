@@ -3,9 +3,9 @@ from __future__ import annotations
 
 import os
 import logging
-from typing import Type
+from typing import Type, Iterable
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, fields, asdict
 
 from pipe_gaps.pipeline.config import PipelineConfig
 
@@ -67,41 +67,45 @@ class CoreProcess(ABC):
     """Base class to define the core step of the pipeline."""
 
     @abstractmethod
-    def process(self, items):
-        """Receives list of items and process them linearly, without parallelization."""
+    def process(self, elements):
+        """Receives list of elements and process them linearly, without parallelization."""
 
     @abstractmethod
-    def process_group(self, element: tuple, *args, **kwargs) -> list:
-        """Receives items inside a group (grouped by groups_key) and process them."""
+    def process_group(self, element: tuple, *args, **kwargs) -> Iterable[Type]:
+        """Receives elements inside a group (grouped by groups_key) and process them."""
 
     @abstractmethod
     def get_group_boundaries(self, element: tuple) -> Type:
-        """Receives items inside a group (grouped by groups_key) and returns needed boundaries."""
+        """Receives elements inside a group (grouped by groups_key)
+            and returns the group's boundary elements."""
 
     @abstractmethod
-    def process_boundaries(self, element: tuple) -> list:
-        """Receives a group of boundaries (grouped by boundaries_key) and process them."""
+    def process_boundaries(self, element: tuple) -> Iterable[Type]:
+        """Receives a group of boundary elements (grouped by boundaries_key) and process them."""
 
     @staticmethod
     def type() -> Type:
         """Returns the final output type of the core process."""
 
     @staticmethod
-    def groups_key() -> Type[ProcessingUnitKey]:
+    def groups_key() -> Type[Key]:
         """Returns the key to group by input items."""
 
     @staticmethod
-    def boundaries_key(item) -> str:
+    def boundaries_key() -> Type[Key]:
         """Returns the key to  output type of the core process."""
 
 
 @dataclass(eq=True, frozen=True)
-class ProcessingUnitKey(ABC):
-    """Defines a key to group inputs by processing units."""
+class Key(ABC):
+    """Defines a key to order or group elements by processing units."""
+
+    def __str__(self):
+        return str(asdict(self))
 
     @classmethod
     @abstractmethod
-    def from_dict(cls, item: dict) -> "ProcessingUnitKey":
+    def from_dict(cls, item: dict) -> "Key":
         """Creates an instance from a dictionary."""
 
     @classmethod
