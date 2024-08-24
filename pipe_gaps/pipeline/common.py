@@ -73,11 +73,10 @@ class DetectGaps(CoreProcess):
         return cls(gd=gd, eval_last=eval_last)
 
     def process(self, elements: list) -> dict[str, list[Gap]]:
-        messages = elements
-        logger.info("Total amount of input messages: {}".format(len(messages)))
+        logger.info("Total amount of input messages: {}".format(len(elements)))
 
         logger.info("Sorting messages...")
-        sorted_messages = sorted(messages, key=lambda x: (x["ssvid"], x[self._gd.KEY_TIMESTAMP]))
+        sorted_messages = sorted(elements, key=lambda x: (x["ssvid"], x[self._gd.KEY_TIMESTAMP]))
 
         logger.info(f"Grouping messages by {self.groups_key().attributes()}...")
         grouped_messages = [
@@ -104,7 +103,7 @@ class DetectGaps(CoreProcess):
 
         return gaps_by_ssvid
 
-    def process_group(self, element: tuple, *args, **kwargs) -> Iterable[Gap]:
+    def process_group(self, element: tuple[Key, Iterable[Message]]) -> Iterable[Gap]:
         key, messages = element
         gaps = self._gd.detect(messages=messages)
 
@@ -113,7 +112,7 @@ class DetectGaps(CoreProcess):
         for gap in gaps:
             yield gap
 
-    def process_boundaries(self, element: tuple) -> Iterable[Gap]:
+    def process_boundaries(self, element: tuple[Key, Iterable[YearBoundary]]) -> Iterable[Gap]:
         key, year_boundaries = element
 
         year_boundaries = sorted(year_boundaries, key=operator.attrgetter("year"))

@@ -1,5 +1,5 @@
 {
-    "pipe_type": "naive",
+    "pipe_type": "beam",
     "pipe_config": {
         "core": {
             "threshold": 1.2,

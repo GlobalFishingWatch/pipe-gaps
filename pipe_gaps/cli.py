@@ -140,7 +140,10 @@ def cli(args):
                 cli_args.setdefault(group, {})[k] = cli_args.pop(k)
 
     cli_config = {}
-    cli_config["pipe_type"] = cli_args.pop("pipe_type", "naive")
+    pipe_type = cli_args.pop("pipe_type", None)
+    if pipe_type is not None:
+        cli_config["pipe_type"] = pipe_type
+
     cli_config["pipe_config"] = cli_args
     cli_config["pipe_config"]["options"] = options
 
