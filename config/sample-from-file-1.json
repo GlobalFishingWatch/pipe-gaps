@@ -1,9 +1,10 @@
 {
-    "pipe_type": "naive",
+    "pipe_type": "beam",
     "pipe_config": {
         "core": {
             "threshold": 1.2,
-            "show_progress": true
+            "show_progress": false,
+            "eval_last": true
         },
         "options": {
             "runner": "direct"

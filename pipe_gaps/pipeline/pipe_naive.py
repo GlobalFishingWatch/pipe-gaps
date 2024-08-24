@@ -4,11 +4,10 @@ import logging
 import itertools
 
 from pipe_gaps import queries
+from pipe_gaps.utils import json_load, json_save
 from pipe_gaps.bq_client import BigQueryClient
 from pipe_gaps.pipeline import base
-from pipe_gaps.core import gap_detector as gd
-from pipe_gaps.utils import json_load, json_save
-from pipe_gaps.pipeline.common import SsvidAndYearKey
+from pipe_gaps.pipeline.common import DetectGaps
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +27,8 @@ class NaivePipeline(base.Pipeline):
 
     def run(self):
         # TODO: split this into sources, core, and sinks operations.
+
+        # Sources
         if self.config.input_file is not None:
             logger.info("Fetching messages from file: {}".format(self.config.input_file.resolve()))
             messages = json_load(self.config.input_file)
@@ -41,45 +42,26 @@ class NaivePipeline(base.Pipeline):
         if len(messages) == 0:
             raise base.NoInputsFound("No messages found with filters provided.")
 
-        logger.info("Total amount of input messages: {}".format(len(messages)))
-        logger.info(f"Grouping messages by {SsvidAndYearKey.attributes()}...")
-        sorted_messages = sorted(messages, key=lambda x: (x["ssvid"], x["timestamp"]))
-        grouped_messages = itertools.groupby(sorted_messages, key=SsvidAndYearKey.from_dict)
+        # Core process
+        core = DetectGaps.build(**self.config.core)
+        gaps_by_ssvid = core.process(messages)
 
-        logger.info("Detecting gaps...")
-        prev_key, prev_message = (None, None)
-        gaps_by_key = {}
-        for key, messages in grouped_messages:
-            messages = list(messages)
-
-            # Handle border cases. Add last message in next batch.
-            last_message = messages[-1].copy()
-            if prev_message is not None and prev_key.ssvid == key.ssvid:
-                messages.append(prev_message)
-
-            gaps = gd.detect(messages, **self.config.core)
-            logger.info("Found {} gaps for key={}".format(len(gaps), key))
-            gaps_by_key[key] = gaps
-
-            prev_key, prev_message = key, last_message
-
-        total_n_gaps = sum(len(g) for g in gaps_by_key.values())
+        total_n_gaps = sum(len(g) for g in gaps_by_ssvid.values())
         logger.info("Total amount of gaps detected: {}".format(total_n_gaps))
 
+        # Sinks
         if self.config.save_json:
             self._output_path = self.config.work_dir.joinpath(f"{self.name}-gaps-{input_id}.json")
-            json_save(list(itertools.chain(*gaps_by_key.values())), self._output_path)
+            json_save(list(itertools.chain(*gaps_by_ssvid.values())), self._output_path)
             logger.info("Output saved in {}".format(self._output_path.resolve()))
 
         if self.config.save_stats:
             output_path_stats = self.config.work_dir.joinpath(f"stats-{input_id}")
             stats = []
-            for k, v in gaps_by_key.items():
-                stats.append({"ssvid": k.ssvid, "total": len(v)})
+            for ssvid, gaps in gaps_by_ssvid.items():
+                stats.append({"ssvid": ssvid, "total": len(gaps)})
 
             with open(f"{output_path_stats}.csv", "w", newline="") as output_file:
                 dict_writer = csv.DictWriter(output_file, stats[0].keys())
                 dict_writer.writeheader()
                 dict_writer.writerows(stats)
-
-            # json_save(stats, f"{output_path_stats}.json")

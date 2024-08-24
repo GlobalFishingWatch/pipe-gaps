@@ -94,7 +94,7 @@ pip install .[beam]
 from pprint import pprint
 from datetime import timedelta, datetime
 
-from pipe_gaps.core import gap_detector as gd
+from pipe_gaps.core import GapDetector
 
 messages = [
     {
@@ -111,7 +111,8 @@ messages = [
     }
 ]
 
-gaps = gd.detect(messages, threshold=timedelta(hours=0, minutes=50), show_progress=True)
+gd = GapDetector(threshold=timedelta(hours=0, minutes=50), show_progress=True)
+gaps = gd.detect(messages)
 pprint(gaps)
 ```
 
@@ -155,7 +156,8 @@ pipe.run()
 
 ```shell
 (.venv) $ pipe-gaps
-usage: pipe-gaps [-h] [-c ] [-i ] [--pipe-type ] [--save-json] [--work-dir ] [-v] [--threshold ] [--show-progress] [--start-date ] [--end-date ] [--ssvids   [ ...]] [--mock-db-client]
+usage: pipe-gaps [-h] [-c ] [-i ] [--pipe-type ] [--save-json | --no-save-json] [--work-dir ] [-v] [--threshold ] [--sort-method ] [--progress-bar | --no-progress-bar] [--start-date ]
+                 [--end-date ] [--ssvids   [ ...]] [--mock-db-client | --no-mock-db-client] [--eval-last | --no-eval-last]
 
     Detects time gaps in AIS position messages.
     The definition of a gap is configurable by a time threshold.
@@ -163,23 +165,27 @@ usage: pipe-gaps [-h] [-c ] [-i ] [--pipe-type ] [--save-json] [--work-dir ] [-v
     If input-file is provided, all query parameters are ignored.
 
 options:
-  -h, --help             show this help message and exit
-  -c  , --config-file    JSON file with pipeline configuration (default: None).
-  -i  , --input-file     JSON file with input messages to use.
-  --pipe-type            Pipeline type: ['naive', 'beam'].
-  --save-json            If passed, saves the results in JSON file.
-  --work-dir             Directory to use as working directory.
-  -v, --verbose          Set logger level to DEBUG.
+  -h, --help                             show this help message and exit
+  -c  , --config-file                    JSON file with pipeline configuration (default: None).
+  -i  , --input-file                     JSON file with input messages to use.
+  --pipe-type                            Pipeline type: ['naive', 'beam'].
+  --save-json, --no-save-json            If passed, saves the results in JSON file.
+  --work-dir                             Directory to use as working directory.
+  -v, --verbose                          Set logger level to DEBUG.
 
 core algorithm:
-  --threshold            Minimum time difference (hours) to start considering gaps.
-  --show-progress        If passed, renders a progress bar.
+  --threshold                            Minimum time difference (hours) to start considering gaps.
+  --sort-method                          Sorting algorihtm.
+  --progress-bar, --no-progress-bar      If passed, renders a progress bar.
 
-query parameters:
-  --start-date           Query filter: messages after this dete, e.g., '2024-01-01'.
-  --end-date             Query filter: messages before this date, e.g., '2024-01-02'.
-  --ssvids   [  ...]     Query filter: list of ssvids.
-  --mock-db-client       If passed, mocks the DB client. Useful for development and testing.
+pipeline sources:
+  --start-date                           Query filter: messages after this dete, e.g., '2024-01-01'.
+  --end-date                             Query filter: messages before this date, e.g., '2024-01-02'.
+  --ssvids   [  ...]                     Query filter: list of ssvids.
+  --mock-db-client, --no-mock-db-client  If passed, mocks the DB client. Useful for development and testing.
+
+pipeline core:
+  --eval-last, --no-eval-last            If passed, evaluates last message of each SSVID to create an open gap.
 
 Examples: 
     pipe-gaps --start-date 2019-01-02 --end-date 2019-01-03 --threshold 0.1 --ssvids 412331104 477334300
@@ -195,7 +201,6 @@ This will run by default with DirectRunner.
 To run on DataFlow, add `--runner dataflow` option.
 
 Beam integrated pipeline will parallelize grouping inputs by SSVID and year.
-Border cases between years and open gaps are not handled in this version.
 
 
 ## References

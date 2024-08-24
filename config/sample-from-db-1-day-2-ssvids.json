@@ -3,7 +3,14 @@
     "pipe_config": {
         "core": {
             "threshold": 1,
-            "show_progress": true
+            "show_progress": true,
+            "eval_last": true
+        },
+        "options": {
+            "runner": "direct",
+            "region": "us-east1",
+            "network": "gfw-internal-network",
+            "subnetwork": "regions/us-east1/subnetworks/gfw-internal-us-east1"
         },
         "save_json": true,
         "mock_db_client": false,

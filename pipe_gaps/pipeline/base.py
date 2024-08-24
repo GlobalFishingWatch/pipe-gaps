@@ -1,13 +1,11 @@
-"""Module with base class for pipelines."""
+"""Module with base classes for pipelines."""
 from __future__ import annotations
 
 import os
 import logging
-
+from typing import Type, Iterable
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, fields
-
-# from typing import Unpack  # Supported from python 3.11
+from dataclasses import dataclass, fields, asdict
 
 from pipe_gaps.pipeline.config import PipelineConfig
 
@@ -26,7 +24,6 @@ class Pipeline(ABC):
     """Base class for pipelines."""
 
     @classmethod
-    #  def build(cls, **kwargs: Unpack[Config]) -> Pipeline:  # Supported from python 3.11
     def build(cls, config: PipelineConfig = PipelineConfig(), **kwargs) -> Pipeline:
         """Builds a Pipeline instance from a config.
 
@@ -66,13 +63,49 @@ class Pipeline(ABC):
         )
 
 
+class CoreProcess(ABC):
+    """Base class to define the core step of the pipeline."""
+
+    @abstractmethod
+    def process(self, elements):
+        """Receives list of elements and process them linearly, without parallelization."""
+
+    @abstractmethod
+    def process_group(self, element: tuple, *args, **kwargs) -> Iterable[Type]:
+        """Receives elements inside a group (grouped by groups_key) and process them."""
+
+    @abstractmethod
+    def get_group_boundaries(self, element: tuple) -> Type:
+        """Receives elements inside a group (grouped by groups_key)
+            and returns the group's boundary elements."""
+
+    @abstractmethod
+    def process_boundaries(self, element: tuple) -> Iterable[Type]:
+        """Receives a group of boundary elements (grouped by boundaries_key) and process them."""
+
+    @staticmethod
+    def type() -> Type:
+        """Returns the final output type of the core process."""
+
+    @staticmethod
+    def groups_key() -> Type[Key]:
+        """Returns the key to group by input items."""
+
+    @staticmethod
+    def boundaries_key() -> Type[Key]:
+        """Returns the key to  output type of the core process."""
+
+
 @dataclass(eq=True, frozen=True)
-class ProcessingUnitKey(ABC):
-    """Defines a key to group inputs by processing units."""
+class Key(ABC):
+    """Defines a key to order or group elements by processing units."""
+
+    def __str__(self):
+        return str(asdict(self))
 
     @classmethod
     @abstractmethod
-    def from_dict(cls, item: dict) -> "ProcessingUnitKey":
+    def from_dict(cls, item: dict) -> "Key":
         """Creates an instance from a dictionary."""
 
     @classmethod

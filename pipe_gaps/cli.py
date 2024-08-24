@@ -3,6 +3,7 @@ import sys
 import logging
 import argparse
 import collections
+from argparse import BooleanOptionalAction
 
 from pathlib import Path
 
@@ -35,6 +36,8 @@ HELP_THRESHOLD = "Minimum time difference (hours) to start considering gaps."
 HELP_START_DATE = "Query filter: messages after this dete, e.g., '2024-01-01'."
 HELP_END_DATE = "Query filter: messages before this date, e.g., '2024-01-02'."
 HELP_SSVIDS = "Query filter: list of ssvids."
+HELP_SORT_METHOD = "Sorting algorihtm."
+HELP_EVAL_LAST = "If passed, evaluates last message of each SSVID to create an open gap."
 HELP_SHOW_PROGRESS = "If passed, renders a progress bar."
 HELP_MOCK_DB_CLIENT = "If passed, mocks the DB client. Useful for development and testing."
 HELP_SAVE_JSON = "If passed, saves the results in JSON file."
@@ -67,6 +70,10 @@ def cli(args):
     utils.setup_logger(
         warning_level=[
             "apache_beam",
+        ],
+        error_level=[
+            "apache_beam.coders.coder_impl"
+            # to supress warning "Using fallback deterministic coder for type..."
         ]
     )
 
@@ -82,23 +89,27 @@ def cli(args):
     add("-c", "--config-file", type=Path, default=None, metavar=" ", help=HELP_CONFIG_FILE)
     add("-i", "--input-file", type=Path, metavar=" ", help=HELP_INPUT_FILE)
     add("--pipe-type", type=str, metavar=" ", help=HELP_PIPE_TYPE)
-    add("--save-json", action="store_true", help=HELP_SAVE_JSON)
+    add("--save-json", default=None, action=BooleanOptionalAction, help=HELP_SAVE_JSON)
     add("--work-dir", type=Path, metavar=" ", help=HELP_WORK_DIR)
     add("-v", "--verbose", action="store_true", default=False, help=HELP_VERBOSE)
 
     add = p.add_argument_group("core algorithm").add_argument
     add("--threshold", type=float, metavar=" ", help=HELP_THRESHOLD)
-    add("--show-progress", action="store_true", help=HELP_SHOW_PROGRESS)
+    add("--sort-method", type=str, metavar=" ", help=HELP_SORT_METHOD)
+    add("--progress-bar", default=None, action=BooleanOptionalAction, help=HELP_SHOW_PROGRESS)
 
-    add = p.add_argument_group("query parameters").add_argument
+    add = p.add_argument_group("pipeline sources").add_argument
     add("--start-date", type=str, metavar=" ", help=HELP_START_DATE)
     add("--end-date", type=str, metavar=" ", help=HELP_END_DATE)
     add("--ssvids", type=str, nargs="+", metavar=" ", help=HELP_SSVIDS)
-    add("--mock-db-client", action="store_true", help=HELP_MOCK_DB_CLIENT)
+    add("--mock-db-client", default=None, action=BooleanOptionalAction, help=HELP_MOCK_DB_CLIENT)
+
+    add = p.add_argument_group("pipeline core").add_argument
+    add("--eval-last", default=None, action=BooleanOptionalAction, help=HELP_EVAL_LAST)
 
     GROUPS_KEYS = {
         "input_query": ["start_date", "end_date", "ssvids"],
-        "core": ["threshold", "show_progress"]
+        "core": ["threshold", "show_progress", "eval_last"]
     }
 
     ns, unknown = p.parse_known_args(args=args or ["--help"])
@@ -121,6 +132,10 @@ def cli(args):
     # Convert namespace of args to dict.
     cli_args = vars(ns)
 
+    for arg in list(cli_args):
+        if cli_args[arg] is None:
+            del cli_args[arg]
+
     # Parse unknown arguments to dict.
     options = dict(zip(unknown[:-1:2], unknown[1::2]))
     options = {k.replace("--", ""): v for k, v in options.items()}
@@ -132,7 +147,10 @@ def cli(args):
                 cli_args.setdefault(group, {})[k] = cli_args.pop(k)
 
     cli_config = {}
-    cli_config["pipe_type"] = cli_args.pop("pipe_type", "naive")
+    pipe_type = cli_args.pop("pipe_type", None)
+    if pipe_type is not None:
+        cli_config["pipe_type"] = pipe_type
+
     cli_config["pipe_config"] = cli_args
     cli_config["pipe_config"]["options"] = options
 

@@ -6,8 +6,12 @@ from dateutil.parser import parse as dateutil_parse
 
 from .logger import setup_logger
 from .timing import timing
+from .collections import pairwise, list_sort
 
-__all__ = [setup_logger, timing]  # functions importable directly from package.
+
+__all__ = [  # functions importable directly from package.
+    setup_logger, timing, pairwise, list_sort,
+]
 
 
 def json_load(path, lines=False) -> dict:

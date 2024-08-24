@@ -16,7 +16,7 @@ class PipelineFactoryError(PipelineError):
 class PipelineFactoryConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
-    pipe_type: str
+    pipe_type: str = "naive"
     pipe_config: PipelineConfig
 
 

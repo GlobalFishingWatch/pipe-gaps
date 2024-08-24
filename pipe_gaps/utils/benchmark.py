@@ -6,16 +6,18 @@ import json
 import logging
 import argparse
 import statistics
-from dataclasses import dataclass
+
+from pathlib import Path
 from random import shuffle
 from datetime import timedelta
-from pathlib import Path
+from dataclasses import dataclass
 
 import cpuinfo
 
 from pipe_gaps.data import get_sample_messages
-from pipe_gaps.core import gap_detector as gd
+from pipe_gaps.core import GapDetector
 from pipe_gaps.utils import setup_logger, timing
+
 
 logger = logging.getLogger("Benchmark")
 
@@ -33,7 +35,7 @@ HELP_FILE = "filepath of measurements file."
 HELP_SKIP_CPU_INFO = "if true, doesn't retrieve CPU info (takes 1 sec)."
 
 STATS_FILENAME = "measurement-size-{size}-reps-{reps}.json"
-OUTPUT_DIR = "benchmarks/"
+OUTPUT_DIR = "workdir/"
 
 
 @dataclass
@@ -77,7 +79,7 @@ class Measurement:
     def compute_stats(self):
         stats = Stats(
             mean=statistics.mean(self.measurements),
-            std=statistics.stdev(self.measurements),
+            std=statistics.stdev(self.measurements) if len(self.measurements) > 1 else 0,
             median=statistics.median(self.measurements),
             minimum=min(self.measurements),
         )
@@ -98,6 +100,7 @@ class Measurement:
             json.dump(self.to_dict(), f, indent=4)
 
 
+# @profile  # noqa  # Uncomment to run memory profiler
 def _build_input_messages(n: int = 1000) -> list[dict]:
     logger.debug("Constructing messages...")
     test_messages = get_sample_messages().copy()
@@ -110,9 +113,15 @@ def _build_input_messages(n: int = 1000) -> list[dict]:
     return messages
 
 
-def _run_process(messages: list[dict]) -> None:
+# @profile  # noqa  # Uncomment to run memory profiler
+def _run_process(input_size: int = 1000) -> None:
     """Benchmark for core gap detector."""
-    gd.detect(messages, threshold=timedelta(hours=1, minutes=20))
+    gd = GapDetector(
+        sort_method="timsort",
+        threshold=timedelta(hours=1, minutes=20)
+    )
+
+    gd.detect(_build_input_messages(input_size))
 
 
 def stats(path: Path):
@@ -135,9 +144,7 @@ def run_benchmark(
         output_dir: directory in which to save the outputs.
         skip_cpu_info: if true, doesn't retrieve CPU info (takes 1 sec).
 
-    TODO: pass generic _build_input_messages as parameter.
     TODO: pass generic _run_process to as parameter.
-    TODO: or pass a generic object with those two methods.
 
     Returns:
         the measurement.
@@ -149,8 +156,7 @@ def run_benchmark(
     logger.info("========== MEASUREMENTS ==========")
     times = []
     for rep in range(1, reps + 1):
-        messages = _build_input_messages(input_size)
-        _, elapsed = timing(_run_process, quiet=True)(messages)
+        _, elapsed = timing(_run_process, quiet=True)(input_size)
         logger.info("Repetition {}; duration: {} sec".format(rep, round(elapsed, 3)))
         times.append(elapsed)
 

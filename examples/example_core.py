@@ -1,7 +1,7 @@
 from pprint import pprint
 from datetime import timedelta, datetime
 
-from pipe_gaps.core import gap_detector as gd
+from pipe_gaps.core import GapDetector
 
 messages = [
     {
@@ -18,5 +18,6 @@ messages = [
     }
 ]
 
-gaps = gd.detect(messages, threshold=timedelta(hours=0, minutes=50), show_progress=True)
+gd = GapDetector(threshold=timedelta(hours=0, minutes=50), show_progress=True)
+gaps = gd.detect(messages)
 pprint(gaps)
