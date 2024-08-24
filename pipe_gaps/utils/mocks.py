@@ -7,7 +7,13 @@ from google.cloud import bigquery
 from google.api_core.exceptions import BadRequest
 
 
-messages = [{"ssvid": 1234, "timestamp": datetime(2024, 1, 1).timestamp()}]
+messages = [
+    {
+        "ssvid": 1234,
+        "timestamp": datetime(2024, 1, 1).timestamp(),
+        "distance_from_shore_m": 1
+    }
+]
 
 
 @dataclass
