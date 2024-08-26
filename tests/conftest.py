@@ -147,3 +147,33 @@ class TestCases:
             "id": "one_ssvid_no_open_gap"
         },
     ]
+
+    CLOSING_GAPS = [
+        {
+            "messages": [
+                {
+                    "ssvid": "226013750",
+                    "timestamp": datetime(2024, 1, 5, 12).timestamp(),
+                    "distance_from_shore_m": 1
+                },
+                {
+                    "ssvid": "226013750",
+                    "timestamp": datetime(2024, 1, 5, 13).timestamp(),
+                    "distance_from_shore_m": 1
+                }
+            ],
+            "open_gaps": [
+                {
+                    "OFF": {
+                        "ssvid": "226013750",
+                        "timestamp": datetime(2024, 1, 1, 1).timestamp(),
+                        "distance_from_shore_m": 1
+                    },
+                    "ON": None
+                }
+            ],
+            "threshold": 6,
+            "expected_gaps": 1,
+            "id": "one_ssvid_one_closed_gap"
+        },
+    ]

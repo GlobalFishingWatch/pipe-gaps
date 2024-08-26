@@ -92,6 +92,8 @@ class GapDetector:
         next_m_date = last_m_date + timedelta(days=1)
         next_m_datetime = datetime.combine(next_m_date, datetime.min.time())
 
+        # next_m_datetime = datetime.now()  # Comprae against NOW or the end of last_m_date?
+
         next_m = {
             self.KEY_TIMESTAMP: next_m_datetime.timestamp(),
             "distance_from_shore_m": 1,

@@ -1,8 +1,7 @@
 """Module with re-usable subclass implementations."""
 import logging
 import operator
-import itertools
-from typing import Type, Iterable
+from typing import Type, Iterable, Optional
 from datetime import datetime
 from dataclasses import dataclass
 
@@ -72,37 +71,6 @@ class DetectGaps(CoreProcess):
         gd = GapDetector(**config)
         return cls(gd=gd, eval_last=eval_last)
 
-    def process(self, elements: list[Message]) -> dict[str, list[Gap]]:
-        logger.info("Total amount of input messages: {}".format(len(elements)))
-
-        logger.info("Sorting messages...")
-        sorted_messages = sorted(elements, key=lambda x: (x["ssvid"], x[self._gd.KEY_TIMESTAMP]))
-
-        logger.info(f"Grouping messages by {self.groups_key().attributes()}...")
-        grouped_messages = [
-            (k, list(v))
-            for k, v in itertools.groupby(sorted_messages, key=self.groups_key().from_dict)
-        ]
-
-        logger.info("Detecting gaps in groups...")
-        gaps_by_ssvid = {}
-        for key, messages in grouped_messages:
-            gaps = self.process_group((key, messages))
-            gaps_by_ssvid.setdefault(key.ssvid, []).extend(gaps)
-
-        logger.info("Detecting gaps in boundaries...")
-        boundaries = [
-            YearBoundary.from_group(group, timestamp_key=self._gd.KEY_TIMESTAMP)
-            for group in grouped_messages
-        ]
-
-        grouped_boundaries = itertools.groupby(boundaries, key=self.boundaries_key().from_dict)
-        for key, boundaries in grouped_boundaries:
-            gaps_in_boundaries = self.process_boundaries((key.ssvid, boundaries))
-            gaps_by_ssvid[key.ssvid].extend(gaps_in_boundaries)
-
-        return gaps_by_ssvid
-
     def process_group(self, group: tuple[SsvidAndYear, Iterable[Message]]) -> Iterable[Gap]:
         key, messages = group
         gaps = self._gd.detect(messages=messages)
@@ -112,7 +80,11 @@ class DetectGaps(CoreProcess):
         for gap in gaps:
             yield gap
 
-    def process_boundaries(self, group: tuple[Ssvid, Iterable[YearBoundary]]) -> Iterable[Gap]:
+    def process_boundaries(
+        self,
+        group: tuple[Ssvid, Iterable[YearBoundary]],
+        side_inputs: Optional[list[Gap]] = None
+    ) -> Iterable[Gap]:
         key, year_boundaries = group
 
         year_boundaries = sorted(year_boundaries, key=operator.attrgetter("year"))
@@ -128,16 +100,24 @@ class DetectGaps(CoreProcess):
 
         if self._eval_last:
             last_m = max(year_boundaries, key=operator.attrgetter("year")).end
-            open_gap = self._gd.eval_open_gap(last_m)
+            new_open_gap = self._gd.eval_open_gap(last_m)
 
-            if open_gap is not None:
-                logger.info(f"Found 1 open gap for key={key}...")
-                gaps.append(open_gap)
+            if new_open_gap is not None:
+                logger.info(f"Creating 1 open gap for key={key}...")
+                gaps.append(new_open_gap)
+
+        if side_inputs is not None:
+            off_messages = {g["OFF"]["ssvid"]: g["OFF"] for g in side_inputs}
+            if key.ssvid in off_messages:
+                logger.info(f"Closing 1 open gap found for key={key}")
+                first_m = min(year_boundaries, key=operator.attrgetter("year")).start
+                closed_gap = dict(OFF=off_messages[key.ssvid], ON=first_m)
+                gaps.append(closed_gap)
 
         for gap in gaps:
             yield gap
 
-    def get_group_boundaries(self, group: tuple[SsvidAndYear, Iterable[Message]]) -> YearBoundary:
+    def get_group_boundary(self, group: tuple[SsvidAndYear, Iterable[Message]]) -> YearBoundary:
         return YearBoundary.from_group(group, timestamp_key=self._gd.KEY_TIMESTAMP)
 
     @staticmethod
@@ -151,3 +131,6 @@ class DetectGaps(CoreProcess):
     @staticmethod
     def boundaries_key() -> Type[Ssvid]:
         return Ssvid
+
+    def sorting_key(self):
+        return lambda x: (x["ssvid"], x[self._gd.KEY_TIMESTAMP])

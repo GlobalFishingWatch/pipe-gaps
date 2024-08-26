@@ -27,6 +27,7 @@ class PipelineConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
     input_file: Optional[Path] = None
+    side_input_file: Optional[Path] = None
     input_query: Optional[dict] = None
     mock_db_client: bool = False
     work_dir: Path = Path(DEFAULT_WORK_DIR)

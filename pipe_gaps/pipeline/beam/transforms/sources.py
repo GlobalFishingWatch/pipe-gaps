@@ -13,10 +13,12 @@ class ReadFromJson(beam.PTransform):
     Args:
         input_file (Union[str, Path]): The filepath to read.
         schema (NamedTuple): The schema for the pcollection.
+        lines: If True, interprets JSON file as JSONLines format.
     """
-    def __init__(self, input_file: Union[str, Path], schema: NamedTuple):
+    def __init__(self, input_file: Union[str, Path], schema: NamedTuple, lines: bool = False):
         self._input_file = input_file
         self._schema = schema
+        self._lines = lines
 
     def expand(self, pcoll):
         # beam.ReadFromJson returns BeamSchema objects, and then we need to convert to dict...
@@ -25,7 +27,8 @@ class ReadFromJson(beam.PTransform):
         #     | beam.io.ReadFromJson(str(input_file), lines=False, convert_dates=False)
         #     | beam.Map(lambda x: dict(x._asdict())).with_output_types(Message)
         # )
-        return pcoll | beam.Create(json_load(self._input_file)).with_output_types(self._schema)
+        return pcoll | beam.Create(
+            json_load(self._input_file, lines=self._lines)).with_output_types(self._schema)
 
 
 class ReadFromBigQueryMock(beam.io.ReadFromBigQuery):
