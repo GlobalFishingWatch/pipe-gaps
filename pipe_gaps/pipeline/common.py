@@ -63,16 +63,16 @@ class DetectGaps(CoreProcess):
         eval_last: If True, evaluates last message of each vessel to create an open gap.
     """
 
-    def __init__(self, gd: GapDetector, eval_last=False):
+    def __init__(self, gd: GapDetector, eval_last: bool = False):
         self._gd = gd
         self._eval_last = eval_last
 
     @classmethod
-    def build(cls, eval_last=False, **config):
+    def build(cls, eval_last: bool = False, **config) -> "DetectGaps":
         gd = GapDetector(**config)
         return cls(gd=gd, eval_last=eval_last)
 
-    def process(self, elements: list) -> dict[str, list[Gap]]:
+    def process(self, elements: list[Message]) -> dict[str, list[Gap]]:
         logger.info("Total amount of input messages: {}".format(len(elements)))
 
         logger.info("Sorting messages...")
@@ -103,8 +103,8 @@ class DetectGaps(CoreProcess):
 
         return gaps_by_ssvid
 
-    def process_group(self, element: tuple[Key, Iterable[Message]]) -> Iterable[Gap]:
-        key, messages = element
+    def process_group(self, group: tuple[SsvidAndYear, Iterable[Message]]) -> Iterable[Gap]:
+        key, messages = group
         gaps = self._gd.detect(messages=messages)
 
         logger.info("Found {} gaps for key={}".format(len(gaps), key))
@@ -112,8 +112,8 @@ class DetectGaps(CoreProcess):
         for gap in gaps:
             yield gap
 
-    def process_boundaries(self, element: tuple[Key, Iterable[YearBoundary]]) -> Iterable[Gap]:
-        key, year_boundaries = element
+    def process_boundaries(self, group: tuple[Ssvid, Iterable[YearBoundary]]) -> Iterable[Gap]:
+        key, year_boundaries = group
 
         year_boundaries = sorted(year_boundaries, key=operator.attrgetter("year"))
         consecutive_years = list(zip(year_boundaries[:-1], year_boundaries[1:]))
@@ -137,8 +137,8 @@ class DetectGaps(CoreProcess):
         for gap in gaps:
             yield gap
 
-    def get_group_boundaries(self, element: tuple) -> YearBoundary:
-        return YearBoundary.from_group(element, timestamp_key=self._gd.KEY_TIMESTAMP)
+    def get_group_boundaries(self, group: tuple[SsvidAndYear, Iterable[Message]]) -> YearBoundary:
+        return YearBoundary.from_group(group, timestamp_key=self._gd.KEY_TIMESTAMP)
 
     @staticmethod
     def type():

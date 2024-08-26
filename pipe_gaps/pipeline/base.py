@@ -67,25 +67,25 @@ class CoreProcess(ABC):
     """Base class to define the core step of the pipeline."""
 
     @abstractmethod
-    def process(self, elements):
+    def process(self, elements: list[Type]) -> dict:
         """Receives list of elements and process them linearly, without parallelization."""
 
     @abstractmethod
-    def process_group(self, element: tuple, *args, **kwargs) -> Iterable[Type]:
+    def process_group(self, group: tuple[Key, Iterable[Type]]) -> Iterable[Type]:
         """Receives elements inside a group (grouped by groups_key) and process them."""
 
     @abstractmethod
-    def get_group_boundaries(self, element: tuple) -> Type:
+    def get_group_boundaries(self, group: tuple[Key, Iterable[Type]]) -> Type:
         """Receives elements inside a group (grouped by groups_key)
             and returns the group's boundary elements."""
 
     @abstractmethod
-    def process_boundaries(self, element: tuple) -> Iterable[Type]:
+    def process_boundaries(self, group: tuple[Key, Iterable[Type]]) -> Iterable[Type]:
         """Receives a group of boundary elements (grouped by boundaries_key) and process them."""
 
     @staticmethod
     def type() -> Type:
-        """Returns the final output type of the core process."""
+        """Returns the final output type of the process."""
 
     @staticmethod
     def groups_key() -> Type[Key]:
@@ -93,7 +93,7 @@ class CoreProcess(ABC):
 
     @staticmethod
     def boundaries_key() -> Type[Key]:
-        """Returns the key to  output type of the core process."""
+        """Returns the key to group boundary elements."""
 
 
 @dataclass(eq=True, frozen=True)
@@ -109,6 +109,6 @@ class Key(ABC):
         """Creates an instance from a dictionary."""
 
     @classmethod
-    def attributes(cls):
+    def attributes(cls) -> list[str]:
         """Returns a list with the names of the attributes in the class."""
         return [x.name for x in fields(cls)]
