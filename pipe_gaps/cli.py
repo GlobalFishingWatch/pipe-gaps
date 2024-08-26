@@ -41,6 +41,7 @@ HELP_EVAL_LAST = "If passed, evaluates last message of each SSVID to create an o
 HELP_SHOW_PROGRESS = "If passed, renders a progress bar."
 HELP_MOCK_DB_CLIENT = "If passed, mocks the DB client. Useful for development and testing."
 HELP_SAVE_JSON = "If passed, saves the results in JSON file."
+HELP_SAVE_STATS = "If passed, saves some statistics."
 HELP_PIPE_TYPE = "Pipeline type: ['naive', 'beam']."
 HELP_WORK_DIR = "Directory to use as working directory."
 HELP_VERBOSE = "Set logger level to DEBUG."
@@ -90,6 +91,7 @@ def cli(args):
     add("-i", "--input-file", type=Path, metavar=" ", help=HELP_INPUT_FILE)
     add("--pipe-type", type=str, metavar=" ", help=HELP_PIPE_TYPE)
     add("--save-json", default=None, action=BooleanOptionalAction, help=HELP_SAVE_JSON)
+    add("--save-stats", default=None, action=BooleanOptionalAction, help=HELP_SAVE_STATS)
     add("--work-dir", type=Path, metavar=" ", help=HELP_WORK_DIR)
     add("-v", "--verbose", action="store_true", default=False, help=HELP_VERBOSE)
 

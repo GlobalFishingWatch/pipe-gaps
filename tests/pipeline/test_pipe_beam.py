@@ -139,3 +139,42 @@ def test_verbose(tmp_path, input_file):
     core_config = dict(threshold=0.5, eval_last=False)
     pipe = BeamPipeline.build(input_file=input_file, core=core_config)
     pipe.run()
+
+
+@pytest.mark.parametrize(
+    "messages, open_gaps, threshold, expected_gaps",
+    [
+        pytest.param(
+            case["messages"],
+            case["open_gaps"],
+            case["threshold"],
+            case["expected_gaps"],
+            id=case["id"]
+        )
+        for case in TestCases.CLOSING_GAPS
+    ],
+)
+def test_closing_gaps(tmp_path, messages, open_gaps, threshold, expected_gaps):
+    # Checks that an existing open gap is properly closed.
+
+    input_file = tmp_path.joinpath("messages-test.json")
+    json_save(messages, input_file)
+
+    side_input_file = tmp_path.joinpath("open-gaps-test.json")
+    json_save(open_gaps, side_input_file, lines=True)
+
+    pipe = BeamPipeline.build(
+        input_file=input_file,
+        side_input_file=side_input_file,
+        work_dir=tmp_path,
+        core=dict(threshold=threshold),
+        save_json=True
+    )
+    pipe.run()
+
+    gaps = json_load(pipe.output_path, lines=True)
+    assert len(gaps) == expected_gaps
+
+    if len(gaps) > 0:
+        for gap in gaps:
+            assert gap["ON"] is not None
