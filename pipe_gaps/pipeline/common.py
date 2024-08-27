@@ -5,11 +5,10 @@ from typing import Type, Iterable, Optional
 from datetime import datetime
 from dataclasses import dataclass
 
-from pipe_gaps.pipeline.base import CoreProcess, Key
-from pipe_gaps.pipeline.schemas import Message
-
+from pipe_gaps.queries import Message
 from pipe_gaps.core import GapDetector
 from pipe_gaps.pipeline.schemas import Gap
+from pipe_gaps.pipeline.base import CoreProcess, Key
 
 logger = logging.getLogger(__name__)
 

@@ -1,6 +1,6 @@
 import typing
 
-from .message import Message
+from pipe_gaps.queries import Message
 
 
 class Gap(typing.NamedTuple):

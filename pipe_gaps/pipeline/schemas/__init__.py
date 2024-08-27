@@ -1,4 +1,19 @@
 from .gap import Gap
-from .message import Message
+
+from pipe_gaps.queries import Message
 
 __all__ = [Message, Gap]
+
+SCHEMAS = {
+    "messages": Message,
+    "gaps": Gap
+}
+
+
+def get_schema(name):
+    if name not in SCHEMAS:
+        raise NotImplementedError(
+            f"Schema with name '{name}' not implemented!. "
+            f"Available schemas: {list(SCHEMAS.keys())}.")
+
+    return SCHEMAS[name]

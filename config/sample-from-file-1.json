@@ -1,6 +1,21 @@
 {
     "pipe_type": "beam",
     "pipe_config": {
+        "inputs": [
+            {
+                "kind": "json",
+                "schema": "messages",
+                "input_file": "pipe_gaps/data/sample_messages.json"
+            }
+        ],
+        "side_inputs": [
+            {
+                "kind": "json",
+                "schema": "gaps",
+                "input_file": "pipe_gaps/data/open_gaps.json",
+                "lines": true
+            }
+        ],
         "core": {
             "threshold": 1.2,
             "show_progress": false,
@@ -9,10 +24,6 @@
         "options": {
             "runner": "direct"
         },
-        "save_json": true,
-        "mock_db_client": false,
-        "input_file": "pipe_gaps/data/sample_messages.json",
-        "side_input_file": "pipe_gaps/data/open_gaps.json",
-        "input_query": null
+        "save_json": true
     }
 }
