@@ -70,7 +70,11 @@ def cli(args):
     """CLI for gaps pipeline."""
     utils.setup_logger(
         warning_level=[
-            "apache_beam",
+            "apache_beam.runners.portability",
+            "apache_beam.runners.worker.bundle_processor",
+            "apache_beam.io.filesystem",
+            "apache_beam.io.gcp.bigquery_tools",
+            "urllib3"
         ],
         error_level=[
             "apache_beam.coders.coder_impl"

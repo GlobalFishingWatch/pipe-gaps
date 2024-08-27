@@ -3,7 +3,7 @@
     "pipe_config": {
         "core": {
             "threshold": 1,
-            "show_progress": true,
+            "show_progress": false,
             "eval_last": true
         },
         "options": {
