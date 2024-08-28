@@ -17,21 +17,17 @@ NAME = "pipe-gaps"
 DESCRIPTION = """
     Detects time gaps in AIS position messages.
     The definition of a gap is configurable by a time threshold.
-
-    If input-file is provided, all query parameters are ignored.
 """
 EPILOG = (
-    "Examples: \n"
-    "    pipe-gaps --start-date 2019-01-02 --end-date 2019-01-03 --threshold 0.1 "
-    "--ssvids 412331104 477334300"
-    "\n"
-    "    pipe-gaps -c config/sample-from-file-1.json --threshold 1.3"
+    "Example: \n"
+    "    pipe-gaps -c config/sample-from-file-1.json --threshold 1.3 "
 )
 
 _DEFAULT = "(default: %(default)s)"
 # TODO: try to get this descriptions from docstrings, so we don´t duplicate them.
 HELP_CONFIG_FILE = f"JSON file with pipeline configuration {_DEFAULT}."
-HELP_INPUT_FILE = "JSON file with input messages to use."
+HELP_INPUT_FILE = "JSON file with main inputs for the pipeline."
+HELP_SIDE_INPUT_FILE = "JSON file with side inputs for the pipeline."
 HELP_THRESHOLD = "Minimum time difference (hours) to start considering gaps."
 HELP_START_DATE = "Query filter: messages after this dete, e.g., '2024-01-01'."
 HELP_END_DATE = "Query filter: messages before this date, e.g., '2024-01-02'."
@@ -70,7 +66,11 @@ def cli(args):
     """CLI for gaps pipeline."""
     utils.setup_logger(
         warning_level=[
-            "apache_beam",
+            "apache_beam.runners.portability",
+            "apache_beam.runners.worker.bundle_processor",
+            "apache_beam.io.filesystem",
+            "apache_beam.io.gcp.bigquery_tools",
+            "urllib3"
         ],
         error_level=[
             "apache_beam.coders.coder_impl"
@@ -88,31 +88,29 @@ def cli(args):
 
     add = p.add_argument
     add("-c", "--config-file", type=Path, default=None, metavar=" ", help=HELP_CONFIG_FILE)
-    add("-i", "--input-file", type=Path, metavar=" ", help=HELP_INPUT_FILE)
     add("--pipe-type", type=str, metavar=" ", help=HELP_PIPE_TYPE)
     add("--save-json", default=None, action=BooleanOptionalAction, help=HELP_SAVE_JSON)
     add("--save-stats", default=None, action=BooleanOptionalAction, help=HELP_SAVE_STATS)
     add("--work-dir", type=Path, metavar=" ", help=HELP_WORK_DIR)
     add("-v", "--verbose", action="store_true", default=False, help=HELP_VERBOSE)
 
-    add = p.add_argument_group("core algorithm").add_argument
+    # TODO: see if we want to support these CLI args.
+
+    # add = p.add_argument_group("pipeline inputs").add_argument
+    # add("-i", "--input-file", type=Path, metavar=" ", help=HELP_INPUT_FILE)
+    # add("-s", "--side-input-file", type=Path, metavar=" ", help=HELP_SIDE_INPUT_FILE)
+    # add("--start-date", type=str, metavar=" ", help=HELP_START_DATE)
+    # add("--end-date", type=str, metavar=" ", help=HELP_END_DATE)
+    # add("--ssvids", type=str, nargs="+", metavar=" ", help=HELP_SSVIDS)
+    # add("--mock-db-client", default=None, action=BooleanOptionalAction, help=HELP_MOCK_DB_CLIENT)
+
+    add = p.add_argument_group("pipeline core process").add_argument
     add("--threshold", type=float, metavar=" ", help=HELP_THRESHOLD)
     add("--sort-method", type=str, metavar=" ", help=HELP_SORT_METHOD)
-    add("--progress-bar", default=None, action=BooleanOptionalAction, help=HELP_SHOW_PROGRESS)
-
-    add = p.add_argument_group("pipeline sources").add_argument
-    add("--start-date", type=str, metavar=" ", help=HELP_START_DATE)
-    add("--end-date", type=str, metavar=" ", help=HELP_END_DATE)
-    add("--ssvids", type=str, nargs="+", metavar=" ", help=HELP_SSVIDS)
-    add("--mock-db-client", default=None, action=BooleanOptionalAction, help=HELP_MOCK_DB_CLIENT)
-
-    add = p.add_argument_group("pipeline core").add_argument
+    add("--show-progress", default=None, action=BooleanOptionalAction, help=HELP_SHOW_PROGRESS)
     add("--eval-last", default=None, action=BooleanOptionalAction, help=HELP_EVAL_LAST)
 
-    GROUPS_KEYS = {
-        "input_query": ["start_date", "end_date", "ssvids"],
-        "core": ["threshold", "show_progress", "eval_last"]
-    }
+    CORE_KEYS = ["threshold", "show_progress", "eval_last"]
 
     ns, unknown = p.parse_known_args(args=args or ["--help"])
 
@@ -138,16 +136,15 @@ def cli(args):
         if cli_args[arg] is None:
             del cli_args[arg]
 
+    for k in CORE_KEYS:
+        if k in cli_args:
+            cli_args.setdefault("core", {})[k] = cli_args.pop(k)
+
     # Parse unknown arguments to dict.
     options = dict(zip(unknown[:-1:2], unknown[1::2]))
     options = {k.replace("--", ""): v for k, v in options.items()}
 
-    # Group parameters.
-    for k in list(cli_args):
-        for group, keys in GROUPS_KEYS.items():
-            if k in keys:
-                cli_args.setdefault(group, {})[k] = cli_args.pop(k)
-
+    # Build config dictionary from CLI params
     cli_config = {}
     pipe_type = cli_args.pop("pipe_type", None)
     if pipe_type is not None:

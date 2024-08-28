@@ -1,5 +1,6 @@
 """This module encapsulates database queries."""
 import logging
+import typing
 from datetime import date
 from abc import ABC, abstractmethod
 
@@ -11,10 +12,36 @@ DB_TABLE_MESSAGES = "pipe_ais_v3_published.messages"
 DB_TABLE_SEGMENTS = "pipe_ais_v3_published.segs_activity"
 
 
+def get_query(query_name, query_params):
+    q = Query.subclasses()
+
+    if query_name not in q:
+        raise NotImplementedError(f"Query with name '{query_name}' not implemented.")
+
+    return q[query_name](**query_params)
+
+
+class QueryError(Exception):
+    pass
+
+
 class Query(ABC):
     @abstractmethod
     def render():
         """Renders query."""
+
+    @classmethod
+    def subclasses(cls):
+        return {x.NAME: x for x in cls.__subclasses__()}
+
+
+class Message(typing.NamedTuple):
+    """Schema for AIS messages."""
+
+    ssvid: str
+    seg_id: str
+    msgid: str
+    timestamp: float
 
 
 class AISMessagesQuery(Query):
@@ -27,6 +54,8 @@ class AISMessagesQuery(Query):
         source_segments: table with AIS segments.
         ssvids: list of ssvdis to filter.
     """
+
+    NAME = "messages"
 
     TEMPLATE = """
     SELECT
@@ -87,3 +116,7 @@ class AISMessagesQuery(Query):
         logger.debug(query)
 
         return query
+
+    @staticmethod
+    def schema():
+        return Message

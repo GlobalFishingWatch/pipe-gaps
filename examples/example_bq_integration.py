@@ -1,23 +1,37 @@
-from datetime import timedelta, datetime
-
 from pipe_gaps import pipeline
 from pipe_gaps.utils import setup_logger
 
 setup_logger()
 
-config = dict(
-    input_query=dict(
-        source_messages="pipe_ais_v3_published.messages",
-        source_segments="pipe_ais_v3_published.segs_activity",
-        start_date=datetime(2019, 2, 1).date(),
-        end_date=datetime(2019, 2, 2).date(),
-        ssvids=[412331104, 477334300],
-    ),
-    core=dict(
-        threshold=timedelta(hours=0.1),
-        show_progress=True,
-    ),
-    save_json=True)
+pipe_config = {
+    "inputs": [
+        {
+            "kind": "query",
+            "query_name": "messages",
+            "query_params": {
+                "source_messages": "pipe_ais_v3_published.messages",
+                "source_segments": "pipe_ais_v3_published.segs_activity",
+                "start_date": "2024-01-01",
+                "end_date": "2024-01-02",
+                "ssvids": [412331104, 477334300]
+            },
+            "mock_db_client": False
+        }
+    ],
+    "core": {
+        "threshold": 1,
+        "show_progress": False,
+        "eval_last": True
+    },
+    "options": {
+        "runner": "direct",
+        "region": "us-east1",
+        "network": "gfw-internal-network",
+        "subnetwork": "regions/us-east1/subnetworks/gfw-internal-us-east1"
+    },
+    "save_json": True
+}
 
-pipe = pipeline.create(**config)
+
+pipe = pipeline.create(pipe_type="naive", **pipe_config)
 pipe.run()

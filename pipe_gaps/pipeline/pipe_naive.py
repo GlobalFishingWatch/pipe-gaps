@@ -2,6 +2,7 @@
 import csv
 import logging
 import itertools
+from pathlib import Path
 
 from pipe_gaps import queries
 from pipe_gaps.utils import json_load, json_save
@@ -24,32 +25,36 @@ class NaivePipeline(base.Pipeline):
 
     @classmethod
     def _build(cls, config: base.PipelineConfig):
+        # TODO: Use factories to make this method also generic and define transforms by config.
         return cls(config)
 
     def run(self):
-        # TODO: split this into sources, core, and sinks operations.
-        # TODO: Generalize this method.
+        # TODO: split this into sources, core, and sinks operations built in _build method
+        # and injected into the instance.
 
         # Sources
-        if self.config.input_file is not None:
-            logger.info("Fetching messages from file: {}".format(self.config.input_file.resolve()))
-            messages = json_load(self.config.input_file)
-            input_id = self.config.input_file.stem
+        inputs = self.config.inputs[0]
+
+        if inputs["kind"] == "json":
+            input_file = Path(inputs["input_file"])
+            logger.info("Fetching messages from file: {}".format(input_file.resolve()))
+            messages = json_load(inputs["input_file"])
         else:
             logger.info("Fetching messages from database...")
-            client = BigQueryClient.build(mock_client=self.config.mock_db_client)
-            messages = client.run_query(queries.AISMessagesQuery(**self.config.input_query))
-            input_id = "from-query"
+            client = BigQueryClient.build(mock_client=inputs["mock_db_client"])
+            query = queries.get_query(inputs["query_name"], inputs["query_params"])
+            messages = client.run_query(query)
 
         if len(messages) == 0:
             raise base.NoInputsFound("No messages found with filters provided.")
 
+        side_inputs = None
+        if len(self.config.side_inputs) > 0:
+            side_inputs = self.config.side_inputs[0]
+            side_inputs = json_load(side_inputs["input_file"], lines=side_inputs["lines"])
+
         # Core process
         core = DetectGaps.build(**self.config.core)
-
-        side_inputs = None
-        if self.config.side_input_file is not None:
-            side_inputs = json_load(self.config.side_input_file, lines=True)
 
         outputs = core.process(messages, side_inputs=side_inputs)
 
@@ -58,12 +63,12 @@ class NaivePipeline(base.Pipeline):
 
         # Sinks
         if self.config.save_json:
-            self._output_path = self.config.work_dir.joinpath(f"{self.name}-gaps-{input_id}.json")
+            self._output_path = self.config.work_dir.joinpath(f"{self.name}-gaps.json")
             json_save(outputs, self._output_path, lines=True)
             logger.info("Output saved in {}".format(self._output_path.resolve()))
 
         if self.config.save_stats:
-            self._output_path_stats = self.config.work_dir.joinpath(f"stats-{input_id}.csv")
+            self._output_path_stats = self.config.work_dir.joinpath(f"{self.name}-stats.csv")
             gaps_by_ssvid = itertools.groupby(outputs, key=lambda x: x["OFF"]["ssvid"])
 
             stats = []
