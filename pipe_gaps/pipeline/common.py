@@ -53,6 +53,16 @@ class YearBoundary:
         return cls(ssvid=key.ssvid, year=key.year, start=start, end=end)
 
 
+def off_message_from_gap(gap: dict):
+    return dict(
+        ssvid=gap["ssvid"],
+        seg_id=gap["gap_start_seg_id"],
+        msgid=gap["gap_start_msgid"],
+        timestamp=gap["gap_start"],
+        distance_from_shore_m=gap["gap_start_distance_from_shore_m"]
+    )
+
+
 class DetectGaps(CoreProcess):
     """Defines the gaps detection process step of the Gaps Pipeline.
 
@@ -72,6 +82,7 @@ class DetectGaps(CoreProcess):
 
     def process_group(self, group: tuple[SsvidAndYear, Iterable[Message]]) -> Iterable[Gap]:
         key, messages = group
+
         gaps = self._gd.detect(messages=messages)
 
         logger.info("Found {} gaps for key={}".format(len(gaps), key))
@@ -106,11 +117,13 @@ class DetectGaps(CoreProcess):
                 gaps.append(new_open_gap)
 
         if side_inputs is not None:
-            off_messages = {g["OFF"]["ssvid"]: g["OFF"] for g in side_inputs}
-            if key.ssvid in off_messages:
+            # TODO: make input p-collection to have objects instead of dicts?
+            open_gaps = {g["ssvid"]: g for g in side_inputs}
+            if key.ssvid in open_gaps:
                 logger.info(f"Closing 1 open gap found for key={key}")
-                first_m = min(year_boundaries, key=operator.attrgetter("year")).start
-                closed_gap = dict(OFF=off_messages[key.ssvid], ON=first_m)
+                off_message = off_message_from_gap(open_gaps[key.ssvid])
+                on_message = min(year_boundaries, key=operator.attrgetter("year")).start
+                closed_gap = dict(OFF=off_message, ON=on_message)
                 gaps.append(closed_gap)
 
         for gap in gaps:

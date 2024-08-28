@@ -13,6 +13,18 @@ from pipe_gaps.pipeline.common import DetectGaps
 logger = logging.getLogger(__name__)
 
 
+def fetch_inputs(name, config):
+    if config["kind"] == "json":
+        input_file = Path(config["input_file"])
+        logger.info("Fetching {} inputs from file: {}".format(name, input_file.resolve()))
+        return json_load(config["input_file"], config.get("lines", False))
+    else:
+        logger.info("Fetching {} inputs from database...".format(name))
+        client = BigQueryClient.build(mock_client=config["mock_db_client"])
+        query = queries.get_query(config["query_name"], config["query_params"])
+        return client.run_query(query)
+
+
 class NaivePipeline(base.Pipeline):
     """Pure python pipeline without parallelization, useful for development and testing."""
 
@@ -33,30 +45,18 @@ class NaivePipeline(base.Pipeline):
         # and injected into the instance.
 
         # Sources
-        inputs = self.config.inputs[0]
+        inputs = fetch_inputs("main", self.config.inputs[0])
 
-        if inputs["kind"] == "json":
-            input_file = Path(inputs["input_file"])
-            logger.info("Fetching messages from file: {}".format(input_file.resolve()))
-            messages = json_load(inputs["input_file"])
-        else:
-            logger.info("Fetching messages from database...")
-            client = BigQueryClient.build(mock_client=inputs["mock_db_client"])
-            query = queries.get_query(inputs["query_name"], inputs["query_params"])
-            messages = client.run_query(query)
-
-        if len(messages) == 0:
-            raise base.NoInputsFound("No messages found with filters provided.")
+        if len(inputs) == 0:
+            raise base.NoInputsFound("No inputs found with filters provided.")
 
         side_inputs = None
         if len(self.config.side_inputs) > 0:
-            side_inputs = self.config.side_inputs[0]
-            side_inputs = json_load(side_inputs["input_file"], lines=side_inputs["lines"])
+            side_inputs = fetch_inputs("side", self.config.side_inputs[0])
 
         # Core process
         core = DetectGaps.build(**self.config.core)
-
-        outputs = core.process(messages, side_inputs=side_inputs)
+        outputs = core.process(inputs, side_inputs=side_inputs)
 
         total_n_gaps = len(outputs)
         logger.info("Total amount of gaps detected: {}".format(total_n_gaps))

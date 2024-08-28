@@ -11,7 +11,7 @@
         "side_inputs": [
             {
                 "kind": "json",
-                "schema": "gaps",
+                "schema": "ais_gaps",
                 "input_file": "pipe_gaps/data/open_gaps.json",
                 "lines": true
             }

@@ -16,6 +16,7 @@ class AISGap(typing.NamedTuple):
     ssvid: str
     gap_id: str
     gap_start_msgid: str
+    gap_start_seg_id: str
     gap_start: float
     is_open: bool
     gap_start_distance_from_shore_m: float
@@ -41,6 +42,7 @@ class AISGapsQuery(Query):
         gap_id,
         CAST(UNIX_MICROS(gap_start) AS FLOAT64) / 1000000  AS gap_start,
         gap_start_msgid,
+        gap_start_seg_id,
         gap_start_distance_from_shore_m,
         is_closed
       FROM `{source_gaps}`

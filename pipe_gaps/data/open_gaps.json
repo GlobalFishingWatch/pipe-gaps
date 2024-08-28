@@ -1,1 +1,1 @@
-{"OFF": {"ssvid": "412331104", "seg_id": "226013750-2023-01-01T00:10:37.000000Z", "msgid": "9541e59b-a492-8aef-b010-7351d5f929e9", "timestamp": 1701435661, "distance_from_shore_m": 1.0}, "ON": null}
+{"ssvid": "412331104", "gap_id": "0eb742651071b9e4f192b643511a3e4f", "gap_start": 1692461670.0, "gap_start_msgid": "3b793b64-46e4-80eb-82ae-1262a2b8eeab", "gap_start_seg_id": "412331104-2023-12-06T17:36:26.000000Z-1", "gap_start_distance_from_shore_m": 97000.0, "is_closed": false}
