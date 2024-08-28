@@ -2,37 +2,14 @@
 import logging
 import typing
 from datetime import date
-from abc import ABC, abstractmethod
 
+from .base import Query
 
 logger = logging.getLogger(__name__)
 
 # DB_TABLE_MESSAGES = "pipe_production_v20201001.research_messages"
 DB_TABLE_MESSAGES = "pipe_ais_v3_published.messages"
 DB_TABLE_SEGMENTS = "pipe_ais_v3_published.segs_activity"
-
-
-def get_query(query_name, query_params):
-    q = Query.subclasses()
-
-    if query_name not in q:
-        raise NotImplementedError(f"Query with name '{query_name}' not implemented.")
-
-    return q[query_name](**query_params)
-
-
-class QueryError(Exception):
-    pass
-
-
-class Query(ABC):
-    @abstractmethod
-    def render():
-        """Renders query."""
-
-    @classmethod
-    def subclasses(cls):
-        return {x.NAME: x for x in cls.__subclasses__()}
 
 
 class Message(typing.NamedTuple):
