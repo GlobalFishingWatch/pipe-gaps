@@ -83,7 +83,7 @@ pip install .[beam]
 
 ### Using from python code
 
-#### Core gap detector
+#### Gap detection core process
 
 > **Note**  
 > Currently, the core algorithm takes about `(1.75 ± 0.01)` seconds to process 10M messages.  
@@ -116,7 +116,7 @@ gaps = gd.detect(messages)
 pprint(gaps)
 ```
 
-#### BigQuery integration
+#### BigQuery integration pipeline
 
 First, authenticate to bigquery and configure project:
 ```shell
@@ -127,27 +127,42 @@ docker compose run gcloud auth application-default set-quota-project world-fishi
 
 Then you can do:
 ```python
-from datetime import timedelta, datetime
-
 from pipe_gaps import pipeline
 from pipe_gaps.utils import setup_logger
 
 setup_logger()
 
-config = dict(
-    input_query=dict(
-        start_date=datetime(2019, 2, 1).date(),
-        end_date=datetime(2019, 2, 2).date(),
-        ssvids=[412331104, 477334300]
-    ),
-    core=dict(
-        threshold=timedelta(hours=0.1),
-        show_progress=True
-    ),
-    save_json=True
-)
+pipe_config = {
+    "inputs": [
+        {
+            "kind": "query",
+            "query_name": "messages",
+            "query_params": {
+                "source_messages": "pipe_ais_v3_published.messages",
+                "source_segments": "pipe_ais_v3_published.segs_activity",
+                "start_date": "2024-01-01",
+                "end_date": "2024-01-02",
+                "ssvids": [412331104, 477334300]
+            },
+            "mock_db_client": False
+        }
+    ],
+    "core": {
+        "threshold": 1,
+        "show_progress": False,
+        "eval_last": True
+    },
+    "options": {
+        "runner": "direct",
+        "region": "us-east1",
+        "network": "gfw-internal-network",
+        "subnetwork": "regions/us-east1/subnetworks/gfw-internal-us-east1"
+    },
+    "save_json": True
+}
 
-pipe = pipeline.create(**config)
+
+pipe = pipeline.create(pipe_type="naive", **pipe_config)
 pipe.run()
 ```
 
@@ -156,46 +171,35 @@ pipe.run()
 
 ```shell
 (.venv) $ pipe-gaps
-usage: pipe-gaps [-h] [-c ] [-i ] [--pipe-type ] [--save-json | --no-save-json] [--work-dir ] [-v] [--threshold ] [--sort-method ] [--progress-bar | --no-progress-bar] [--start-date ]
-                 [--end-date ] [--ssvids   [ ...]] [--mock-db-client | --no-mock-db-client] [--eval-last | --no-eval-last]
+usage: pipe-gaps [-h] [-c ] [--pipe-type ] [--save-json | --no-save-json] [--save-stats | --no-save-stats] [--work-dir ] [-v] [--threshold ] [--sort-method ]
+                 [--show-progress | --no-show-progress] [--eval-last | --no-eval-last]
 
     Detects time gaps in AIS position messages.
     The definition of a gap is configurable by a time threshold.
 
-    If input-file is provided, all query parameters are ignored.
-
 options:
-  -h, --help                             show this help message and exit
-  -c  , --config-file                    JSON file with pipeline configuration (default: None).
-  -i  , --input-file                     JSON file with input messages to use.
-  --pipe-type                            Pipeline type: ['naive', 'beam'].
-  --save-json, --no-save-json            If passed, saves the results in JSON file.
-  --work-dir                             Directory to use as working directory.
-  -v, --verbose                          Set logger level to DEBUG.
+  -h, --help                           show this help message and exit
+  -c  , --config-file                  JSON file with pipeline configuration (default: None).
+  --pipe-type                          Pipeline type: ['naive', 'beam'].
+  --save-json, --no-save-json          If passed, saves the results in JSON file.
+  --save-stats, --no-save-stats        If passed, saves some statistics.
+  --work-dir                           Directory to use as working directory.
+  -v, --verbose                        Set logger level to DEBUG.
 
-core algorithm:
-  --threshold                            Minimum time difference (hours) to start considering gaps.
-  --sort-method                          Sorting algorihtm.
-  --progress-bar, --no-progress-bar      If passed, renders a progress bar.
+pipeline core process:
+  --threshold                          Minimum time difference (hours) to start considering gaps.
+  --sort-method                        Sorting algorihtm.
+  --show-progress, --no-show-progress  If passed, renders a progress bar.
+  --eval-last, --no-eval-last          If passed, evaluates last message of each SSVID to create an open gap.
 
-pipeline sources:
-  --start-date                           Query filter: messages after this dete, e.g., '2024-01-01'.
-  --end-date                             Query filter: messages before this date, e.g., '2024-01-02'.
-  --ssvids   [  ...]                     Query filter: list of ssvids.
-  --mock-db-client, --no-mock-db-client  If passed, mocks the DB client. Useful for development and testing.
-
-pipeline core:
-  --eval-last, --no-eval-last            If passed, evaluates last message of each SSVID to create an open gap.
-
-Examples: 
-    pipe-gaps --start-date 2019-01-02 --end-date 2019-01-03 --threshold 0.1 --ssvids 412331104 477334300
+Example: 
     pipe-gaps -c config/sample-from-file-1.json --threshold 1.3
 ```
 ### Apache Beam integration
 
 Just use `--pipe-type beam` option:
 ```
-pipe-gaps --pipe-type beam --start-date 2019-01-02 --end-date 2019-01-03 --threshold 0.1 --ssvids 412331104 477334300
+pipe-gaps --pipe-type beam -c config/sample-from-file-1.json --threshold 1.3
 ```
 This will run by default with DirectRunner.
 To run on DataFlow, add `--runner dataflow` option.
