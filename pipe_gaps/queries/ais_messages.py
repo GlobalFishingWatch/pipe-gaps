@@ -19,6 +19,7 @@ class Message(typing.NamedTuple):
     seg_id: str
     msgid: str
     timestamp: float
+    distance_from_shore_m: float
 
 
 class AISMessagesQuery(Query):

@@ -29,6 +29,9 @@ class QueryResult:
     def __len__(self):
         return self.row_iterator.total_rows
 
+    def __next__(self):
+        return dict(next(self.row_iterator).items())
+
     def __iter__(self):
         for row in self.row_iterator:
             yield dict(row.items())

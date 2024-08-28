@@ -22,6 +22,9 @@ class _RowIteratorMock:
         self.items = items
         self.total_rows = len(self.items)
 
+    def __next__(self):
+        return dict(next(x for x in self).items())
+
     def __iter__(self):
         for x in self.items:
             yield x
