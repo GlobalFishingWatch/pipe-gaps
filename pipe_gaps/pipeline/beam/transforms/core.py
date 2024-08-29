@@ -3,7 +3,7 @@
 import logging
 import apache_beam as beam
 
-from pipe_gaps.pipeline import CoreProcess
+from pipe_gaps.pipeline.processes import CoreProcess
 
 logger = logging.getLogger(__name__)
 

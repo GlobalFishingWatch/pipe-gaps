@@ -6,6 +6,17 @@ import apache_beam as beam
 # from apache_beam.io.fileio import default_file_naming
 
 
+def sinks_factory(kind, **kwargs):
+    SINKS_MAP = {
+        "json": WriteJson
+    }
+
+    if kind not in SINKS_MAP:
+        raise NotImplementedError(f"Sink transform {kind} not implemented.")
+
+    return SINKS_MAP[kind](**kwargs)
+
+
 class WriteJson(beam.PTransform):
     """Writes p-collection as JSON.
 
@@ -13,7 +24,7 @@ class WriteJson(beam.PTransform):
         output_dir: Output directory.
         output_prefix: Prefix to use in filename/s.
     """
-    def __init__(self, output_dir: Path, output_prefix: str = ""):
+    def __init__(self, output_dir: Path = Path("workdir"), output_prefix: str = ""):
         self._output_dir = output_dir
         self._output_prefix = output_prefix
 
@@ -21,6 +32,7 @@ class WriteJson(beam.PTransform):
         self._shard_name_template = ''
         self._suffix = ".json"
 
+        # This is what beam does to construct the path.
         self.path = Path(''.join([self._prefix, self._shard_name_template, self._suffix]))
 
     def expand(self, pcoll):

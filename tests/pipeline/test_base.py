@@ -15,4 +15,4 @@ def test_config(tmp_path):
 
 def test_build():
     with pytest.raises(NotImplementedError):
-        Pipeline.build(inputs=[{}])
+        Pipeline.build(inputs=[{}], core={"kind": "dummy"})

@@ -17,13 +17,19 @@
             }
         ],
         "core": {
+            "kind": "detect_gaps",
             "threshold": 1.2,
             "show_progress": false,
             "eval_last": true
         },
+        "outputs": [
+            {
+                "kind": "json",
+                "output_prefix": "gaps"
+            }
+        ],
         "options": {
             "runner": "direct"
-        },
-        "save_json": true
+        }
     }
 }

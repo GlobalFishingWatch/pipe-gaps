@@ -28,16 +28,22 @@
             }
         ],
         "core": {
+            "kind": "detect_gaps",
             "threshold": 1,
             "show_progress": false,
             "eval_last": true
         },
+        "outputs": [
+            {
+                "kind": "json",
+                "output_prefix": "gaps"
+            }
+        ],
         "options": {
             "runner": "direct",
             "region": "us-east1",
             "network": "gfw-internal-network",
             "subnetwork": "regions/us-east1/subnetworks/gfw-internal-us-east1"
-        },
-        "save_json": true
+        }
     }
 }

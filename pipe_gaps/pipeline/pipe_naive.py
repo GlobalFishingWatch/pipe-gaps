@@ -5,10 +5,10 @@ import itertools
 from pathlib import Path
 
 from pipe_gaps import queries
+from pipe_gaps.pipeline import base
+from pipe_gaps.pipeline.processes import processes_factory
 from pipe_gaps.utils import json_load, json_save
 from pipe_gaps.bq_client import BigQueryClient
-from pipe_gaps.pipeline import base
-from pipe_gaps.pipeline.common import DetectGaps
 
 logger = logging.getLogger(__name__)
 
@@ -41,8 +41,8 @@ class NaivePipeline(base.Pipeline):
         return cls(config)
 
     def run(self):
-        # TODO: split this into sources, core, and sinks operations built in _build method
-        # and injected into the instance.
+        # TODO: Split this into sources, core, and sinks operations.
+        # TODO: Inject them through the constructor.
 
         # Sources
         inputs = fetch_inputs("main", self.config.inputs[0])
@@ -55,30 +55,38 @@ class NaivePipeline(base.Pipeline):
             side_inputs = fetch_inputs("side", self.config.side_inputs[0])
 
         # Core process
-        core = DetectGaps.build(**self.config.core)
+        core = processes_factory(**self.config.core)
         outputs = core.process(inputs, side_inputs=side_inputs)
 
         total_n_gaps = len(outputs)
         logger.info("Total amount of gaps detected: {}".format(total_n_gaps))
 
         # Sinks
-        if self.config.save_json:
-            self._output_path = self.config.work_dir.joinpath(f"{self.name}-gaps.json")
+        for output_config in self.config.outputs:
+            self._save_outputs(outputs, output_config)
+
+        if self.config.save_stats:
+            self._save_stats(outputs)
+
+    def _save_outputs(self, outputs, config):
+        if config["kind"] == "json":
+            output_prefix = config["output_prefix"]
+            self._output_path = self.config.work_dir.joinpath(f"{self.name}-{output_prefix}.json")
             json_save(outputs, self._output_path, lines=True)
             logger.info("Output saved in {}".format(self._output_path.resolve()))
 
-        if self.config.save_stats:
-            self._output_path_stats = self.config.work_dir.joinpath(f"{self.name}-stats.csv")
-            gaps_by_ssvid = itertools.groupby(outputs, key=lambda x: x["OFF"]["ssvid"])
+    def _save_stats(self, outputs):
+        self._output_path_stats = self.config.work_dir.joinpath(f"{self.name}-stats.csv")
+        gaps_by_ssvid = itertools.groupby(outputs, key=lambda x: x["OFF"]["ssvid"])
 
-            stats = []
-            for ssvid, gaps in gaps_by_ssvid:
-                gaps = list(gaps)
-                stats.append({"ssvid": ssvid, "total": len(gaps)})
+        stats = []
+        for ssvid, gaps in gaps_by_ssvid:
+            gaps = list(gaps)
+            stats.append({"ssvid": ssvid, "total": len(gaps)})
 
-            with open(self._output_path_stats, "w", newline="") as output_file:
-                dict_writer = csv.DictWriter(output_file, ["ssvid", "total"])
-                dict_writer.writeheader()
-                dict_writer.writerows(stats)
+        with open(self._output_path_stats, "w", newline="") as output_file:
+            dict_writer = csv.DictWriter(output_file, ["ssvid", "total"])
+            dict_writer.writeheader()
+            dict_writer.writerows(stats)
 
-            logger.info("Stats saved in {}".format(self._output_path_stats.resolve()))
+        logger.info("Stats saved in {}".format(self._output_path_stats.resolve()))

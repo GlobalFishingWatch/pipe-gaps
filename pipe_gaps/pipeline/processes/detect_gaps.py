@@ -1,56 +1,14 @@
-"""Module with re-usable subclass implementations."""
 import logging
 import operator
 from typing import Type, Iterable, Optional
-from datetime import datetime
-from dataclasses import dataclass
 
-from pipe_gaps.queries import Message
 from pipe_gaps.core import GapDetector
 from pipe_gaps.pipeline.schemas import Gap
-from pipe_gaps.pipeline.base import CoreProcess, Key
+
+from .base import CoreProcess
+from .common import SsvidAndYear, Message, Ssvid, YearBoundary
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass(eq=True, frozen=True)
-class SsvidAndYear(Key):
-    ssvid: str
-    year: str
-
-    @classmethod
-    def from_dict(cls, item: dict) -> "SsvidAndYear":
-        return cls(ssvid=item["ssvid"], year=str(datetime.fromtimestamp(item["timestamp"]).year))
-
-
-@dataclass(eq=True, frozen=True)
-class Ssvid(Key):
-    ssvid: str
-
-    @classmethod
-    def from_dict(cls, item: dict) -> "Ssvid":
-        return cls(ssvid=item["ssvid"])
-
-
-@dataclass(eq=True, frozen=True)
-class YearBoundary:
-    """Defines first and last AIS messages for a specific year and ssvid."""
-    ssvid: str
-    year: str
-    start: Message
-    end: Message
-
-    def __getitem__(self, key):
-        return self.__dict__[key]
-
-    @classmethod
-    def from_group(cls, element, timestamp_key="timestamp"):
-        key, messages = element
-
-        start = min(messages, key=lambda x: x[timestamp_key])
-        end = max(messages, key=lambda x: x[timestamp_key])
-
-        return cls(ssvid=key.ssvid, year=key.year, start=start, end=end)
 
 
 def off_message_from_gap(gap: dict):
@@ -64,7 +22,7 @@ def off_message_from_gap(gap: dict):
 
 
 class DetectGaps(CoreProcess):
-    """Defines the gaps detection process step of the Gaps Pipeline.
+    """Defines the gap detection process step of the "gaps pipeline".
 
     Args:
         gd: core gap detector.

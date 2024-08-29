@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime
 
-from pipe_gaps.pipeline.common import DetectGaps
+from pipe_gaps.pipeline.processes import DetectGaps
 from pipe_gaps.pipeline.beam.transforms import Core, ReadFromJson
 from pipe_gaps.pipeline import BeamPipeline, PipelineError
 from pipe_gaps.pipeline import pipe_beam
@@ -10,15 +10,23 @@ from pipe_gaps.utils import json_save, json_load
 from tests.conftest import TestCases
 
 
-def input_file_config(input_file, schema):
+def get_input_file_config(input_file, schema):
     return dict(kind="json", input_file=input_file, schema=schema)
 
 
-def test_with_input_file(input_file):
-    core_config = dict(threshold=0.5, eval_last=False)
-    inputs = [input_file_config(input_file, schema="messages")]
+def get_core_config():
+    return dict(kind="detect_gaps", threshold=0.5, eval_last=False)
 
-    pipe = BeamPipeline.build(inputs=inputs, core=core_config)
+
+def get_outputs_config():
+    return dict(kind="json", output_prefix="gaps")
+
+
+def test_with_input_file(input_file):
+    core_config = get_core_config()
+    inputs_config = [get_input_file_config(input_file, schema="messages")]
+
+    pipe = BeamPipeline.build(inputs=inputs_config, core=core_config)
     pipe.run()
 
 
@@ -30,13 +38,15 @@ def test_multiple_sources(input_file):
     sources = [read1, read2]
     sinks = []
 
-    pipe = BeamPipeline(sources, core, sinks, output_path=input_file)
+    pipe = BeamPipeline(sources, core, sinks)
     pipe.run()
 
 
 def test_no_output_path(input_file):
-    inputs = [input_file_config(input_file, schema="messages")]
-    pipe = BeamPipeline.build(inputs=inputs)
+    inputs = [get_input_file_config(input_file, schema="messages")]
+    core_config = get_core_config()
+
+    pipe = BeamPipeline.build(inputs=inputs, core=core_config)
 
     with pytest.raises(PipelineError):
         pipe.output_path.is_file()
@@ -48,8 +58,8 @@ def test_distance_from_shore_is_null(tmp_path, messages):
         m["distance_from_shore_m"] = None
 
     json_save(messages, input_file)
-    core_config = dict(threshold=0.5, eval_last=False)
-    inputs = [input_file_config(input_file, schema="messages")]
+    inputs = [get_input_file_config(input_file, schema="messages")]
+    core_config = get_core_config()
 
     pipe = BeamPipeline.build(inputs=inputs, core=core_config)
     pipe.run()
@@ -65,14 +75,24 @@ def test_with_input_query():
             end_date=datetime(2024, 1, 1).date().isoformat()
         )
     )
-    pipe = BeamPipeline.build(inputs=[input_query])
+    core_config = get_core_config()
+
+    pipe = BeamPipeline.build(inputs=[input_query], core=core_config)
     pipe.run()
 
 
 def test_save_json(tmp_path, input_file):
-    inputs = [input_file_config(input_file, schema="messages")]
+    inputs = [get_input_file_config(input_file, schema="messages")]
+    core_config = get_core_config()
+    outputs_config = [get_outputs_config()]
 
-    pipe = BeamPipeline.build(inputs=inputs, work_dir=tmp_path, save_json=True)
+    pipe = BeamPipeline.build(
+        inputs=inputs,
+        work_dir=tmp_path,
+        core=core_config,
+        outputs=outputs_config
+    )
+
     pipe.run()
 
     assert pipe.output_path.is_file()
@@ -96,15 +116,17 @@ def test_gap_between_years(tmp_path, messages, threshold, expected_gaps):
     input_file = tmp_path.joinpath("test.json")
     json_save(messages, input_file)
 
-    core_config = dict(threshold=threshold, eval_last=False)
+    core_config = get_core_config()
+    core_config["threshold"] = threshold
 
-    inputs = [input_file_config(input_file, schema="messages")]
+    inputs = [get_input_file_config(input_file, schema="messages")]
+    outputs_config = [get_outputs_config()]
 
     pipe = BeamPipeline.build(
         inputs=inputs,
         work_dir=tmp_path,
         core=core_config,
-        save_json=True
+        outputs=outputs_config
     )
     pipe.run()
 
@@ -130,14 +152,17 @@ def test_open_gaps(tmp_path, messages, threshold, expected_gaps):
     input_file = tmp_path.joinpath("test.json")
     json_save(messages, input_file)
 
-    core_config = dict(threshold=threshold, eval_last=True)
-    inputs = [input_file_config(input_file, schema="messages")]
+    core_config = get_core_config()
+    core_config["threshold"] = threshold
+    core_config["eval_last"] = True
+
+    inputs = [get_input_file_config(input_file, schema="messages")]
 
     pipe = BeamPipeline.build(
         inputs=inputs,
         work_dir=tmp_path,
         core=core_config,
-        save_json=True
+        outputs=[get_outputs_config()]
     )
     pipe.run()
 
@@ -167,19 +192,22 @@ def test_closing_gaps(tmp_path, messages, open_gaps, threshold, expected_gaps):
 
     input_file = tmp_path.joinpath("messages-test.json")
     json_save(messages, input_file)
-    inputs = [input_file_config(input_file, schema="messages")]
+    inputs = [get_input_file_config(input_file, schema="messages")]
 
     side_input_file = tmp_path.joinpath("open-gaps-test.json")
     json_save(open_gaps, side_input_file, lines=True)
     side_inputs_config = dict(kind="json", input_file=side_input_file, schema="gaps", lines=True)
     side_inputs = [side_inputs_config]
 
+    core_config = get_core_config()
+    core_config["threshold"] = threshold
+
     pipe = BeamPipeline.build(
         inputs=inputs,
         side_inputs=side_inputs,
         work_dir=tmp_path,
-        core=dict(threshold=threshold),
-        save_json=True
+        core=core_config,
+        outputs=[get_outputs_config()]
     )
     pipe.run()
 
@@ -195,8 +223,8 @@ def test_verbose(tmp_path, input_file):
     import logging
     pipe_beam.logger.setLevel(logging.DEBUG)
 
-    core_config = dict(threshold=0.5, eval_last=False)
-    inputs = [input_file_config(input_file, schema="messages")]
+    core_config = get_core_config()
+    inputs = [get_input_file_config(input_file, schema="messages")]
 
     pipe = BeamPipeline.build(inputs=inputs, core=core_config)
     pipe.run()
