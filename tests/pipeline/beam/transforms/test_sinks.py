@@ -8,7 +8,7 @@ from pipe_gaps.pipeline.schemas import Message
 from pipe_gaps.utils import json_load
 
 
-def test_detect_gaps(messages, tmp_path):
+def test_write_json(messages, tmp_path):
     with TestPipeline() as p:
         inputs = p | beam.Create(messages).with_output_types(Message)
         inputs | WriteJson(output_dir=tmp_path, output_prefix="test")
