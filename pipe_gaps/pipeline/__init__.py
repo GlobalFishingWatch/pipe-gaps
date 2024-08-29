@@ -1,6 +1,7 @@
 import warnings
 
-from pipe_gaps.pipeline.base import Pipeline, PipelineError, NoInputsFound, CoreProcess
+from .processes.base import CoreProcess
+from .base import Pipeline, PipelineError, NoInputsFound
 from pipe_gaps.pipeline.config import PipelineConfig, PipeConfigError
 from pipe_gaps.pipeline.factory import create, PipelineFactoryConfig, PipelineFactoryError
 from pipe_gaps.pipeline.pipe_naive import NaivePipeline

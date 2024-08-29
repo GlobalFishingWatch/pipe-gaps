@@ -1,6 +1,8 @@
 import operator
 from copy import copy
 
+import pytest
+
 from pipe_gaps.utils.collections import heapsort, heapsort_pd, list_sort
 
 
@@ -16,6 +18,9 @@ def test_list_sort():
     lst = [4, 2, 5, 1, 3]
     original = copy(lst)
     list_sort(lst, method="heapsort_pd") == sorted(original)
+
+    with pytest.raises(NotImplementedError):
+        list_sort(lst, method="dummy")
 
 
 def test_heapsort():

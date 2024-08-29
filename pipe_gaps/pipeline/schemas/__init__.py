@@ -1,12 +1,13 @@
 from .gap import Gap
 
-from pipe_gaps.queries import Message
+from pipe_gaps.queries import Message, AISGap
 
 __all__ = [Message, Gap]
 
 SCHEMAS = {
     "messages": Message,
-    "gaps": Gap
+    "gaps": Gap,
+    "ais_gaps": AISGap
 }
 
 

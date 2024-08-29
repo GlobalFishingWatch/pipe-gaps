@@ -1,6 +1,6 @@
 """Package with generic re-usable beam transforms."""
 from .core import Core
-from .sinks import WriteJson
+from .sinks import sinks_factory, WriteJson
 from .sources import sources_factory, ReadFromQuery, ReadFromJson
 
-__all__ = [Core, sources_factory, ReadFromJson, ReadFromQuery, WriteJson]
+__all__ = [Core, sources_factory, sinks_factory, ReadFromJson, ReadFromQuery, WriteJson]

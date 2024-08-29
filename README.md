@@ -148,19 +148,24 @@ pipe_config = {
         }
     ],
     "core": {
+        "kind": "detect_gaps",
         "threshold": 1,
         "show_progress": False,
         "eval_last": True
     },
+    "outputs": [
+        {
+            "kind": "json",
+            "output_prefix": "gaps"
+        }
+    ],
     "options": {
         "runner": "direct",
         "region": "us-east1",
         "network": "gfw-internal-network",
         "subnetwork": "regions/us-east1/subnetworks/gfw-internal-us-east1"
-    },
-    "save_json": True
+    }
 }
-
 
 pipe = pipeline.create(pipe_type="naive", **pipe_config)
 pipe.run()
@@ -171,8 +176,8 @@ pipe.run()
 
 ```shell
 (.venv) $ pipe-gaps
-usage: pipe-gaps [-h] [-c ] [--pipe-type ] [--save-json | --no-save-json] [--save-stats | --no-save-stats] [--work-dir ] [-v] [--threshold ] [--sort-method ]
-                 [--show-progress | --no-show-progress] [--eval-last | --no-eval-last]
+usage: pipe-gaps [-h] [-c ] [--pipe-type ] [--save-stats | --no-save-stats] [--work-dir ] [-v] [--threshold ] [--sort-method ] [--show-progress | --no-show-progress]
+                 [--eval-last | --no-eval-last]
 
     Detects time gaps in AIS position messages.
     The definition of a gap is configurable by a time threshold.
@@ -181,7 +186,6 @@ options:
   -h, --help                           show this help message and exit
   -c  , --config-file                  JSON file with pipeline configuration (default: None).
   --pipe-type                          Pipeline type: ['naive', 'beam'].
-  --save-json, --no-save-json          If passed, saves the results in JSON file.
   --save-stats, --no-save-stats        If passed, saves some statistics.
   --work-dir                           Directory to use as working directory.
   -v, --verbose                        Set logger level to DEBUG.

@@ -1,7 +1,7 @@
 import apache_beam as beam
 from apache_beam.testing.test_pipeline import TestPipeline
 
-from pipe_gaps.pipeline.common import DetectGaps
+from pipe_gaps.pipeline.processes import DetectGaps
 from pipe_gaps.pipeline.beam.transforms import Core
 
 from pipe_gaps.pipeline.schemas import Message

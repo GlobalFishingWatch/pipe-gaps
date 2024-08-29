@@ -20,7 +20,7 @@ DESCRIPTION = """
 """
 EPILOG = (
     "Example: \n"
-    "    pipe-gaps -c config/sample-from-file-1.json --threshold 1.3 "
+    "    pipe-gaps -c config/sample-from-file-1.json --threshold 1.3"
 )
 
 _DEFAULT = "(default: %(default)s)"
@@ -89,12 +89,13 @@ def cli(args):
     add = p.add_argument
     add("-c", "--config-file", type=Path, default=None, metavar=" ", help=HELP_CONFIG_FILE)
     add("--pipe-type", type=str, metavar=" ", help=HELP_PIPE_TYPE)
-    add("--save-json", default=None, action=BooleanOptionalAction, help=HELP_SAVE_JSON)
     add("--save-stats", default=None, action=BooleanOptionalAction, help=HELP_SAVE_STATS)
     add("--work-dir", type=Path, metavar=" ", help=HELP_WORK_DIR)
     add("-v", "--verbose", action="store_true", default=False, help=HELP_VERBOSE)
 
     # TODO: see if we want to support these CLI args.
+
+    # add("--save-json", default=None, action=BooleanOptionalAction, help=HELP_SAVE_JSON)
 
     # add = p.add_argument_group("pipeline inputs").add_argument
     # add("-i", "--input-file", type=Path, metavar=" ", help=HELP_INPUT_FILE)

@@ -164,12 +164,13 @@ class TestCases:
             ],
             "open_gaps": [
                 {
-                    "OFF": {
-                        "ssvid": "226013750",
-                        "timestamp": datetime(2024, 1, 1, 1).timestamp(),
-                        "distance_from_shore_m": 1
-                    },
-                    "ON": None
+                    "ssvid": "226013750",
+                    "gap_id": "0eb742651071b9e4f192b643511a3e4f",
+                    "gap_start": datetime(2024, 1, 1, 1).timestamp(),
+                    "gap_start_msgid": "3b793b64-46e4-80eb-82ae-1262a2b8eeab",
+                    "gap_start_seg_id": "412331104-2023-12-06T17:36:26.000000Z-1",
+                    "gap_start_distance_from_shore_m": 97000.0,
+                    "is_closed": False
                 }
             ],
             "threshold": 6,

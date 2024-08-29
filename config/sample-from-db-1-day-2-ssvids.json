@@ -15,17 +15,35 @@
                 "mock_db_client": false
             }
         ],
+        "side_inputs": [
+            {
+                "kind": "query",
+                "query_name": "gaps",
+                "query_params": {
+                    "source_gaps": "pipe_ais_v3_published.product_events_ais_gaps",
+                    "start_date": "2020-01-01",
+                    "ssvids": [412331104, 477334300]
+                },
+                "mock_db_client": false
+            }
+        ],
         "core": {
+            "kind": "detect_gaps",
             "threshold": 1,
             "show_progress": false,
             "eval_last": true
         },
+        "outputs": [
+            {
+                "kind": "json",
+                "output_prefix": "gaps"
+            }
+        ],
         "options": {
             "runner": "direct",
             "region": "us-east1",
             "network": "gfw-internal-network",
             "subnetwork": "regions/us-east1/subnetworks/gfw-internal-us-east1"
-        },
-        "save_json": true
+        }
     }
 }

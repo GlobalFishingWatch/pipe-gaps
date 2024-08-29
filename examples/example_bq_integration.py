@@ -19,19 +19,24 @@ pipe_config = {
         }
     ],
     "core": {
+        "kind": "detect_gaps",
         "threshold": 1,
         "show_progress": False,
         "eval_last": True
     },
+    "outputs": [
+        {
+            "kind": "json",
+            "output_prefix": "gaps"
+        }
+    ],
     "options": {
         "runner": "direct",
         "region": "us-east1",
         "network": "gfw-internal-network",
         "subnetwork": "regions/us-east1/subnetworks/gfw-internal-us-east1"
-    },
-    "save_json": True
+    }
 }
-
 
 pipe = pipeline.create(pipe_type="naive", **pipe_config)
 pipe.run()

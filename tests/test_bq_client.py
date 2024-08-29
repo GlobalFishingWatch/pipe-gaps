@@ -20,6 +20,10 @@ def test_build(monkeypatch):
     start_date = datetime(2024, 1, 1).date()
     end_date = start_date
 
+    res = client.run_query(query=AISMessagesQuery(start_date=start_date, end_date=end_date))
+    assert isinstance(res.tolist(), list)
+    assert isinstance(next(res), dict)
+
     with pytest.raises(bq_client.QueryError):
         client = bq_client.BigQueryClient.build(project=None, mock_client=True)
         client.run_query(query=AISMessagesQuery(start_date=start_date, end_date=end_date))
