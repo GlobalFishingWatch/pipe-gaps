@@ -10,11 +10,13 @@ from pipe_gaps.utils import json_load
 
 
 def test_write_json(messages, tmp_path):
+    transform = WriteJson(output_dir=tmp_path, output_prefix="test")
+
     with TestPipeline() as p:
         inputs = p | beam.Create(messages).with_output_types(Message)
-        inputs | WriteJson(output_dir=tmp_path, output_prefix="test")
+        inputs | transform
 
-    output_file = Path(tmp_path).joinpath("test.json")
+    output_file = transform.path
     assert Path(output_file).is_file()
 
     output_messages = json_load(output_file, lines=True)

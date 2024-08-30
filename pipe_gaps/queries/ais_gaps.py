@@ -1,7 +1,8 @@
 """This module encapsulates database queries."""
 import logging
 import typing
-from datetime import date
+
+from datetime import date, datetime
 
 from .base import Query
 
@@ -11,15 +12,27 @@ DB_TABLE_GAPS = "pipe_ais_v3_published.product_events_ais_gaps"
 
 
 class AISGap(typing.NamedTuple):
-    """Schema for AIS gaps."""
+    """Schema for AIS gaps.
+
+    TODO: create this class dynamically using a JSON schema.
+    https://docs.pydantic.dev/latest/concepts/models/#dynamic-model-creation
+    """
 
     ssvid: str
     gap_id: str
+    gap_start: datetime
     gap_start_msgid: str
-    gap_start_seg_id: str
-    gap_start: float
-    is_open: bool
+    gap_start_lat: float
+    gap_start_lon: float
+    gap_start_receiver_type: str
     gap_start_distance_from_shore_m: float
+    gap_end: datetime
+    gap_end_msgid: str
+    gap_end_lat: float
+    gap_end_lon: float
+    gap_end_receiver_type: str
+    gap_end_distance_from_shore_m: float
+    is_closed: bool
 
 
 class AISGapsQuery(Query):
@@ -38,13 +51,7 @@ class AISGapsQuery(Query):
 
     TEMPLATE = """
       SELECT
-        ssvid,
-        gap_id,
-        CAST(UNIX_MICROS(gap_start) AS FLOAT64) / 1000000  AS gap_start,
-        gap_start_msgid,
-        gap_start_seg_id,
-        gap_start_distance_from_shore_m,
-        is_closed
+        {fields}
       FROM `{source_gaps}`
       WHERE
           DATE(gap_start) >= "{start_date}"
@@ -66,6 +73,7 @@ class AISGapsQuery(Query):
         query = self.TEMPLATE.format(
             source_gaps=self._source_gaps,
             start_date=self._start_date,
+            fields=self._select_clause()
         )
 
         if self._ssvids is not None:
@@ -82,6 +90,5 @@ class AISGapsQuery(Query):
 
         return query
 
-    @staticmethod
-    def schema():
+    def schema(self):
         return AISGap

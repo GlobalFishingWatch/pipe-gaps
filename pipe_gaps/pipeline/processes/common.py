@@ -16,7 +16,10 @@ class SsvidAndYear(Key):
 
     @classmethod
     def from_dict(cls, item: dict) -> "SsvidAndYear":
-        return cls(ssvid=item["ssvid"], year=str(datetime.fromtimestamp(item["timestamp"]).year))
+        return cls(
+            ssvid=str(item["ssvid"]),
+            year=str(datetime.fromtimestamp(item["timestamp"]).year)
+        )
 
 
 @dataclass(eq=True, frozen=True)
@@ -25,7 +28,7 @@ class Ssvid(Key):
 
     @classmethod
     def from_dict(cls, item: dict) -> "Ssvid":
-        return cls(ssvid=item["ssvid"])
+        return cls(ssvid=str(item["ssvid"]))
 
 
 @dataclass(eq=True, frozen=True)

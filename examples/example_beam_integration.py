@@ -38,6 +38,5 @@ pipe_config = {
     }
 }
 
-
 pipe = pipeline.create(pipe_type="beam", **pipe_config)
 pipe.run()

@@ -97,11 +97,12 @@ class BeamPipeline(base.Pipeline):
         )
 
     def _resolve_output_path(self):
+        # Maybe we could change the list of outputs for a dict of outputs,
+        # and that way we can access the JSON output directly with a unique key.
         path = None
         for s in self._sinks:
             path = getattr(s, 'path', None)
 
-        print(path)
         return path
 
     @staticmethod

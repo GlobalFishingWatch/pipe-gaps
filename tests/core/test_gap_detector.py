@@ -20,13 +20,20 @@ def test_missing_keys():
             "ssvid": "226013750",
             "msgid": "295fa26f-cee9-1d86-8d28-d5ed96c32835",
             "timestamp": datetime(2024, 1, 1, 1).timestamp(),
-            "distance_from_shore_m": 1
+            "receiver_type": "terrestrial",
+            "lat": None,
+            "lon": None,
+            "distance_from_shore_m": 1.0
+
         },
         {
             "ssvid": "226013750",
             "msgid": "295fa26f-cee9-1d86-8d28-d5ed96c32835",
             "timestamp": datetime(2024, 1, 1, 2).timestamp(),
-            "distance_from_shore_m": 1
+            "receiver_type": "terrestrial",
+            "lat": None,
+            "lon": None,
+            "distance_from_shore_m": 1.0
         }
     ]
     gd = GapDetector(threshold=0.5)
@@ -37,3 +44,11 @@ def test_missing_keys():
         wrong_messages = [{k: v for k, v in m.items() if k != key} for m in messages]
         with pytest.raises(GapDetectionError):
             gd.detect(wrong_messages)
+
+
+def test_normalize_output(messages):
+    gd = GapDetector(threshold=timedelta(hours=1, minutes=20), normalize_output=True)
+    gaps = gd.detect(messages)
+    from pprint import pprint
+    pprint(gaps)
+    assert len(gaps) == 7
