@@ -33,7 +33,7 @@ class CoreProcess(ABC):
         and must be defined in subclasses.
     """
 
-    def process(self, elements: list[Type], side_inputs: list[Type] = None) -> Iterable:
+    def process(self, elements: Iterable, side_inputs: Iterable = None) -> Iterable:
         """Receives list of elements and process them linearly, without parallelization.
 
         This method uses subclass implementations of abstract methods.

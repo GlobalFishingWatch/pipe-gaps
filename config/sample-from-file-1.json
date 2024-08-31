@@ -20,7 +20,8 @@
             "kind": "detect_gaps",
             "threshold": 1.2,
             "show_progress": false,
-            "eval_last": true
+            "eval_last": true,
+            "normalize_output": true
         },
         "outputs": [
             {

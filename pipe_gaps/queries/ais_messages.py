@@ -1,7 +1,7 @@
 """This module encapsulates database queries."""
 import logging
 import typing
-from datetime import date
+from datetime import date, datetime
 
 from .base import Query
 
@@ -13,12 +13,17 @@ DB_TABLE_SEGMENTS = "pipe_ais_v3_published.segs_activity"
 
 
 class Message(typing.NamedTuple):
-    """Schema for AIS messages."""
+    """Schema for AIS messages.
 
+    TODO: create this class dynamically using a JSON schema.
+    https://docs.pydantic.dev/latest/concepts/models/#dynamic-model-creation
+    """
     ssvid: str
-    seg_id: str
     msgid: str
-    timestamp: float
+    timestamp: datetime
+    lat: float
+    lon: float
+    receiver_type: str
     distance_from_shore_m: float
 
 
@@ -36,32 +41,20 @@ class AISMessagesQuery(Query):
     NAME = "messages"
 
     TEMPLATE = """
-    SELECT
-      ssvid,
-      seg_id,
-      msgid,
-      CAST(UNIX_MICROS(timestamp) AS FLOAT64) / 1000000  AS timestamp,
-      # lat,
-      # lon,
-      # course,
-      # speed_knots,
-      # type,
-      # receiver_type,
-      # regions,
-      distance_from_shore_m,
-      # distance_from_port_m
-    FROM
-      `{source_messages}`
-    WHERE
-      (DATE(timestamp) >= "{start_date}" AND DATE(timestamp) <= "{end_date}")
-      AND seg_id IN (
-        SELECT
-          seg_id
-        FROM
-          `{source_segments}`
-        WHERE
-          good_seg
-          and not overlapping_and_short)
+      SELECT
+        {fields}
+      FROM
+        `{source_messages}`
+      WHERE
+        (DATE(timestamp) >= "{start_date}" AND DATE(timestamp) <= "{end_date}")
+        AND seg_id IN (
+          SELECT
+            seg_id
+          FROM
+            `{source_segments}`
+          WHERE
+            good_seg
+            and not overlapping_and_short)
     """
 
     def __init__(
@@ -84,6 +77,7 @@ class AISMessagesQuery(Query):
             source_segments=self._source_segments,
             start_date=self._start_date,
             end_date=self._end_date,
+            fields=self._select_clause()
         )
 
         if self._ssvids is not None:
@@ -95,6 +89,5 @@ class AISMessagesQuery(Query):
 
         return query
 
-    @staticmethod
-    def schema():
+    def schema(self):
         return Message

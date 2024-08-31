@@ -1,3 +1,5 @@
+import json
+
 from pipe_gaps import queries
 from pipe_gaps.bq_client import BigQueryClient
 
@@ -17,4 +19,4 @@ gaps = client.run_query(query)
 print("Done.")
 
 gap = next(gaps)
-print(gap)
+print(json.dumps(gap, indent=4))

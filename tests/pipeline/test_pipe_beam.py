@@ -171,7 +171,7 @@ def test_open_gaps(tmp_path, messages, threshold, expected_gaps):
 
     if len(gaps) > 0:
         for gap in gaps:
-            assert gap["ON"] is None
+            assert gap["ON"]["msgid"] is None
 
 
 @pytest.mark.parametrize(
@@ -216,7 +216,7 @@ def test_closing_gaps(tmp_path, messages, open_gaps, threshold, expected_gaps):
 
     if len(gaps) > 0:
         for gap in gaps:
-            assert gap["ON"] is not None
+            assert gap["ON"]["msgid"] is not None
 
 
 def test_verbose(tmp_path, input_file):

@@ -26,13 +26,13 @@ class WriteJson(beam.PTransform):
     """
     def __init__(self, output_dir: Path = Path("workdir"), output_prefix: str = ""):
         self._output_dir = output_dir
-        self._output_prefix = output_prefix
+        self._output_prefix = f"beam-{output_prefix}"
 
         self._prefix = self._output_dir.joinpath(self._output_prefix).as_posix()
         self._shard_name_template = ''
         self._suffix = ".json"
 
-        # This is what beam does to construct the path.
+        # This is what WriteToText does to construct the path.
         self.path = Path(''.join([self._prefix, self._shard_name_template, self._suffix]))
 
     def expand(self, pcoll):

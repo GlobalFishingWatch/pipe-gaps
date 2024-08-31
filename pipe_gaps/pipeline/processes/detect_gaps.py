@@ -12,13 +12,17 @@ logger = logging.getLogger(__name__)
 
 
 def off_message_from_gap(gap: dict):
-    return dict(
-        ssvid=gap["ssvid"],
-        seg_id=gap["gap_start_seg_id"],
-        msgid=gap["gap_start_msgid"],
-        timestamp=gap["gap_start"],
-        distance_from_shore_m=gap["gap_start_distance_from_shore_m"]
-    )
+    """Extracts off message from gap object."""
+    to_remove = "gap_start_"
+    off_message = {
+        k.replace(to_remove, ""): v
+        for k, v in gap.items()
+        if to_remove in k
+    }
+    off_message["timestamp"] = gap["gap_start"]
+    off_message["ssvid"] = gap["ssvid"]
+
+    return off_message
 
 
 class DetectGaps(CoreProcess):
@@ -74,21 +78,34 @@ class DetectGaps(CoreProcess):
                 logger.info(f"Creating 1 open gap for key={key}...")
                 gaps.append(new_open_gap)
 
-        if side_inputs is not None:
-            # TODO: make input p-collection to have objects instead of dicts?
-            open_gaps = {g["ssvid"]: g for g in side_inputs}
-            if key.ssvid in open_gaps:
-                logger.info(f"Closing 1 open gap found for key={key}")
-                off_message = off_message_from_gap(open_gaps[key.ssvid])
-                on_message = min(year_boundaries, key=operator.attrgetter("year")).start
-                closed_gap = dict(OFF=off_message, ON=on_message)
-                gaps.append(closed_gap)
+        if side_inputs is None:
+            side_inputs = []
+
+        for open_gap in side_inputs:
+            if not key.ssvid == open_gap["ssvid"]:
+                continue
+
+            logger.info(f"Closing 1 open gap found for key={key}")
+            gaps.append(self._close_open_gap(open_gap, year_boundaries))
+            break
 
         for gap in gaps:
             yield gap
 
     def get_group_boundary(self, group: tuple[SsvidAndYear, Iterable[Message]]) -> YearBoundary:
         return YearBoundary.from_group(group, timestamp_key=self._gd.KEY_TIMESTAMP)
+
+    def sorting_key(self):
+        return lambda x: (x["ssvid"], x[self._gd.KEY_TIMESTAMP])
+
+    def _close_open_gap(self, open_gap, year_boundaries):
+        off_m = off_message_from_gap(open_gap)
+        on_m = min(year_boundaries, key=operator.attrgetter("year")).start
+
+        # Re-order off-message using on-message keys.
+        off_m = {k: off_m[k] for k in on_m.keys() if k in off_m}
+
+        return self._gd.create_gap(off_m=off_m, on_m=on_m)
 
     @staticmethod
     def type():
@@ -101,6 +118,3 @@ class DetectGaps(CoreProcess):
     @staticmethod
     def boundaries_key() -> Type[Ssvid]:
         return Ssvid
-
-    def sorting_key(self):
-        return lambda x: (x["ssvid"], x[self._gd.KEY_TIMESTAMP])

@@ -32,8 +32,9 @@ HELP_THRESHOLD = "Minimum time difference (hours) to start considering gaps."
 HELP_START_DATE = "Query filter: messages after this dete, e.g., '2024-01-01'."
 HELP_END_DATE = "Query filter: messages before this date, e.g., '2024-01-02'."
 HELP_SSVIDS = "Query filter: list of ssvids."
-HELP_SORT_METHOD = "Sorting algorihtm."
+HELP_SORT_METHOD = "Sorting algorithm."
 HELP_EVAL_LAST = "If passed, evaluates last message of each SSVID to create an open gap."
+HELP_NORM_OUTPUT = "If passed, normalizes the output."
 HELP_SHOW_PROGRESS = "If passed, renders a progress bar."
 HELP_MOCK_DB_CLIENT = "If passed, mocks the DB client. Useful for development and testing."
 HELP_SAVE_JSON = "If passed, saves the results in JSON file."
@@ -105,13 +106,15 @@ def cli(args):
     # add("--ssvids", type=str, nargs="+", metavar=" ", help=HELP_SSVIDS)
     # add("--mock-db-client", default=None, action=BooleanOptionalAction, help=HELP_MOCK_DB_CLIENT)
 
+    boolean = BooleanOptionalAction
     add = p.add_argument_group("pipeline core process").add_argument
     add("--threshold", type=float, metavar=" ", help=HELP_THRESHOLD)
     add("--sort-method", type=str, metavar=" ", help=HELP_SORT_METHOD)
-    add("--show-progress", default=None, action=BooleanOptionalAction, help=HELP_SHOW_PROGRESS)
-    add("--eval-last", default=None, action=BooleanOptionalAction, help=HELP_EVAL_LAST)
+    add("--show-progress", default=None, action=boolean, help=HELP_SHOW_PROGRESS)
+    add("--eval-last", default=None, action=boolean, help=HELP_EVAL_LAST)
+    add("--norm", dest="normalize_output", default=None, action=boolean, help=HELP_NORM_OUTPUT)
 
-    CORE_KEYS = ["threshold", "show_progress", "eval_last"]
+    CORE_KEYS = ["threshold", "show_progress", "eval_last", "normalize_output"]
 
     ns, unknown = p.parse_known_args(args=args or ["--help"])
 

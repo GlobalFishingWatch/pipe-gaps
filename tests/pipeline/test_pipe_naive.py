@@ -104,12 +104,13 @@ def test_save_json(tmp_path, input_file):
     assert pipe.output_path.is_file()
 
 
-def test_save_stats(input_file):
+def test_save_stats(tmp_path, input_file):
     inputs = [get_input_file_config(input_file, schema="messages")]
     core_config = get_core_config()
     core_config["threshold"] = 0.1
 
-    pipe = NaivePipeline.build(inputs=inputs, core=core_config, save_stats=True)
+    pipe = NaivePipeline.build(
+        inputs=inputs, core=core_config, work_dir=tmp_path, save_stats=True)
 
     pipe.run()
     assert pipe.output_path_stats.is_file()
@@ -187,7 +188,7 @@ def test_open_gaps(tmp_path, messages, threshold, expected_gaps):
 
     if len(gaps) > 0:
         for gap in gaps:
-            assert gap["ON"] is None
+            assert gap["ON"]["msgid"] is None
 
 
 @pytest.mark.parametrize(
@@ -233,4 +234,4 @@ def test_closing_gaps(tmp_path, messages, open_gaps, threshold, expected_gaps):
 
     if len(gaps) > 0:
         for gap in gaps:
-            assert gap["ON"] is not None
+            assert gap["ON"]["msgid"] is not None

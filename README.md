@@ -91,9 +91,8 @@ pip install .[beam]
 
 
 ```python
-from pprint import pprint
+import json
 from datetime import timedelta, datetime
-
 from pipe_gaps.core import GapDetector
 
 messages = [
@@ -101,19 +100,25 @@ messages = [
         "ssvid": "226013750",
         "msgid": "295fa26f-cee9-1d86-8d28-d5ed96c32835",
         "timestamp": datetime(2024, 1, 1, 0).timestamp(),
-        "distance_from_shore_m": 1
+        "receiver_type": "terrestrial",
+        "lat": 30.5,
+        "lon": 50.6,
+        "distance_from_shore_m": 1.0
     },
     {
         "ssvid": "226013750",
         "msgid": "295fa26f-cee9-1d86-8d28-d5ed96c32835",
         "timestamp": datetime(2024, 1, 1, 1).timestamp(),
-        "distance_from_shore_m": 1
+        "receiver_type": "terrestrial",
+        "lat": 30.5,
+        "lon": 50.6,
+        "distance_from_shore_m": 1.0
     }
 ]
 
-gd = GapDetector(threshold=timedelta(hours=0, minutes=50), show_progress=True)
+gd = GapDetector(threshold=timedelta(hours=0, minutes=50))
 gaps = gd.detect(messages)
-pprint(gaps)
+print(json.dumps(gaps, indent=4))
 ```
 
 #### BigQuery integration pipeline
@@ -177,7 +182,7 @@ pipe.run()
 ```shell
 (.venv) $ pipe-gaps
 usage: pipe-gaps [-h] [-c ] [--pipe-type ] [--save-stats | --no-save-stats] [--work-dir ] [-v] [--threshold ] [--sort-method ] [--show-progress | --no-show-progress]
-                 [--eval-last | --no-eval-last]
+                 [--eval-last | --no-eval-last] [--norm | --no-norm]
 
     Detects time gaps in AIS position messages.
     The definition of a gap is configurable by a time threshold.
@@ -192,9 +197,10 @@ options:
 
 pipeline core process:
   --threshold                          Minimum time difference (hours) to start considering gaps.
-  --sort-method                        Sorting algorihtm.
+  --sort-method                        Sorting algorithm.
   --show-progress, --no-show-progress  If passed, renders a progress bar.
   --eval-last, --no-eval-last          If passed, evaluates last message of each SSVID to create an open gap.
+  --norm, --no-norm                    If passed, normalizes the output.
 
 Example: 
     pipe-gaps -c config/sample-from-file-1.json --threshold 1.3
