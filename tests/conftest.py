@@ -109,6 +109,17 @@ class TestCases:
             ],
             "open_gaps": [
                 {
+                    "ssvid": "210023456",
+                    "gap_id": "0eb742651071b9e4f192b643511a3e4f",
+                    "gap_start": datetime(2024, 1, 1, 1).timestamp(),
+                    "gap_start_msgid": "3b793b64-46e4-80eb-82ae-1262a2b8eeab",
+                    "gap_start_distance_from_shore_m": 97000.0,
+                    "gap_start_lat": 44.5,
+                    "gap_start_lon": 60.1,
+                    "gap_start_receiver_type": "terrestrial",
+                    "is_closed": False
+                },
+                {
                     "ssvid": "226013750",
                     "gap_id": "0eb742651071b9e4f192b643511a3e4f",
                     "gap_start": datetime(2024, 1, 1, 1).timestamp(),
@@ -118,10 +129,10 @@ class TestCases:
                     "gap_start_lon": 60.1,
                     "gap_start_receiver_type": "terrestrial",
                     "is_closed": False
-                }
+                },
             ],
             "threshold": 6,
             "expected_gaps": 1,
-            "id": "one_ssvid_one_closed_gap"
+            "id": "two_ssvid_one_closed_gap"
         },
     ]

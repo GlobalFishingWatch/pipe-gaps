@@ -12,6 +12,10 @@ def test_config(tmp_path):
         config = PipelineConfig(inputs=[{}], side_inputs=[{}, {}])
         config.validate()
 
+    with pytest.raises(PipeConfigError):
+        config = PipelineConfig(inputs=[{}], side_inputs=[{}])
+        config.validate()
+
 
 def test_build():
     with pytest.raises(NotImplementedError):

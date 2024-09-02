@@ -106,7 +106,7 @@ class GapDetector:
 
         if self._filter_condition(message, next_test_message):
             null_msg = {k: None for k in message}
-            return self.create_gap(off_m=message, on_m=null_msg)
+            return self.create_gap(off_m=message, on_m=null_msg, is_closed=False)
 
         return None
 
@@ -133,16 +133,16 @@ class GapDetector:
 
         return self._create_gap_unnormalized
 
-    def _create_gap_normalized(self, off_m, on_m):
+    def _create_gap_normalized(self, off_m, on_m, is_closed=True):
         gap_id = self._generate_gap_id(off_m)
 
         off_m_copy = off_m.copy()
         on_m_copy = on_m.copy()
 
         ssvid = off_m_copy.pop("ssvid")
-        on_m_copy.pop("ssvid", None)  # Can be null msg if open gap.
+        on_m_copy.pop("ssvid")
 
-        gap = dict(gap_id=gap_id, ssvid=ssvid)
+        gap = dict(gap_id=gap_id, ssvid=ssvid, is_closed=is_closed)
 
         def _msg_fields(msg_type, msg):
             return {f"gap_{msg_type}_{k}": v for k, v in msg.items()}
@@ -153,9 +153,9 @@ class GapDetector:
             **_msg_fields("end", on_m_copy)
         }
 
-    def _create_gap_unnormalized(self, off_m, on_m):
+    def _create_gap_unnormalized(self, off_m, on_m, is_closed=True):
         gap_id = self._generate_gap_id(off_m)
-        return dict(gap_id=gap_id, ssvid=off_m["ssvid"], OFF=off_m, ON=on_m)
+        return dict(gap_id=gap_id, ssvid=off_m["ssvid"], is_closed=is_closed, OFF=off_m, ON=on_m)
 
     def _generate_gap_id(self, message):
         s = "{}|{}|{}|{}".format(
