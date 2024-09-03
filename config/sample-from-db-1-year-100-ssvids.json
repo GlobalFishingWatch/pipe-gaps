@@ -129,11 +129,20 @@
         ],
         "core": {
             "kind": "detect_gaps",
-            "threshold": 0.08,
+            "threshold": 6,
             "show_progress": false,
-            "eval_last": true
+            "eval_last": true,
+            "normalize_output": true
         },
-        "outputs": [],
+        "outputs": [
+            {
+                "kind": "bigquery",
+                "table": "scratch_tomas_ttl30d.pipe_ais_gaps",
+                "description": "Gaps for AIS position messages.",
+                "schema": "gaps",
+                "write_disposition": "WRITE_TRUNCATE"
+            }
+        ],
         "options": {
             "runner": "direct",
             "region": "us-east1",
