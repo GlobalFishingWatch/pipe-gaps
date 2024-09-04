@@ -9,6 +9,15 @@ from pipe_gaps.queries import Message
 logger = logging.getLogger(__name__)
 
 
+def ts_to_year(ts):
+    """Extracts year from unix timestamp.
+
+    This is ~2-times faster than datetime.fromtimestamp(ts, tz=timezone.utc).year,
+    but needs further testing/validation.
+    """
+    return int(ts / 60 / 60 / 24 / 365) + 1970
+
+
 def ssvid_and_year_key(item):
     return (str(item["ssvid"]), datetime.fromtimestamp(item["timestamp"], tz=timezone.utc).year)
 
@@ -17,27 +26,24 @@ def ssvid_key(item):
     return str(item["ssvid"])
 
 
-@dataclass(eq=True, frozen=True)
-class SsvidAndYear(Key):
-    ssvid: str
-    year: str
+def ssvid_and_year_key2(item):
+    return (str(item["ssvid"]), ts_to_year(item["timestamp"]))
 
-    @classmethod
-    def from_dict(cls, item: dict) -> "SsvidAndYear":
-        return cls(*ssvid_and_year_key(item))
+
+class SsvidAndYear(Key):
+    @staticmethod
+    def keynames():
+        return ["SSVID", "YEAR"]
 
     @staticmethod
     def func():
         return ssvid_and_year_key
 
 
-@dataclass(eq=True, frozen=True)
 class Ssvid(Key):
-    ssvid: str
-
-    @classmethod
-    def from_dict(cls, item: dict) -> "Ssvid":
-        return cls(ssvid=str(item["ssvid"]))
+    @staticmethod
+    def keynames():
+        return ["SSVID"]
 
     @staticmethod
     def func():

@@ -3,27 +3,30 @@ import itertools
 
 from abc import ABC, abstractmethod
 from typing import Type, Iterable
-from dataclasses import dataclass, fields, asdict
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass(eq=True, frozen=True)
 class Key(ABC):
-    """Defines a key to order or group elements by processing units."""
-
-    def __str__(self):
-        return str(asdict(self))
+    """Defines a key function to order or group elements by processing units."""
 
     @classmethod
+    def name(cls):
+        return cls.__name__
+
+    @classmethod
+    def format(cls, key):
+        if not isinstance(key, list):
+            key = [key]
+
+        return "({})".format(
+            ', '.join([f'{k}={v}' for k, v in zip(cls.keynames(), key)])
+        )
+
+    @staticmethod
     @abstractmethod
-    def from_dict(cls, item: dict) -> "Key":
-        """Creates an instance from a dictionary."""
-
-    @classmethod
-    def attributes(cls) -> list[str]:
-        """Returns a list with the names of the attributes in the class."""
-        return [x.name for x in fields(cls)]
+    def func():
+        """Returns callable to obtain keys to group by."""
 
 
 class CoreProcess(ABC):
@@ -51,7 +54,7 @@ class CoreProcess(ABC):
         logger.info("Sorting inputs...")
         sorted_messages = sorted(elements, key=self.sorting_key())
 
-        logger.info(f"Grouping inputs by {self.groups_key().attributes()}...")
+        logger.info(f"Grouping inputs by {self.groups_key().name()}...")
         grouped_messages = [
             (k, list(v))
             for k, v in itertools.groupby(sorted_messages, key=self.groups_key().func())
