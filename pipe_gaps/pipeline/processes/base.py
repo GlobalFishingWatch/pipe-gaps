@@ -2,7 +2,7 @@ import logging
 import itertools
 
 from abc import ABC, abstractmethod
-from typing import Type, Iterable
+from typing import Type, Iterable, Optional, Any
 
 logger = logging.getLogger(__name__)
 
@@ -77,16 +77,18 @@ class CoreProcess(ABC):
         return outputs
 
     @abstractmethod
-    def process_group(self, group: tuple[Key, Iterable[Type]]) -> Iterable[Type]:
+    def process_group(self, group: tuple[Key, Iterable]) -> Iterable:
         """Receives elements inside a group (grouped by groups_key) and process them."""
 
     @abstractmethod
-    def get_group_boundary(self, group: tuple[Key, Iterable[Type]]) -> Type:
+    def get_group_boundary(self, group: tuple[Key, Iterable]) -> Any:
         """Receives elements inside a group (grouped by groups_key)
             and returns the group's boundary elements."""
 
     @abstractmethod
-    def process_boundaries(self, group: tuple[Key, Iterable[Type]]) -> Iterable[Type]:
+    def process_boundaries(
+        self, group: tuple[Key, Iterable], side_inputs: Optional[Iterable]
+    ) -> Iterable:
         """Receives a group of boundary elements (grouped by boundaries_key) and process them."""
 
     @staticmethod

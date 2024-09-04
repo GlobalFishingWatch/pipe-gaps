@@ -58,7 +58,7 @@ class Core(beam.PTransform):
     def _process_boundaries(self):
         side_inputs = None
         if self._side_inputs is not None:
-            side_inputs = beam.pvalue.AsList(self._side_inputs)
+            side_inputs = beam.pvalue.AsIter(self._side_inputs)
 
         return (
             beam.Map(self._process.get_group_boundary)

@@ -4,6 +4,7 @@ from typing import Type, Iterable, Optional
 
 from pipe_gaps.core import GapDetector
 from pipe_gaps.pipeline.schemas import Gap
+from pipe_gaps.queries.ais_gaps import AISGap
 
 from .base import CoreProcess
 from .common import SsvidAndYear, Message, Ssvid, YearBoundary
@@ -55,8 +56,8 @@ class DetectGaps(CoreProcess):
     def process_boundaries(
         self,
         group: tuple[str, Iterable[YearBoundary]],
-        side_inputs: Optional[list[Gap]] = None
-    ) -> Iterable[Gap]:
+        side_inputs: Optional[Iterable[AISGap]] = None
+    ) -> Iterable[AISGap]:
         key, year_boundaries = group
 
         year_boundaries = sorted(year_boundaries, key=operator.attrgetter("year"))
