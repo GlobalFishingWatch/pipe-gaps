@@ -1,12 +1,20 @@
 """Module with re-usable subclass implementations."""
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from dataclasses import dataclass
 
 from .base import Key
 from pipe_gaps.queries import Message
 
 logger = logging.getLogger(__name__)
+
+
+def ssvid_and_year_key(item):
+    return (str(item["ssvid"]), datetime.fromtimestamp(item["timestamp"], tz=timezone.utc).year)
+
+
+def ssvid_key(item):
+    return str(item["ssvid"])
 
 
 @dataclass(eq=True, frozen=True)
@@ -16,10 +24,11 @@ class SsvidAndYear(Key):
 
     @classmethod
     def from_dict(cls, item: dict) -> "SsvidAndYear":
-        return cls(
-            ssvid=str(item["ssvid"]),
-            year=str(datetime.fromtimestamp(item["timestamp"]).year)
-        )
+        return cls(*ssvid_and_year_key(item))
+
+    @staticmethod
+    def func():
+        return ssvid_and_year_key
 
 
 @dataclass(eq=True, frozen=True)
@@ -29,6 +38,10 @@ class Ssvid(Key):
     @classmethod
     def from_dict(cls, item: dict) -> "Ssvid":
         return cls(ssvid=str(item["ssvid"]))
+
+    @staticmethod
+    def func():
+        return ssvid_key
 
 
 @dataclass(eq=True, frozen=True)
@@ -44,9 +57,9 @@ class YearBoundary:
 
     @classmethod
     def from_group(cls, element, timestamp_key="timestamp"):
-        key, messages = element
+        (ssvid, year), messages = element
 
         start = min(messages, key=lambda x: x[timestamp_key])
         end = max(messages, key=lambda x: x[timestamp_key])
 
-        return cls(ssvid=key.ssvid, year=key.year, start=start, end=end)
+        return cls(ssvid=ssvid, year=year, start=start, end=end)

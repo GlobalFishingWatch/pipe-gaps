@@ -41,7 +41,7 @@ class Core(beam.PTransform):
     def group_by(self):
         """Returns the GroupBy pTransform."""
         groups_key = self._process.groups_key()
-        return f"GroupBy{groups_key.__name__}" >> beam.GroupBy(groups_key.from_dict)
+        return f"GroupBy{groups_key.__name__}" >> beam.GroupBy(groups_key.func())
 
     def process_groups(self):
         """Returns the ProcessGroups pTransform."""
@@ -62,6 +62,6 @@ class Core(beam.PTransform):
 
         return (
             beam.Map(self._process.get_group_boundary)
-            | beam.GroupBy(self._process.boundaries_key().from_dict)
+            | beam.GroupBy(self._process.boundaries_key().func())
             | beam.FlatMap(self._process.process_boundaries, side_inputs=side_inputs)
         )

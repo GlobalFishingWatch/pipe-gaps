@@ -54,7 +54,7 @@ class CoreProcess(ABC):
         logger.info(f"Grouping inputs by {self.groups_key().attributes()}...")
         grouped_messages = [
             (k, list(v))
-            for k, v in itertools.groupby(sorted_messages, key=self.groups_key().from_dict)
+            for k, v in itertools.groupby(sorted_messages, key=self.groups_key().func())
         ]
 
         logger.info("Processing groups...")
@@ -66,7 +66,7 @@ class CoreProcess(ABC):
         logger.info("Processing boundaries...")
         boundaries = [self.get_group_boundary(g) for g in grouped_messages]
 
-        grouped_boundaries = itertools.groupby(boundaries, key=self.boundaries_key().from_dict)
+        grouped_boundaries = itertools.groupby(boundaries, key=self.boundaries_key().func())
         for k, v in grouped_boundaries:
             outputs_in_boundaries = self.process_boundaries((k, v), side_inputs=side_inputs)
             outputs.extend(outputs_in_boundaries)
