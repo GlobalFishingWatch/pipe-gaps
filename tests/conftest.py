@@ -41,8 +41,8 @@ class TestCases:
     GAP_BETWEEN_YEARS = [
         {
             "messages": [
-                create_message(ssvid=226013750, time=datetime(2023, 12, 31, 23)),
-                create_message(ssvid=446013750, time=datetime(2024, 1, 1, 1)),
+                create_message(ssvid="226013750", time=datetime(2023, 12, 31, 23)),
+                create_message(ssvid="446013750", time=datetime(2024, 1, 1, 1)),
             ],
             "threshold": 1,
             "expected_gaps": 0,
@@ -50,8 +50,8 @@ class TestCases:
         },
         {
             "messages": [
-                create_message(ssvid=226013750, time=datetime(2023, 12, 31, 23)),
-                create_message(ssvid=226013750, time=datetime(2024, 1, 1, 1)),
+                create_message(ssvid="226013750", time=datetime(2023, 12, 31, 23)),
+                create_message(ssvid="226013750", time=datetime(2024, 1, 1, 1)),
             ],
             "threshold": 1,
             "expected_gaps": 1,
@@ -59,9 +59,9 @@ class TestCases:
         },
         {
             "messages": [
-                create_message(ssvid=226013750, time=datetime(2023, 12, 31, 23)),
-                create_message(ssvid=226013750, time=datetime(2024, 1, 1, 1)),
-                create_message(ssvid=226013750, time=datetime(2024, 1, 1, 3)),
+                create_message(ssvid="226013750", time=datetime(2023, 12, 31, 23)),
+                create_message(ssvid="226013750", time=datetime(2024, 1, 1, 1)),
+                create_message(ssvid="226013750", time=datetime(2024, 1, 1, 3)),
             ],
             "threshold": 2,
             "expected_gaps": 0,
@@ -69,11 +69,11 @@ class TestCases:
         },
         {
             "messages": [
-                create_message(ssvid=226013750, time=datetime(2023, 12, 31, 23)),
-                create_message(ssvid=226013750, time=datetime(2024, 1, 1, 1)),
-                create_message(ssvid=226013750, time=datetime(2024, 1, 1, 3)),
-                create_message(ssvid=446013750, time=datetime(2023, 12, 31, 23)),
-                create_message(ssvid=446013750, time=datetime(2024, 1, 1, 1)),
+                create_message(ssvid="226013750", time=datetime(2023, 12, 31, 23)),
+                create_message(ssvid="226013750", time=datetime(2024, 1, 1, 1)),
+                create_message(ssvid="226013750", time=datetime(2024, 1, 1, 3)),
+                create_message(ssvid="446013750", time=datetime(2023, 12, 31, 23)),
+                create_message(ssvid="446013750", time=datetime(2024, 1, 1, 1)),
             ],
             "threshold": 1,
             "expected_gaps": 3,
@@ -84,8 +84,8 @@ class TestCases:
     OPEN_GAPS = [
         {
             "messages": [
-                create_message(ssvid=226013750, time=datetime(2024, 8, 20, 12)),
-                create_message(ssvid=446013750, time=datetime(2024, 1, 20, 13)),
+                create_message(ssvid="226013750", time=datetime(2024, 8, 20, 12)),
+                create_message(ssvid="446013750", time=datetime(2024, 1, 20, 13)),
             ],
             "threshold": 6,
             "expected_gaps": 2,
@@ -93,7 +93,7 @@ class TestCases:
         },
         {
             "messages": [
-                create_message(ssvid=226013750, time=datetime(2024, 8, 20, 20)),
+                create_message(ssvid="226013750", time=datetime(2024, 8, 20, 20)),
             ],
             "threshold": 6,
             "expected_gaps": 0,
@@ -104,8 +104,8 @@ class TestCases:
     CLOSING_GAPS = [
         {
             "messages": [
-                create_message(ssvid=226013750, time=datetime(2024, 1, 5, 12)),
-                create_message(ssvid=226013750, time=datetime(2024, 1, 5, 13)),
+                create_message(ssvid="226013750", time=datetime(2024, 1, 5, 12)),
+                create_message(ssvid="226013750", time=datetime(2024, 1, 5, 13)),
             ],
             "open_gaps": [
                 {

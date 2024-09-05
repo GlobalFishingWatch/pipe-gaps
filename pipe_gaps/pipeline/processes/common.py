@@ -19,15 +19,15 @@ def ts_to_year(ts):
 
 
 def ssvid_and_year_key(item):
-    return (str(item["ssvid"]), datetime.fromtimestamp(item["timestamp"], tz=timezone.utc).year)
+    return (item["ssvid"], datetime.fromtimestamp(item["timestamp"], tz=timezone.utc).year)
 
 
 def ssvid_key(item):
-    return str(item["ssvid"])
+    return item["ssvid"]
 
 
 def ssvid_and_year_key2(item):
-    return (str(item["ssvid"]), ts_to_year(item["timestamp"]))
+    return (item["ssvid"], ts_to_year(item["timestamp"]))
 
 
 class SsvidAndYear(Key):
