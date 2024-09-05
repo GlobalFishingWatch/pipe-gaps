@@ -18,8 +18,9 @@
         "side_inputs": [
             {
                 "kind": "json",
-                "schema": "gaps",
-                "input_file": "pipe_gaps/data/open_gaps.json"
+                "schema": "ais_gaps",
+                "input_file": "pipe_gaps/data/open_gaps.json",
+                "lines": true
             }
         ],
         "core": {

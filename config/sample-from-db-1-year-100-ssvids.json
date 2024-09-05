@@ -116,7 +116,17 @@
                 "mock_db_client": false
             }
         ],
-        "side_inputs": [],
+        "side_inputs": [
+            {
+                "kind": "query",
+                "query_name": "gaps",
+                "query_params": {
+                    "source_gaps": "pipe_ais_v3_published.product_events_ais_gaps",
+                    "start_date": "2012-01-01"
+                },
+                "mock_db_client": false
+            }
+        ],
         "core": {
             "kind": "detect_gaps",
             "threshold": 6,
