@@ -1,5 +1,5 @@
 {
-    "pipe_type": "naive",
+    "pipe_type": "beam",
     "pipe_config": {
         "inputs": [
             {
@@ -15,18 +15,7 @@
                 "mock_db_client": false
             }
         ],
-        "side_inputs": [
-            {
-                "kind": "query",
-                "query_name": "gaps",
-                "query_params": {
-                    "source_gaps": "pipe_ais_v3_published.product_events_ais_gaps",
-                    "start_date": "2020-01-01",
-                    "ssvids": ["412331104", "477334300"]
-                },
-                "mock_db_client": false
-            }
-        ],
+        "side_inputs": [],
         "core": {
             "kind": "detect_gaps",
             "threshold": 1,

@@ -1,0 +1,92 @@
+[
+    {
+        "mode": "NULLABLE",
+        "name": "ssvid",
+        "type": "STRING",
+        "description": "ssvid"
+    },
+    {
+        "mode": "NULLABLE",
+        "name": "gap_id",
+        "type": "STRING",
+        "description": "gap id (has of ssvid, gap_start, gap_start_lat, and gap_start_lon)"
+    },
+    {
+        "mode": "NULLABLE",
+        "name": "gap_start_timestamp",
+        "type": "TIMESTAMP",
+        "description": "the timestamp of the position at the beginning of the gap"
+    },
+    {
+        "mode": "NULLABLE",
+        "name": "gap_start_msgid",
+        "type": "STRING",
+        "description": "message ID for last position message before for start of gap"
+    },
+    {
+        "mode": "NULLABLE",
+        "name": "gap_start_lat",
+        "type": "FLOAT",
+        "description": "latitude at start of gap"
+    },
+    {
+        "mode": "NULLABLE",
+        "name": "gap_start_lon",
+        "type": "FLOAT",
+        "description": "longitude at start of gap"
+    },
+    {
+        "mode": "NULLABLE",
+        "name": "gap_start_receiver_type",
+        "type": "STRING",
+        "description": "receiver type at start of gap"
+    },
+    {
+        "mode": "NULLABLE",
+        "name": "gap_start_distance_from_shore_m",
+        "type": "FLOAT",
+        "description": "distance from shore (meters) at start of gap (using rasterized distance)"
+    },
+    {
+        "mode": "NULLABLE",
+        "name": "gap_end_timestamp",
+        "type": "TIMESTAMP",
+        "description": "the timestamp of the position at the end of the gap"
+    },
+    {
+        "mode": "NULLABLE",
+        "name": "gap_end_msgid",
+        "type": "STRING",
+        "description": "position message for end of gap"
+    },
+    {
+        "mode": "NULLABLE",
+        "name": "gap_end_lat",
+        "type": "FLOAT",
+        "description": "latitude at end of gap"
+    },
+    {
+        "mode": "NULLABLE",
+        "name": "gap_end_lon",
+        "type": "FLOAT",
+        "description": "longitude at end of gap"
+    },
+    {
+        "mode": "NULLABLE",
+        "name": "gap_end_receiver_type",
+        "type": "STRING",
+        "description": "receiver type at end of gap"
+    },
+    {
+        "mode": "NULLABLE",
+        "name": "gap_end_distance_from_shore_m",
+        "type": "FLOAT",
+        "description": "distance from shore (meters) at end of gap (using rasterized distance)"
+    },
+    {
+        "mode": "NULLABLE",
+        "name": "is_closed",
+        "type": "BOOLEAN",
+        "description": "1 if the gap is closed, 0 if the gap is open"
+    }
+]

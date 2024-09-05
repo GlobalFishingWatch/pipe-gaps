@@ -2,28 +2,31 @@ import logging
 import itertools
 
 from abc import ABC, abstractmethod
-from typing import Type, Iterable
-from dataclasses import dataclass, fields, asdict
+from typing import Type, Iterable, Optional, Any
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass(eq=True, frozen=True)
 class Key(ABC):
-    """Defines a key to order or group elements by processing units."""
-
-    def __str__(self):
-        return str(asdict(self))
+    """Defines a key function to order or group elements by processing units."""
 
     @classmethod
+    def name(cls):
+        return cls.__name__
+
+    @classmethod
+    def format(cls, key):
+        if not isinstance(key, list):
+            key = [key]
+
+        return "({})".format(
+            ', '.join([f'{k}={v}' for k, v in zip(cls.keynames(), key)])
+        )
+
+    @staticmethod
     @abstractmethod
-    def from_dict(cls, item: dict) -> "Key":
-        """Creates an instance from a dictionary."""
-
-    @classmethod
-    def attributes(cls) -> list[str]:
-        """Returns a list with the names of the attributes in the class."""
-        return [x.name for x in fields(cls)]
+    def func():
+        """Returns callable to obtain keys to group by."""
 
 
 class CoreProcess(ABC):
@@ -51,10 +54,10 @@ class CoreProcess(ABC):
         logger.info("Sorting inputs...")
         sorted_messages = sorted(elements, key=self.sorting_key())
 
-        logger.info(f"Grouping inputs by {self.groups_key().attributes()}...")
+        logger.info(f"Grouping inputs by {self.groups_key().name()}...")
         grouped_messages = [
             (k, list(v))
-            for k, v in itertools.groupby(sorted_messages, key=self.groups_key().from_dict)
+            for k, v in itertools.groupby(sorted_messages, key=self.groups_key().func())
         ]
 
         logger.info("Processing groups...")
@@ -66,7 +69,7 @@ class CoreProcess(ABC):
         logger.info("Processing boundaries...")
         boundaries = [self.get_group_boundary(g) for g in grouped_messages]
 
-        grouped_boundaries = itertools.groupby(boundaries, key=self.boundaries_key().from_dict)
+        grouped_boundaries = itertools.groupby(boundaries, key=self.boundaries_key().func())
         for k, v in grouped_boundaries:
             outputs_in_boundaries = self.process_boundaries((k, v), side_inputs=side_inputs)
             outputs.extend(outputs_in_boundaries)
@@ -74,16 +77,18 @@ class CoreProcess(ABC):
         return outputs
 
     @abstractmethod
-    def process_group(self, group: tuple[Key, Iterable[Type]]) -> Iterable[Type]:
+    def process_group(self, group: tuple[Key, Iterable]) -> Iterable:
         """Receives elements inside a group (grouped by groups_key) and process them."""
 
     @abstractmethod
-    def get_group_boundary(self, group: tuple[Key, Iterable[Type]]) -> Type:
+    def get_group_boundary(self, group: tuple[Key, Iterable]) -> Any:
         """Receives elements inside a group (grouped by groups_key)
             and returns the group's boundary elements."""
 
     @abstractmethod
-    def process_boundaries(self, group: tuple[Key, Iterable[Type]]) -> Iterable[Type]:
+    def process_boundaries(
+        self, group: tuple[Key, Iterable], side_inputs: Optional[Iterable]
+    ) -> Iterable:
         """Receives a group of boundary elements (grouped by boundaries_key) and process them."""
 
     @staticmethod

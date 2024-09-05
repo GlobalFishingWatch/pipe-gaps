@@ -196,7 +196,9 @@ def test_closing_gaps(tmp_path, messages, open_gaps, threshold, expected_gaps):
 
     side_input_file = tmp_path.joinpath("open-gaps-test.json")
     json_save(open_gaps, side_input_file, lines=True)
-    side_inputs_config = dict(kind="json", input_file=side_input_file, schema="gaps", lines=True)
+    side_inputs_config = dict(
+        kind="json", input_file=side_input_file, schema="ais_gaps", lines=True)
+
     side_inputs = [side_inputs_config]
 
     core_config = get_core_config()

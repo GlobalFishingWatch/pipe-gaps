@@ -74,6 +74,12 @@ class NaivePipeline(base.Pipeline):
             self._output_path = self.config.work_dir.joinpath(f"{self.name}-{output_prefix}.json")
             json_save(outputs, self._output_path, lines=True)
             logger.info("Output saved in {}".format(self._output_path.resolve()))
+            return
+
+        logger.warning(
+            "Ignoring output of type '{}' not impemented for naive pipeline."
+            .format(config["kind"])
+        )
 
     def _save_stats(self, outputs):
         self._output_path_stats = self.config.work_dir.joinpath(f"{self.name}-stats.csv")

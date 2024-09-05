@@ -1,6 +1,6 @@
 """Module with re-usable subclass implementations."""
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from dataclasses import dataclass
 
 from .base import Key
@@ -9,26 +9,45 @@ from pipe_gaps.queries import Message
 logger = logging.getLogger(__name__)
 
 
-@dataclass(eq=True, frozen=True)
+def ts_to_year(ts):
+    """Extracts year from unix timestamp.
+
+    This is ~2-times faster than datetime.fromtimestamp(ts, tz=timezone.utc).year,
+    but needs further testing/validation.
+    """
+    return int(ts / 60 / 60 / 24 / 365) + 1970
+
+
+def ssvid_and_year_key(item):
+    return (item["ssvid"], datetime.fromtimestamp(item["timestamp"], tz=timezone.utc).year)
+
+
+def ssvid_key(item):
+    return item["ssvid"]
+
+
+def ssvid_and_year_key2(item):
+    return (item["ssvid"], ts_to_year(item["timestamp"]))
+
+
 class SsvidAndYear(Key):
-    ssvid: str
-    year: str
+    @staticmethod
+    def keynames():
+        return ["SSVID", "YEAR"]
 
-    @classmethod
-    def from_dict(cls, item: dict) -> "SsvidAndYear":
-        return cls(
-            ssvid=str(item["ssvid"]),
-            year=str(datetime.fromtimestamp(item["timestamp"]).year)
-        )
+    @staticmethod
+    def func():
+        return ssvid_and_year_key
 
 
-@dataclass(eq=True, frozen=True)
 class Ssvid(Key):
-    ssvid: str
+    @staticmethod
+    def keynames():
+        return ["SSVID"]
 
-    @classmethod
-    def from_dict(cls, item: dict) -> "Ssvid":
-        return cls(ssvid=str(item["ssvid"]))
+    @staticmethod
+    def func():
+        return ssvid_key
 
 
 @dataclass(eq=True, frozen=True)
@@ -44,9 +63,9 @@ class YearBoundary:
 
     @classmethod
     def from_group(cls, element, timestamp_key="timestamp"):
-        key, messages = element
+        (ssvid, year), messages = element
 
         start = min(messages, key=lambda x: x[timestamp_key])
         end = max(messages, key=lambda x: x[timestamp_key])
 
-        return cls(ssvid=key.ssvid, year=key.year, start=start, end=end)
+        return cls(ssvid=ssvid, year=year, start=start, end=end)
