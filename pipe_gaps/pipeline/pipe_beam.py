@@ -110,9 +110,10 @@ class BeamPipeline(base.Pipeline):
         return dict(
             runner="DirectRunner",
             max_num_workers=100,
-            worker_machine_type="e2-highcpu-4",  # 4 cores - 4GB RAM.
+            # machine_type="e2-highcpu-4",  # 4 cores - 4GB RAM.
+            machine_type="e2-standard-2",  # 2 cores - 8GB RAM.
             disk_size_gb=25,
-            no_use_public_ips=True,
+            use_public_ips=False,
             job_name="tom-test-gaps",
             project="world-fishing-827",
             temp_location="gs://pipe-temp-us-central-ttl7/dataflow_temp",

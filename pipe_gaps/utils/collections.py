@@ -1,4 +1,3 @@
-import operator
 import itertools
 from heapq import heapify, _siftup
 
@@ -14,14 +13,11 @@ def pairwise(iterable):
     return zip(a, b)
 
 
-def list_sort(items, method="timsort", key=None):
+def list_sort(items, method="timsort", **kwargs):
     """Sorts a list in-place."""
 
-    def timsort(lst, key=None, **kwargs):
-        if key is not None:
-            key = operator.itemgetter(key)
-
-        lst.sort(key=key, **kwargs)
+    def timsort(lst, **kwargs):
+        lst.sort(**kwargs)
 
     available_methods = {
         "timsort": timsort,
@@ -32,7 +28,7 @@ def list_sort(items, method="timsort", key=None):
     if method not in available_methods:
         raise NotImplementedError(f"Sorting method {method} not implemented.")
 
-    available_methods[method](items, key=key)
+    available_methods[method](items, **kwargs)
 
 
 def heapsort_pd(lst, key=None):

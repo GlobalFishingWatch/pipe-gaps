@@ -14,7 +14,7 @@ __all__ = [  # functions importable directly from package.
 ]
 
 
-def json_load(path: Path, lines: bool = False) -> dict:
+def json_load(path: Path, lines: bool = False, coder=None) -> dict:
     """Opens JSON file.
 
     Args:
@@ -26,8 +26,11 @@ def json_load(path: Path, lines: bool = False) -> dict:
         with open(path) as file:
             return json.load(file)
 
+    if coder is None:
+        coder = dict
+
     with open(path, "r") as file:
-        return [json.loads(each_line) for each_line in file]
+        return [json.loads(each_line, object_hook=lambda d: coder(**d)) for each_line in file]
 
 
 def json_save(data: list, path: Path, indent: int = 4, lines: bool = False) -> dict:

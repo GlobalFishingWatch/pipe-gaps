@@ -4,7 +4,6 @@ from datetime import datetime, timezone
 from dataclasses import dataclass
 
 from .base import Key
-from pipe_gaps.queries import Message
 
 logger = logging.getLogger(__name__)
 
@@ -55,8 +54,8 @@ class YearBoundary:
     """Defines first and last AIS messages for a specific year and ssvid."""
     ssvid: str
     year: str
-    start: Message
-    end: Message
+    start: dict
+    end: dict
 
     def __getitem__(self, key):
         return self.__dict__[key]

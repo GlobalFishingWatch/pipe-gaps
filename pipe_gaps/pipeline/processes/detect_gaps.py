@@ -3,11 +3,9 @@ import operator
 from typing import Type, Iterable, Optional
 
 from pipe_gaps.core import GapDetector
-from pipe_gaps.pipeline.schemas import Gap
-from pipe_gaps.queries.ais_gaps import AISGap
 
 from .base import CoreProcess
-from .common import SsvidAndYear, Message, Ssvid, YearBoundary
+from .common import SsvidAndYear, Ssvid, YearBoundary
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +41,7 @@ class DetectGaps(CoreProcess):
         gd = GapDetector(**config)
         return cls(gd=gd, eval_last=eval_last)
 
-    def process_group(self, group: tuple[tuple[str, int], Iterable[Message]]) -> Iterable[Gap]:
+    def process_group(self, group: tuple[tuple[str, int], Iterable[dict]]) -> Iterable[dict]:
         key, messages = group
 
         gaps = self._gd.detect(messages=messages)
@@ -56,8 +54,8 @@ class DetectGaps(CoreProcess):
     def process_boundaries(
         self,
         group: tuple[str, Iterable[YearBoundary]],
-        side_inputs: Optional[Iterable[AISGap]] = None
-    ) -> Iterable[AISGap]:
+        side_inputs: Optional[Iterable[dict]] = None
+    ) -> Iterable[dict]:
         key, year_boundaries = group
 
         year_boundaries = sorted(year_boundaries, key=operator.attrgetter("year"))
@@ -95,11 +93,11 @@ class DetectGaps(CoreProcess):
         for gap in gaps:
             yield gap
 
-    def get_group_boundary(self, group: tuple[tuple[str, int], Iterable[Message]]) -> YearBoundary:
+    def get_group_boundary(self, group: tuple[tuple[str, int], Iterable[dict]]) -> YearBoundary:
         return YearBoundary.from_group(group, timestamp_key=self._gd.KEY_TIMESTAMP)
 
     def sorting_key(self):
-        return lambda x: (x["ssvid"], x[self._gd.KEY_TIMESTAMP])
+        return lambda x: (x["ssvid"], x["timestamp"])
 
     def _close_open_gap(self, open_gap, year_boundaries):
         off_m = off_message_from_gap(open_gap)
@@ -109,10 +107,6 @@ class DetectGaps(CoreProcess):
         off_m = {k: off_m[k] for k in on_m.keys() if k in off_m}
 
         return self._gd.create_gap(off_m=off_m, on_m=on_m)
-
-    @staticmethod
-    def type():
-        return Gap
 
     @staticmethod
     def groups_key() -> Type[SsvidAndYear]:

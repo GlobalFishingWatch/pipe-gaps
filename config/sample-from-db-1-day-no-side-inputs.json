@@ -1,5 +1,5 @@
 {
-    "pipe_type": "naive",
+    "pipe_type": "beam",
     "pipe_config": {
         "inputs": [
             {
@@ -8,31 +8,27 @@
                 "query_params": {
                     "source_messages": "pipe_ais_v3_published.messages",
                     "source_segments": "pipe_ais_v3_published.segs_activity",
-                    "start_date": "2024-03-01",
-                    "end_date": "2024-04-01",
-                    "ssvids": ["412331104"]
+                    "start_date": "2024-01-01",
+                    "end_date": "2024-01-02"
                 },
                 "mock_db_client": false
             }
         ],
-        "side_inputs": [
-            {
-                "kind": "json",
-                "schema": "ais_gaps",
-                "input_file": "pipe_gaps/data/open_gaps.json",
-                "lines": true
-            }
-        ],
+        "side_inputs": [],
         "core": {
             "kind": "detect_gaps",
-            "threshold": 1,
+            "threshold": 6,
             "show_progress": false,
-            "eval_last": true
+            "eval_last": true,
+            "normalize_output": true
         },
         "outputs": [
             {
-                "kind": "json",
-                "output_prefix": "gaps"
+                "kind": "bigquery",
+                "table": "scratch_tomas_ttl30d.pipe_ais_gaps",
+                "description": "Gaps for AIS position messages.",
+                "schema": "gaps",
+                "write_disposition": "WRITE_TRUNCATE"
             }
         ],
         "options": {

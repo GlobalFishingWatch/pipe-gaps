@@ -26,6 +26,16 @@ class Message(typing.NamedTuple):
     receiver_type: str
     distance_from_shore_m: float
 
+    def __getitem__(self, key):
+        """Implement dict access interface."""
+        return getattr(self, key)
+
+    def items(self):
+        return self._asdict().items()
+
+    def keys(self):
+        return self._asdict().keys()
+
 
 class AISMessagesQuery(Query):
     """Encapsulates a AIS messages query.

@@ -92,13 +92,16 @@ class CoreProcess(ABC):
         """Receives a group of boundary elements (grouped by boundaries_key) and process them."""
 
     @staticmethod
-    def type() -> Type:
+    def output_type():
         """Returns the final output type of the process."""
+        return dict
 
     @staticmethod
+    @abstractmethod
     def groups_key() -> Type[Key]:
         """Returns the key to group by input items."""
 
     @staticmethod
+    @abstractmethod
     def boundaries_key() -> Type[Key]:
         """Returns the key to group boundary elements."""
