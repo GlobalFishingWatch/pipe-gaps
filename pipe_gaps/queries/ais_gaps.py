@@ -26,13 +26,20 @@ class AISGap(typing.NamedTuple):
     gap_start_lon: float
     gap_start_receiver_type: str
     gap_start_distance_from_shore_m: float
-    gap_end: datetime
-    gap_end_msgid: str
-    gap_end_lat: float
-    gap_end_lon: float
-    gap_end_receiver_type: str
-    gap_end_distance_from_shore_m: float
-    is_closed: bool
+    gap_end: datetime = None
+    gap_end_msgid: str = None
+    gap_end_lat: float = None
+    gap_end_lon: float = None
+    gap_end_receiver_type: str = None
+    gap_end_distance_from_shore_m: float = None
+    is_closed: bool = False
+
+    def __getitem__(self, key):
+        """Implement dict access interface."""
+        return getattr(self, key)
+
+    def items(self):
+        return self._asdict().items()
 
 
 class AISGapsQuery(Query):

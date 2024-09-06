@@ -38,7 +38,7 @@ class ReadFromJson(beam.PTransform):
 
         Args:
             input_file: The filepath to read.
-            schema: The schema for the p-collection.
+            schema: The schema for the p-collection type. If None, uses dict.
             lines: If True, interprets JSON file as JSONLines format.
             **kwargs: Extra keyword arguments for beam.io.Create constructor.
 
@@ -52,10 +52,13 @@ class ReadFromJson(beam.PTransform):
         #     | beam.io.ReadFromJson(str(input_file), lines=False, convert_dates=False)
         #     | beam.Map(lambda x: dict(x._asdict())).with_output_types(Message)
         # )
-        transform = beam.Create(json_load(input_file, lines=lines))
 
-        if schema is not None:
-            transform = transform.with_output_types(schemas.get_schema(schema))
+        schema = dict
+        if schema is None:
+            schema = schemas.get_schema(schema)
+
+        transform = beam.Create(json_load(input_file, lines=lines, coder=schema))
+        transform.with_output_types(schema)
 
         return cls(transform)
 
@@ -91,13 +94,14 @@ class ReadFromQuery(beam.PTransform):
     @classmethod
     def build(
         cls,
-        query_name: str, query_params: dict, mock_db_client=False, **kwargs
+        query_name: str, query_params: dict, use_schema=False, mock_db_client=False, **kwargs
     ) -> "ReadFromQuery":
         """Builds a ReadFromQuery instance.
 
         Args:
             query_name: The name of the query.
             query_params: The parameters of the query.
+            use_schema: If true, uses query defined schema as p-collection type. If not, uses dict.
             mock_db_client: If True, uses a mock for the database client.
             **kwargs: Extra keyword arguments for beam.io.ReadFromBigQuery constructor.
 
@@ -112,7 +116,9 @@ class ReadFromQuery(beam.PTransform):
             class_ = ReadFromBigQueryMock
 
         transform = class_(use_standard_sql=True, query=query.render(), **kwargs)
-        transform = transform.with_output_types(query.schema())
+
+        if use_schema:
+            transform = transform.with_output_types(query.schema())
 
         return cls(transform)
 

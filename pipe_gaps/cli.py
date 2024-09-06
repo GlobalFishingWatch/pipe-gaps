@@ -72,10 +72,6 @@ def cli(args):
             "apache_beam.io.filesystem",
             "apache_beam.io.gcp.bigquery_tools",
             "urllib3"
-        ],
-        error_level=[
-            "apache_beam.coders.coder_impl"
-            # to supress warning "Using fallback deterministic coder for type..."
         ]
     )
 

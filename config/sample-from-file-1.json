@@ -4,8 +4,8 @@
         "inputs": [
             {
                 "kind": "json",
-                "schema": "messages",
-                "input_file": "pipe_gaps/data/sample_messages.json"
+                "input_file": "pipe_gaps/data/sample_messages_lines.json",
+                "lines": true
             }
         ],
         "side_inputs": [

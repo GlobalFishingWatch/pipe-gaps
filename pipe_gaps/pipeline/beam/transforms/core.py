@@ -53,12 +53,12 @@ class Core(beam.PTransform):
 
     def join_outputs(self):
         """Returns the JoinOutputs pTransform."""
-        return "JoinOutputs" >> beam.Flatten().with_output_types(self._process.type())
+        return "JoinOutputs" >> beam.Flatten().with_output_types(self._process.output_type())
 
     def _process_boundaries(self):
         side_inputs = None
         if self._side_inputs is not None:
-            side_inputs = beam.pvalue.AsIter(self._side_inputs)
+            side_inputs = beam.pvalue.AsList(self._side_inputs)
 
         return (
             beam.Map(self._process.get_group_boundary)

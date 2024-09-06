@@ -1,6 +1,7 @@
 """This module encapsulates the gap detection core algorithm."""
 import logging
 import hashlib
+import operator
 
 from typing import Union
 from datetime import datetime, timedelta
@@ -112,7 +113,8 @@ class GapDetector:
 
     # @profile  # noqa  # Uncomment to run memory profiler
     def _sort_messages(self, messages):
-        list_sort(messages, key=self.KEY_TIMESTAMP, method=self._sort_method)
+        key = operator.itemgetter(self.KEY_TIMESTAMP)
+        list_sort(messages, key=key, method=self._sort_method)
 
     def _build_progress_bar(self, gaps, total):
         return track(gaps, total=total, description=self.PROGRESS_BAR_DESCRIPTION)
@@ -136,11 +138,10 @@ class GapDetector:
     def _create_gap_normalized(self, off_m, on_m, is_closed=True):
         gap_id = self._generate_gap_id(off_m)
 
-        off_m_copy = off_m.copy()
-        on_m_copy = on_m.copy()
+        ssvid = off_m["ssvid"]
 
-        ssvid = off_m_copy.pop("ssvid")
-        on_m_copy.pop("ssvid")
+        off_m_copy = {k: v for k, v in off_m.items() if k != "ssvid"}
+        on_m_copy = {k: v for k, v in on_m.items() if k != "ssvid"}
 
         gap = dict(gap_id=gap_id, ssvid=ssvid, is_closed=is_closed)
 
