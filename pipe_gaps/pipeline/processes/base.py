@@ -60,6 +60,12 @@ class CoreProcess(ABC):
             for k, v in itertools.groupby(sorted_messages, key=self.groups_key().func())
         ]
 
+        side_inputs_dict = {}
+        if side_inputs is not None:
+            grouped_side_inputs = itertools.groupby(side_inputs, key=self.boundaries_key().func())
+            for k, group in grouped_side_inputs:
+                side_inputs_dict[k] = list(group)
+
         logger.info("Processing groups...")
         outputs = []
         for key, messages in grouped_messages:
@@ -71,7 +77,7 @@ class CoreProcess(ABC):
 
         grouped_boundaries = itertools.groupby(boundaries, key=self.boundaries_key().func())
         for k, v in grouped_boundaries:
-            outputs_in_boundaries = self.process_boundaries((k, v), side_inputs=side_inputs)
+            outputs_in_boundaries = self.process_boundaries((k, v), side_inputs=side_inputs_dict)
             outputs.extend(outputs_in_boundaries)
 
         return outputs

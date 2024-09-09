@@ -9,7 +9,7 @@
                     "source_messages": "pipe_ais_v3_published.messages",
                     "source_segments": "pipe_ais_v3_published.segs_activity",
                     "start_date": "2023-01-01",
-                    "end_date": "2023-12-31",
+                    "end_date": "2024-01-01",
                     "ssvids": [
                         "412331104",
                         "477334300",
