@@ -8,8 +8,8 @@
                 "query_params": {
                     "source_messages": "pipe_ais_v3_published.messages",
                     "source_segments": "pipe_ais_v3_published.segs_activity",
-                    "start_date": "2019-02-01",
-                    "end_date": "2019-03-01"
+                    "start_date": "2019-01-01",
+                    "end_date": "2019-07-01"
                 },
                 "mock_db_client": false
             }
@@ -22,21 +22,13 @@
             "eval_last": true,
             "normalize_output": true
         },
-        "outputs": [
-            {
-                "kind": "bigquery",
-                "table": "scratch_tomas_ttl30d.pipe_ais_gaps",
-                "description": "Gaps for AIS position messages.",
-                "schema": "gaps",
-                "write_disposition": "WRITE_TRUNCATE"
-            }
-        ],
+        "outputs": [],
         "options": {
             "runner": "direct",
             "region": "us-east1",
             "network": "gfw-internal-network",
             "subnetwork": "regions/us-east1/subnetworks/gfw-internal-us-east1",
-            "job_name": "tom-test-gaps-1-month-no-side-inputs"
+            "job_name": "tom-test-gaps-6-months-no-side-inputs"
         }
     }
 }
