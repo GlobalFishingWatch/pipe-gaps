@@ -41,11 +41,11 @@ dockershell:
 
 reqs:
 	docker compose run --entrypoint /bin/bash -it ${DOCKER_IMAGE_DEV} -c \
-		'pip-compile -o ${REQS_PROD_TXT} setup.py -v'
+		'pip-compile -o ${REQS_PROD_TXT} setup.py --extra beam -v'
 
 upgrade-reqs:
 	docker compose run --entrypoint /bin/bash -it ${DOCKER_IMAGE_DEV} -c \
-	'pip-compile -o ${REQS_PROD_TXT} -U setup.py -v'
+	'pip-compile -o ${REQS_PROD_TXT} -U setup.py --extra beam -v'
 
 venv:
 	python3 -m venv ${VENV_NAME}
