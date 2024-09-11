@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------------------
 # BASE
 # ---------------------------------------------------------------------------------------
-FROM python:3.11-slim as base
+FROM python:3.11-slim AS base
 
 # Configure the working directory
 RUN mkdir -p /opt/project
@@ -23,7 +23,7 @@ ENTRYPOINT ["/opt/apache/beam/boot"]
 # ---------------------------------------------------------------------------------------
 # PROD
 # ---------------------------------------------------------------------------------------
-FROM base as prod
+FROM base AS prod
 
 # Install app package
 COPY . /opt/project
@@ -32,7 +32,7 @@ RUN pip install .
 # ---------------------------------------------------------------------------------------
 # DEV
 # ---------------------------------------------------------------------------------------
-FROM base as dev
+FROM base AS dev
 
 COPY ./requirements/dev.txt .
 COPY ./requirements/test.txt .
