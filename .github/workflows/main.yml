@@ -49,9 +49,20 @@ jobs:
         run: |
           make testintegration
 
-      # Remove this step when this is done in tests-in-docker job.
+  tests-in-docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4.1.0
+  
+      - name: Build docker image
+        run: make build
+    
+      - name: Run tests
+        run: make testdocker
+
       - name: Upload coverage reports to Codecov
-        if: ${{ matrix.python-version == '3.11' }}
         uses: codecov/codecov-action@v4.0.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
