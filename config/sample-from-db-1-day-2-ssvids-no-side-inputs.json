@@ -33,7 +33,8 @@
             "runner": "direct",
             "region": "us-east1",
             "network": "gfw-internal-network",
-            "subnetwork": "regions/us-east1/subnetworks/gfw-internal-us-east1"
+            "subnetwork": "regions/us-east1/subnetworks/gfw-internal-us-east1",
+            "job_name": "tom-test-gaps-1-day-2-ssvids-no-side-inputs"
         }
     }
 }

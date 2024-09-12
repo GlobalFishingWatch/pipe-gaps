@@ -82,3 +82,4 @@
 {"ssvid":"412331104","msgid":"f9f19e29-deeb-a928-3944-0b989869d15b","timestamp":1704105940,"receiver_type":"terrestrial","lat":45.4,"lon":80.6,"distance_from_shore_m":1}
 {"ssvid":"412331104","msgid":"73302ebf-dbb9-7364-7941-ebcbf50595fe","timestamp":1704156339,"receiver_type":"terrestrial","lat":45.4,"lon":80.6,"distance_from_shore_m":1}
 {"ssvid":"412331104","msgid":"88a7fa51-e3ab-7784-e8b5-2b097479ae7c","timestamp":1704145357,"receiver_type":"terrestrial","lat":45.4,"lon":80.6,"distance_from_shore_m":1}
+{"ssvid":"345678123","msgid":"88a7fa51-e3ab-7784-e8b5-2b097479ae7c","timestamp":1704145357,"receiver_type":"terrestrial","lat":45.4,"lon":80.6,"distance_from_shore_m":1}

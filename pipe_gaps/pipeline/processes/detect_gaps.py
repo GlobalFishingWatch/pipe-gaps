@@ -54,13 +54,12 @@ class DetectGaps(CoreProcess):
     def process_boundaries(
         self,
         group: tuple[str, Iterable[YearBoundary]],
-        side_inputs: Optional[Iterable[dict]] = None
+        side_inputs: Optional[dict[str, Iterable]] = None
     ) -> Iterable[dict]:
         key, year_boundaries = group
 
         year_boundaries = sorted(year_boundaries, key=operator.attrgetter("year"))
         consecutive_years = list(zip(year_boundaries[:-1], year_boundaries[1:]))
-
         boundaries_messages = [[left.end, right.start] for left, right in consecutive_years]
 
         formatted_key = self.boundaries_key().format(key)
@@ -69,29 +68,35 @@ class DetectGaps(CoreProcess):
         for messages_pair in boundaries_messages:
             gaps.extend(self._gd.detect(messages_pair))
 
-        logger.info(f"Found {len(gaps)} gaps analyzing year boundaries for {formatted_key}...")
+        logger.info(f"Found {len(gaps)} gaps analyzing boundaries for {formatted_key}...")
+        for g in gaps:
+            yield g
 
         if self._eval_last:
             last_m = max(year_boundaries, key=operator.attrgetter("year")).end
             new_open_gap = self._gd.eval_open_gap(last_m)
 
             if new_open_gap is not None:
-                logger.info(f"Creating 1 open gap for {formatted_key}...")
-                gaps.append(new_open_gap)
+                logger.info(f"Creating 1 new open gap for {formatted_key}...")
+                yield new_open_gap
 
-        if side_inputs is None:
-            side_inputs = []
+        side_inputs_list = []
+        if side_inputs is not None:
+            try:
+                side_inputs_list = list(side_inputs[key])
+            except KeyError:
+                # A key was not found for this group.
+                pass
 
-        for open_gap in side_inputs:
-            if not key == open_gap["ssvid"]:
-                continue
+        if len(side_inputs_list) > 0:
+            open_gap = side_inputs_list[0]
 
-            logger.info(f"Closing 1 open gap found for {formatted_key}")
-            gaps.append(self._close_open_gap(open_gap, year_boundaries))
-            break
+            if not isinstance(open_gap, dict):
+                # beam.MultiMap encapsulates value in an iterable of iterables (wtf?).
+                open_gap = [x for x in open_gap][0]
 
-        for gap in gaps:
-            yield gap
+            logger.info(f"Closing 1 existing open gap found for {formatted_key}")
+            yield self._close_open_gap(open_gap, year_boundaries)
 
     def get_group_boundary(self, group: tuple[tuple[str, int], Iterable[dict]]) -> YearBoundary:
         return YearBoundary.from_group(group, timestamp_key=self._gd.KEY_TIMESTAMP)

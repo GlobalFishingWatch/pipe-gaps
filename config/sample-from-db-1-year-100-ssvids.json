@@ -9,7 +9,7 @@
                     "source_messages": "pipe_ais_v3_published.messages",
                     "source_segments": "pipe_ais_v3_published.segs_activity",
                     "start_date": "2023-01-01",
-                    "end_date": "2023-12-31",
+                    "end_date": "2024-01-01",
                     "ssvids": [
                         "412331104",
                         "477334300",
@@ -147,7 +147,9 @@
             "runner": "direct",
             "region": "us-east1",
             "network": "gfw-internal-network",
-            "subnetwork": "regions/us-east1/subnetworks/gfw-internal-us-east1"
+            "subnetwork": "regions/us-east1/subnetworks/gfw-internal-us-east1",
+            "job_name": "tom-test-gaps-1-year-100-ssvids"
+
         }
     }
 }

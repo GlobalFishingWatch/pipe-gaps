@@ -1,7 +1,7 @@
 import pytest
 
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from pipe_gaps.data import get_sample_messages
 from pipe_gaps import utils
 
@@ -29,7 +29,7 @@ def create_message(ssvid: str, time: datetime, lat: float = 65.4, lon: Optional[
     return {
         "ssvid": ssvid,
         "msgid": "295fa26f-cee9-1d86-8d28-d5ed96c32835",
-        "timestamp": time.timestamp(),
+        "timestamp": time.astimezone(timezone.utc).timestamp(),
         "receiver_type": "terrestrial",
         "lat": lat,
         "lon": lon,
@@ -50,7 +50,7 @@ class TestCases:
         },
         {
             "messages": [
-                create_message(ssvid="226013750", time=datetime(2023, 12, 31, 23)),
+                create_message(ssvid="226013750", time=datetime(2023, 12, 1, 1)),
                 create_message(ssvid="226013750", time=datetime(2024, 1, 1, 1)),
             ],
             "threshold": 1,
@@ -59,23 +59,23 @@ class TestCases:
         },
         {
             "messages": [
-                create_message(ssvid="226013750", time=datetime(2023, 12, 31, 23)),
+                create_message(ssvid="226013750", time=datetime(2023, 12, 31, 1)),
                 create_message(ssvid="226013750", time=datetime(2024, 1, 1, 1)),
                 create_message(ssvid="226013750", time=datetime(2024, 1, 1, 3)),
             ],
-            "threshold": 2,
+            "threshold": 24,
             "expected_gaps": 0,
             "id": "same_ssvid_zero_gaps"
         },
         {
             "messages": [
-                create_message(ssvid="226013750", time=datetime(2023, 12, 31, 23)),
+                create_message(ssvid="226013750", time=datetime(2023, 12, 31, 12)),
                 create_message(ssvid="226013750", time=datetime(2024, 1, 1, 1)),
-                create_message(ssvid="226013750", time=datetime(2024, 1, 1, 3)),
-                create_message(ssvid="446013750", time=datetime(2023, 12, 31, 23)),
+                create_message(ssvid="226013750", time=datetime(2024, 1, 1, 15)),
+                create_message(ssvid="446013750", time=datetime(2023, 12, 31, 12)),
                 create_message(ssvid="446013750", time=datetime(2024, 1, 1, 1)),
             ],
-            "threshold": 1,
+            "threshold": 12,
             "expected_gaps": 3,
             "id": "different_ssvid_three_gaps"
         }
