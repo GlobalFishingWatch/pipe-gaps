@@ -46,10 +46,7 @@ class BeamPipeline(base.Pipeline):
         self._side_inputs = side_inputs
         self._output_path = self._resolve_output_path()
 
-        beam_options = self.default_options()
-        beam_options.update(**options)
-
-        self._options = PipelineOptions(flags=[], **beam_options)
+        self._options = PipelineOptions(flags=[], **self._resolve_beam_options(options))
 
     def run(self):
         with beam.Pipeline(options=self._options) as p:
@@ -105,6 +102,15 @@ class BeamPipeline(base.Pipeline):
 
         return path
 
+    def _resolve_beam_options(self, options):
+        beam_options = self.default_options()
+        beam_options.update(**options)
+
+        if "sdk_container_image" not in beam_options:
+            beam_options["setup_file"] = "./setup.py"
+
+        return beam_options
+
     @staticmethod
     def default_options():
         return dict(
@@ -119,7 +125,5 @@ class BeamPipeline(base.Pipeline):
             staging_location="gs://pipe-temp-us-central-ttl7/dataflow_staging",
             region="us-central1",
             network="gfw-internal-network",
-            subnetwork="regions/us-central1/subnetworks/gfw-internal-us-central1",
-            # experiments=["use_runner_v2"],
-            setup_file="./setup.py",
+            subnetwork="regions/us-central1/subnetworks/gfw-internal-us-central1"
         )
