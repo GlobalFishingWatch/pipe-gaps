@@ -70,7 +70,10 @@
             "region": "us-east1",
             "network": "gfw-internal-network",
             "subnetwork": "regions/us-east1/subnetworks/gfw-internal-us-east1",
-            "job_name": "tom-test-gaps-1-month-30-ssvids"
+            "max_num_workers": 100,
+            "machine_type": "e2-standard-2",
+            "job_name": "tom-test-gaps-1-month-30-ssvids-docker-image",
+            "sdk_container_image": "gcr.io/world-fishing-827/github.com/globalfishingwatch/pipe-gaps:v0.1.0-PIPELINE-2096-gaps-dockerize-pipeline"
         }
     }
 }
