@@ -1,0 +1,48 @@
+{
+    "pipe_type": "beam",
+    "pipe_config": {
+        "inputs": [
+            {
+                "kind": "query",
+                "query_name": "messages",
+                "query_params": {
+                    "source_messages": "pipe_ais_v3_published.messages",
+                    "source_segments": "pipe_ais_v3_published.segs_activity",
+                    "start_date": "2021-01-01",
+                    "end_date": "2024-01-01",
+                    "filter_overlapping_and_short": true
+                },
+                "mock_db_client": false,
+                "method": "DIRECT_READ"
+            }
+        ],
+        "side_inputs": [],
+        "core": {
+            "kind": "detect_gaps",
+            "threshold": 6,
+            "show_progress": false,
+            "eval_last": true,
+            "normalize_output": true
+
+        },
+        "outputs": [
+            {
+                "kind": "bigquery",
+                "table": "scratch_tomas_ttl30d.pipe_ais_gaps_filter_overlapping_and_short",
+                "description": "Gaps for AIS position messages.",
+                "schema": "gaps",
+                "write_disposition": "WRITE_TRUNCATE"
+            }
+        ],
+        "options": {
+            "runner": "dataflow",
+            "region": "us-east1",
+            "network": "gfw-internal-network",
+            "subnetwork": "regions/us-east1/subnetworks/gfw-internal-us-east1",
+            "max_num_workers": 200,
+            "machine_type": "e2-standard-2",
+            "job_name": "tom-test-gaps-3-years-filter-overlapping-and-short",
+            "sdk_container_image": "gcr.io/world-fishing-827/github.com/globalfishingwatch/pipe-gaps:v0.1.0-PIPELINE-2219-gaps-make-overlapping-and-short-filter-configurable"
+        }
+    }
+}

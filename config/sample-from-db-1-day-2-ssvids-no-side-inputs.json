@@ -10,7 +10,8 @@
                     "source_segments": "pipe_ais_v3_published.segs_activity",
                     "start_date": "2024-01-01",
                     "end_date": "2024-01-02",
-                    "ssvids": ["412331104", "477334300"]
+                    "ssvids": ["412331104", "477334300"],
+                    "filter_overlapping_and_short": false
                 },
                 "mock_db_client": false
             }

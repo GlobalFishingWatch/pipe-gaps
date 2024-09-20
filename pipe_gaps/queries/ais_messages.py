@@ -63,8 +63,8 @@ class AISMessagesQuery(Query):
           FROM
             `{source_segments}`
           WHERE
-            good_seg
-            and not overlapping_and_short)
+            good_seg {overlapping_and_short}
+        )
     """
 
     def __init__(
@@ -74,20 +74,27 @@ class AISMessagesQuery(Query):
         source_messages: str = DB_TABLE_MESSAGES,
         source_segments: str = DB_TABLE_SEGMENTS,
         ssvids: list = None,
+        filter_overlapping_and_short: bool = False
     ):
         self._start_date = start_date
         self._end_date = end_date
         self._source_messages = source_messages
         self._source_segments = source_segments
         self._ssvids = ssvids
+        self._filter_overlapping_and_short = filter_overlapping_and_short
 
     def render(self):
+        overlapping_and_short = ""
+        if self._filter_overlapping_and_short:
+            overlapping_and_short = "and not overlapping_and_short"
+
         query = self.TEMPLATE.format(
             source_messages=self._source_messages,
             source_segments=self._source_segments,
             start_date=self._start_date,
             end_date=self._end_date,
-            fields=self._select_clause()
+            fields=self._select_clause(),
+            overlapping_and_short=overlapping_and_short
         )
 
         if self._ssvids is not None:
