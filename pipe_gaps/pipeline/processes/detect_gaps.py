@@ -44,7 +44,7 @@ class DetectGaps(CoreProcess):
     def process_group(self, group: tuple[tuple[str, int], Iterable[dict]]) -> Iterable[dict]:
         key, messages = group
 
-        gaps = self._gd.detect(messages=messages)
+        gaps = self._gd.detect(messages=list(messages))
 
         logger.info("Found {} gaps for {}".format(len(gaps), self.groups_key().format(key)))
 
