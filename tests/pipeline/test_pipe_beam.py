@@ -221,6 +221,40 @@ def test_closing_gaps(tmp_path, messages, open_gaps, threshold, expected_gaps):
             assert gap["ON"]["msgid"] is not None
 
 
+@pytest.mark.parametrize(
+    "messages, threshold, expected_gaps",
+    [
+        pytest.param(
+            case["messages"],
+            case["threshold"],
+            case["expected_gaps"],
+            id=case["id"]
+        )
+        for case in TestCases.NO_GAPS_DUPLICATION
+    ],
+)
+def test_no_duplicated_gaps(tmp_path, messages, threshold, expected_gaps):
+    # Checks the output does not contain duplicated gaps.
+
+    input_file = tmp_path.joinpath("messages-test.json")
+    json_save(messages, input_file)
+    inputs = [get_input_file_config(input_file, schema="messages")]
+
+    core_config = get_core_config()
+    core_config["threshold"] = threshold
+
+    pipe = BeamPipeline.build(
+        inputs=inputs,
+        work_dir=tmp_path,
+        core=core_config,
+        outputs=[get_outputs_config()]
+    )
+    pipe.run()
+
+    gaps = json_load(pipe.output_path, lines=True)
+    assert len(gaps) == expected_gaps
+
+
 def test_verbose(tmp_path, input_file):
     import logging
     pipe_beam.logger.setLevel(logging.DEBUG)

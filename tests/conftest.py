@@ -136,3 +136,17 @@ class TestCases:
             "id": "two_ssvid_one_closed_gap"
         },
     ]
+
+    NO_GAPS_DUPLICATION = [
+        {
+            "messages": [
+                create_message(ssvid="446013750", time=datetime(2024, 1, 1, 1)),
+                create_message(ssvid="446013750", time=datetime(2024, 1, 1, 1)),
+                create_message(ssvid="446013750", time=datetime(2024, 1, 1, 5)),
+
+            ],
+            "threshold": 1,
+            "expected_gaps": 1,
+            "id": "input_message_with_same_ssvid_and_timestamp"
+        }
+    ]
