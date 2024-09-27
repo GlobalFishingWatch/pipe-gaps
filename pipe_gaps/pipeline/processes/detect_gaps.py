@@ -18,7 +18,6 @@ def off_message_from_gap(gap: dict):
         for k, v in gap.items()
         if to_remove in k
     }
-    off_message["timestamp"] = gap["gap_start"]
     off_message["ssvid"] = gap["ssvid"]
 
     return off_message
@@ -96,6 +95,8 @@ class DetectGaps(CoreProcess):
                 open_gap = [x for x in open_gap][0]
 
             logger.info(f"Closing 1 existing open gap found for {formatted_key}")
+            logger.info("gap_id={}".format(open_gap["gap_id"]))
+
             yield self._close_open_gap(open_gap, year_boundaries)
 
     def get_group_boundary(self, group: tuple[tuple[str, int], Iterable[dict]]) -> YearBoundary:
@@ -111,7 +112,7 @@ class DetectGaps(CoreProcess):
         # Re-order off-message using on-message keys.
         off_m = {k: off_m[k] for k in on_m.keys() if k in off_m}
 
-        return self._gd.create_gap(off_m=off_m, on_m=on_m)
+        return self._gd.create_gap(off_m=off_m, on_m=on_m, gap_id=open_gap["gap_id"])
 
     @staticmethod
     def groups_key() -> Type[SsvidAndYear]:

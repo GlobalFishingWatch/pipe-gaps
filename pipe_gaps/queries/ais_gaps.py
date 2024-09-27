@@ -20,13 +20,13 @@ class AISGap(typing.NamedTuple):
 
     ssvid: str
     gap_id: str
-    gap_start: datetime
+    gap_start_timestamp: datetime
     gap_start_msgid: str
     gap_start_lat: float
     gap_start_lon: float
     gap_start_receiver_type: str
     gap_start_distance_from_shore_m: float
-    gap_end: datetime = None
+    gap_end_timestamp: datetime = None
     gap_end_msgid: str = None
     gap_end_lat: float = None
     gap_end_lon: float = None
@@ -61,7 +61,7 @@ class AISGapsQuery(Query):
         {fields}
       FROM `{source_gaps}`
       WHERE
-          DATE(gap_start) >= "{start_date}"
+          DATE(gap_start_timestamp) >= "{start_date}"
     """
 
     def __init__(
@@ -88,7 +88,7 @@ class AISGapsQuery(Query):
             query = f"{query} AND ssvid IN ({ssvid_filter})"
 
         if self._end_date is not None:
-            query = f"{query} AND AND DATE(gap_end) <= '{self._end_date}'"
+            query = f"{query} AND AND DATE(gap_end) < '{self._end_date}'"
         else:
             query = f"{query} AND is_closed = False"
 

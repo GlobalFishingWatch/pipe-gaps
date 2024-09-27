@@ -28,6 +28,13 @@
             {
                 "kind": "json",
                 "output_prefix": "gaps"
+            },
+            {
+                "kind": "bigquery",
+                "table": "scratch_tomas_ttl30d.pipe_ais_gaps_with_version",
+                "description": "Gaps for AIS position messages.",
+                "schema": "gaps",
+                "write_disposition": "WRITE_TRUNCATE"
             }
         ],
         "options": {
@@ -35,7 +42,7 @@
             "region": "us-east1",
             "network": "gfw-internal-network",
             "subnetwork": "regions/us-east1/subnetworks/gfw-internal-us-east1",
-            "job_name": "tom-test-gaps-1-day-2-ssvids-no-side-inputs"
+            "job_name": "tom-test-gaps-1-day-2-ssvids-with-gap-version"
         }
     }
 }

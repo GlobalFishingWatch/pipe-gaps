@@ -56,7 +56,7 @@ class AISMessagesQuery(Query):
       FROM
         `{source_messages}`
       WHERE
-        (DATE(timestamp) >= "{start_date}" AND DATE(timestamp) <= "{end_date}")
+        (DATE(timestamp) >= "{start_date}" AND DATE(timestamp) < "{end_date}")
         AND seg_id IN (
           SELECT
             seg_id

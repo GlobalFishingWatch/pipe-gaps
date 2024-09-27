@@ -58,11 +58,11 @@ unauthorized transshipments [[1]](#1)[[2]](#2).
 We define an **AIS** gap event when the period of time between
 consecutive known good **AIS** positions from a single vessel,
 after de-noise and de-spoofing),
-exceeds a configured `gap_threshold` (typically 12 hours).
+exceeds a configured `threshold` (typically 12 hours).
 
 When the period of time between **last** known good position
-and the present time exceeds the `gap_threshold`,
-we call it an **opened** gap event.
+and the present time exceeds the `threshold`,
+we call it an **open** gap event.
 
 ## Usage
 
@@ -176,6 +176,9 @@ pipe = pipeline.create(pipe_type="naive", **pipe_config)
 pipe.run()
 ```
 
+> **Warning**  
+> Date ranges are inclusive for the start date and exclusive for the end date.
+
 
 ### Using from CLI:
 
@@ -215,6 +218,30 @@ This will run by default with DirectRunner.
 To run on DataFlow, add `--runner dataflow` option.
 
 Beam integrated pipeline will parallelize grouping inputs by SSVID and year.
+
+### Handle of open gaps
+
+When an open gap is closed,
+a new gap event is created. 
+Two gap events will exist with the same `gap_id`,
+one will be an old open gap, and the other one will be the current closed active gap.
+
+To query all active gaps,
+you will just need to query the last versions for every `gap_id`.
+For example:
+```sql
+SELECT *
+    FROM (
+      SELECT
+          *,
+          MAX(gap_version)
+              OVER (PARTITION BY gap_id)
+              AS last_version,
+      FROM `world-fishing-827.scratch_tomas_ttl30d.pipe_ais_gaps_filter_no_overlapping_and_short`
+    )
+    WHERE gap_version = last_version
+```
+
 
 
 ## References

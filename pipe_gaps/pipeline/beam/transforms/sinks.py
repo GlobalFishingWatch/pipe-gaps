@@ -103,13 +103,21 @@ class WriteBigQueryTable(beam.PTransform):
         self._transform = transform
 
     @classmethod
-    def build(cls, schema: str = None, description: str = None, mock_db_client=False, **kwargs):
+    def build(
+        cls,
+        schema: str = None,
+        description: str = None,
+        mock_db_client=False,
+        write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+        **kwargs
+    ):
         """Builds a WriteBigQueryTable instance.
 
         Args:
             schema: name of the schema for the output table.
             description: description for the output table.
             mock_db_client: If True, uses a mock for the database client.
+            write_disposition: whether to overwrite table or just append.
             **kwargs: keyword arguments for beam.io.WriteToBigQuery constructor.
 
         Returns:
@@ -127,6 +135,7 @@ class WriteBigQueryTable(beam.PTransform):
             schema=schema,
             additional_bq_parameters=cls._build_bq_params(description),
             create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED,
+            write_disposition=write_disposition,
             validate=True,
             **kwargs
         )
