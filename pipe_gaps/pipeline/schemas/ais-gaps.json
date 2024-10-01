@@ -1,24 +1,30 @@
 [
     {
-        "mode": "NULLABLE",
+        "mode": "REQUIRED",
         "name": "ssvid",
         "type": "STRING",
         "description": "ssvid"
     },
     {
-        "mode": "NULLABLE",
+        "mode": "REQUIRED",
         "name": "gap_id",
         "type": "STRING",
         "description": "gap id (has of ssvid, gap_start, gap_start_lat, and gap_start_lon)"
     },
     {
-        "mode": "NULLABLE",
+        "mode": "REQUIRED",
+        "name": "gap_version",
+        "type": "TIMESTAMP",
+        "description": "The time in which the gap was created."
+    },
+    {
+        "mode": "REQUIRED",
         "name": "gap_start_timestamp",
         "type": "TIMESTAMP",
         "description": "the timestamp of the position at the beginning of the gap"
     },
     {
-        "mode": "NULLABLE",
+        "mode": "REQUIRED",
         "name": "gap_start_msgid",
         "type": "STRING",
         "description": "message ID for last position message before for start of gap"
@@ -84,7 +90,7 @@
         "description": "distance from shore (meters) at end of gap (using rasterized distance)"
     },
     {
-        "mode": "NULLABLE",
+        "mode": "REQUIRED",
         "name": "is_closed",
         "type": "BOOLEAN",
         "description": "1 if the gap is closed, 0 if the gap is open"

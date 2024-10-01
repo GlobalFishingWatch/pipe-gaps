@@ -4,7 +4,7 @@ import hashlib
 import operator
 
 from typing import Union
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from rich.progress import track
 
 from pipe_gaps.utils import pairwise, list_sort
@@ -47,6 +47,7 @@ class GapDetector:
         self._sort_method = sort_method
         self._normalize_output = normalize_output
 
+        self._creation_time = int(datetime.now(tz=timezone.utc).timestamp())
         self.create_gap = self._create_gap_factory()
 
     @classmethod
@@ -102,7 +103,7 @@ class GapDetector:
 
         next_test_message = {
             self.KEY_TIMESTAMP: next_m_datetime.timestamp(),
-            "distance_from_shore_m": 1,
+            self.KEY_DISTANCE_FROM_SHORE: 1,
         }
 
         if self._filter_condition(message, next_test_message):
@@ -135,15 +136,17 @@ class GapDetector:
 
         return self._create_gap_unnormalized
 
-    def _create_gap_normalized(self, off_m, on_m, is_closed=True):
-        gap_id = self._generate_gap_id(off_m)
+    def _create_gap_normalized(self, off_m, on_m, gap_id=None, is_closed=True):
+        if gap_id is None:
+            gap_id = self._generate_gap_id(off_m)
 
         ssvid = off_m["ssvid"]
 
         off_m_copy = {k: v for k, v in off_m.items() if k != "ssvid"}
         on_m_copy = {k: v for k, v in on_m.items() if k != "ssvid"}
 
-        gap = dict(gap_id=gap_id, ssvid=ssvid, is_closed=is_closed)
+        gap = dict(
+            gap_id=gap_id, gap_version=self._creation_time, ssvid=ssvid, is_closed=is_closed)
 
         def _msg_fields(msg_type, msg):
             return {f"gap_{msg_type}_{k}": v for k, v in msg.items()}
@@ -154,9 +157,18 @@ class GapDetector:
             **_msg_fields("end", on_m_copy)
         }
 
-    def _create_gap_unnormalized(self, off_m, on_m, is_closed=True):
-        gap_id = self._generate_gap_id(off_m)
-        return dict(gap_id=gap_id, ssvid=off_m["ssvid"], is_closed=is_closed, OFF=off_m, ON=on_m)
+    def _create_gap_unnormalized(self, off_m, on_m, gap_id=None, is_closed=True):
+        if gap_id is None:
+            gap_id = self._generate_gap_id(off_m)
+
+        return dict(
+            gap_id=gap_id,
+            gap_version=self._creation_time,
+            ssvid=off_m["ssvid"],
+            is_closed=is_closed,
+            OFF=off_m,
+            ON=on_m
+        )
 
     def _generate_gap_id(self, message):
         s = "{}|{}|{}|{}".format(
