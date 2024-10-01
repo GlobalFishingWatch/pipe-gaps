@@ -1,11 +1,10 @@
 import logging
-import operator
 from typing import Type, Iterable, Optional
 
 from pipe_gaps.core import GapDetector
 
 from .base import CoreProcess
-from .common import SsvidAndYear, Ssvid, YearBoundary
+from .common import SsvidAndYear, Ssvid, Boundary, Boundaries
 
 logger = logging.getLogger(__name__)
 
@@ -52,19 +51,17 @@ class DetectGaps(CoreProcess):
 
     def process_boundaries(
         self,
-        group: tuple[str, Iterable[YearBoundary]],
+        group: tuple[str, Iterable[Boundary]],
         side_inputs: Optional[dict[str, Iterable]] = None
     ) -> Iterable[dict]:
-        key, year_boundaries = group
+        key, boundaries_it = group
 
-        year_boundaries = sorted(year_boundaries, key=operator.attrgetter("year"))
-        consecutive_years = list(zip(year_boundaries[:-1], year_boundaries[1:]))
-        boundaries_messages = [[left.end, right.start] for left, right in consecutive_years]
+        boundaries = Boundaries(boundaries_it)
 
         formatted_key = self.boundaries_key().format(key)
 
         gaps = []
-        for messages_pair in boundaries_messages:
+        for messages_pair in boundaries.messages():
             gaps.extend(self._gd.detect(messages_pair))
 
         logger.info(f"Found {len(gaps)} gaps analyzing boundaries for {formatted_key}...")
@@ -72,8 +69,7 @@ class DetectGaps(CoreProcess):
             yield g
 
         if self._eval_last:
-            last_m = max(year_boundaries, key=operator.attrgetter("year")).end
-            new_open_gap = self._gd.eval_open_gap(last_m)
+            new_open_gap = self._gd.eval_open_gap(boundaries.last_message())
 
             if new_open_gap is not None:
                 logger.info(f"Creating 1 new open gap for {formatted_key}...")
@@ -97,17 +93,17 @@ class DetectGaps(CoreProcess):
             logger.info(f"Closing 1 existing open gap found for {formatted_key}")
             logger.info("gap_id={}".format(open_gap["gap_id"]))
 
-            yield self._close_open_gap(open_gap, year_boundaries)
+            yield self._close_open_gap(open_gap, boundaries)
 
-    def get_group_boundary(self, group: tuple[tuple[str, int], Iterable[dict]]) -> YearBoundary:
-        return YearBoundary.from_group(group, timestamp_key=self._gd.KEY_TIMESTAMP)
+    def get_group_boundary(self, group: tuple[tuple[str, int], Iterable[dict]]) -> Boundary:
+        return Boundary.from_group(group, timestamp_key=self._gd.KEY_TIMESTAMP)
 
     def sorting_key(self):
         return lambda x: (x["ssvid"], x["timestamp"])
 
-    def _close_open_gap(self, open_gap, year_boundaries):
+    def _close_open_gap(self, open_gap, boundaries):
         off_m = off_message_from_gap(open_gap)
-        on_m = min(year_boundaries, key=operator.attrgetter("year")).start
+        on_m = boundaries.first_message()
 
         # Re-order off-message using on-message keys.
         off_m = {k: off_m[k] for k in on_m.keys() if k in off_m}

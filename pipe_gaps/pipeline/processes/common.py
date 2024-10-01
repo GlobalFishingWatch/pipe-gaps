@@ -1,5 +1,7 @@
 """Module with re-usable subclass implementations."""
 import logging
+import operator
+
 from datetime import datetime, timezone
 from dataclasses import dataclass
 
@@ -49,11 +51,29 @@ class Ssvid(Key):
         return ssvid_key
 
 
+class Boundaries:
+    """Container for Boundary objects."""
+    def __init__(self, boundaries):
+        self._boundaries = sorted(boundaries, key=operator.attrgetter("time_interval"))
+
+    def messages(self):
+        boundaries_pairs = list(zip(self._boundaries[:-1], self._boundaries[1:]))
+        messages_pairs = [[left.end, right.start] for left, right in boundaries_pairs]
+
+        return messages_pairs
+
+    def last_message(self):
+        return max(self._boundaries, key=operator.attrgetter("time_interval")).end
+
+    def first_message(self):
+        return min(self._boundaries, key=operator.attrgetter("time_interval")).start
+
+
 @dataclass(eq=True, frozen=True)
-class YearBoundary:
-    """Defines first and last AIS messages for a specific year and ssvid."""
+class Boundary:
+    """Encapsulates first and last AIS position messages for a specific ssvid and time interval."""
     ssvid: str
-    year: str
+    time_interval: str
     start: dict
     end: dict
 
@@ -61,10 +81,10 @@ class YearBoundary:
         return self.__dict__[key]
 
     @classmethod
-    def from_group(cls, element, timestamp_key="timestamp"):
-        (ssvid, year), messages = element
+    def from_group(cls, group, timestamp_key="timestamp"):
+        (ssvid, time_interval), messages = group
 
         start = min(messages, key=lambda x: x[timestamp_key])
         end = max(messages, key=lambda x: x[timestamp_key])
 
-        return cls(ssvid=ssvid, year=year, start=start, end=end)
+        return cls(ssvid=ssvid, time_interval=time_interval, start=start, end=end)

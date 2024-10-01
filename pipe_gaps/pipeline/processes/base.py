@@ -29,6 +29,10 @@ class Key(ABC):
         """Returns callable to obtain keys to group by."""
 
 
+class Boundary(ABC):
+    """Boundary base class."""
+
+
 class CoreProcess(ABC):
     """Base class to define the core step of the pipeline.
 
