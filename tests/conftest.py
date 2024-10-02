@@ -161,6 +161,6 @@ class TestCases:
             ],
             "threshold": 6,
             "expected_gaps": 2,
-            "id": "one_ssvid_three_gaps"
+            "id": "one_ssvid_two_gaps"
         }
     ]

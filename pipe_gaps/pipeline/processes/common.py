@@ -20,13 +20,13 @@ def ts_to_year(ts):
 
 
 def ssvid_and_year_key(item):
-    return (item["ssvid"], datetime.fromtimestamp(item["timestamp"], tz=timezone.utc).year)
+    return (item["ssvid"], datetime.utcfromtimestamp(item["timestamp"]).year)
 
 
 def ssvid_and_day_key(item):
     return (
         item["ssvid"],
-        datetime.fromtimestamp(item["timestamp"], tz=timezone.utc).date().isoformat())
+        datetime.utcfromtimestamp(item["timestamp"]).date().isoformat())
 
 
 def ssvid_key(item):

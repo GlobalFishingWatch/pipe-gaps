@@ -9,7 +9,7 @@
                     "source_messages": "scratch_tomas_ttl30d.messages",
                     "source_segments": "pipe_ais_v3_published.segs_activity",
                     "start_date": "2024-01-01",
-                    "end_date": "2024-01-02"
+                    "end_date": "2024-01-03"
                 },
                 "mock_db_client": false
             }
@@ -23,7 +23,7 @@
             "threshold": 6,
             "show_progress": false,
             "normalize_output": true,
-            "filter_range": ["2024-01-01", "2024-01-02"]
+            "filter_range": ["2024-01-02", "2024-01-03"]
         },
         "outputs": [
             {
