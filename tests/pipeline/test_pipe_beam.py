@@ -143,6 +143,44 @@ def test_gap_between_years(tmp_path, messages, threshold, expected_gaps):
             case["expected_gaps"],
             id=case["id"]
         )
+        for case in TestCases.GAP_BETWEEN_DAYS
+    ],
+)
+def test_gap_between_days(tmp_path, messages, threshold, expected_gaps):
+    # Checks that a gap between days is properly detected.
+
+    input_file = tmp_path.joinpath("test.json")
+    json_save(messages, input_file)
+
+    core_config = get_core_config()
+    core_config["threshold"] = threshold
+    core_config["groups_key"] = "ssvid_day"
+    core_config["filter_range"] = ("2024-01-02", "2024-01-03")
+
+    inputs = [get_input_file_config(input_file, schema="messages")]
+    outputs_config = [get_outputs_config()]
+
+    pipe = BeamPipeline.build(
+        inputs=inputs,
+        work_dir=tmp_path,
+        core=core_config,
+        outputs=outputs_config
+    )
+    pipe.run()
+
+    gaps = json_load(pipe.output_path, lines=True)
+    assert len(gaps) == expected_gaps
+
+
+@pytest.mark.parametrize(
+    "messages, threshold, expected_gaps",
+    [
+        pytest.param(
+            case["messages"],
+            case["threshold"],
+            case["expected_gaps"],
+            id=case["id"]
+        )
         for case in TestCases.OPEN_GAPS
     ],
 )

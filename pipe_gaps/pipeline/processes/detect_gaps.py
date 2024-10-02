@@ -1,10 +1,11 @@
 import logging
+from datetime import date
 from typing import Type, Iterable, Optional
 
 from pipe_gaps.core import GapDetector
 
-from .base import CoreProcess
-from .common import SsvidAndYear, Ssvid, Boundary, Boundaries
+from .base import CoreProcess, Key
+from .common import Boundary, Boundaries, key_factory
 
 logger = logging.getLogger(__name__)
 
@@ -27,17 +28,37 @@ class DetectGaps(CoreProcess):
 
     Args:
         gd: core gap detector.
+        gk: groups Key object. Used to group input messages.
+        bk: boundaries Key object. Used to group boundaries.
         eval_last: If True, evaluates last message of each vessel to create an open gap.
     """
 
-    def __init__(self, gd: GapDetector, eval_last: bool = False):
+    def __init__(
+        self,
+        gd: GapDetector, gk: Key, bk: Key, eval_last: bool = False, filter_range: tuple = None,
+    ):
         self._gd = gd
+        self._gk = gk
+        self._bk = bk
         self._eval_last = eval_last
+        self._filter_range = filter_range
 
     @classmethod
-    def build(cls, eval_last: bool = False, **config) -> "DetectGaps":
-        gd = GapDetector(**config)
-        return cls(gd=gd, eval_last=eval_last)
+    def build(
+        cls,
+        groups_key: str = "ssvid_year",
+        boundaries_key: str = "ssvid",
+        filter_range: tuple = None,
+        eval_last: bool = False,
+        **config
+    ) -> "DetectGaps":
+        return cls(
+            gd=GapDetector(**config),
+            gk=key_factory(groups_key),
+            bk=key_factory(boundaries_key),
+            eval_last=eval_last,
+            filter_range=filter_range,
+        )
 
     def process_group(self, group: tuple[tuple[str, int], Iterable[dict]]) -> Iterable[dict]:
         key, messages = group
@@ -101,6 +122,13 @@ class DetectGaps(CoreProcess):
     def sorting_key(self):
         return lambda x: (x["ssvid"], x["timestamp"])
 
+    def filter_range(self):
+        if self._filter_range is not None:
+            start, end = self._filter_range
+            return (date.fromisoformat(start), date.fromisoformat(end))
+
+        return None
+
     def _close_open_gap(self, open_gap, boundaries):
         off_m = off_message_from_gap(open_gap)
         on_m = boundaries.first_message()
@@ -110,10 +138,8 @@ class DetectGaps(CoreProcess):
 
         return self._gd.create_gap(off_m=off_m, on_m=on_m, gap_id=open_gap["gap_id"])
 
-    @staticmethod
-    def groups_key() -> Type[SsvidAndYear]:
-        return SsvidAndYear
+    def groups_key(self) -> Type[Key]:
+        return self._gk
 
-    @staticmethod
-    def boundaries_key() -> Type[Ssvid]:
-        return Ssvid
+    def boundaries_key(self) -> Type[Key]:
+        return self._bk

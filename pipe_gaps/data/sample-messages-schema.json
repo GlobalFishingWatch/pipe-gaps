@@ -45,6 +45,6 @@
         "description": "distance from shore. ",
         "mode": "NULLABLE",
         "name": "distance_from_shore_m",
-        "type": "STRING"
+        "type": "FLOAT"
     }
 ]

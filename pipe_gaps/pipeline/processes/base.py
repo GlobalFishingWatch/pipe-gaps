@@ -10,9 +10,8 @@ logger = logging.getLogger(__name__)
 class Key(ABC):
     """Defines a key function to order or group elements by processing units."""
 
-    @classmethod
-    def name(cls):
-        return cls.__name__
+    def name(self):
+        return self.__class__.__name__
 
     @classmethod
     def format(cls, key):
@@ -27,10 +26,6 @@ class Key(ABC):
     @abstractmethod
     def func():
         """Returns callable to obtain keys to group by."""
-
-
-class Boundary(ABC):
-    """Boundary base class."""
 
 
 class CoreProcess(ABC):

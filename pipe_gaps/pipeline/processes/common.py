@@ -2,7 +2,7 @@
 import logging
 import operator
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from dataclasses import dataclass
 
 from .base import Key
@@ -23,12 +23,26 @@ def ssvid_and_year_key(item):
     return (item["ssvid"], datetime.fromtimestamp(item["timestamp"], tz=timezone.utc).year)
 
 
+def ssvid_and_day_key(item):
+    return (
+        item["ssvid"],
+        datetime.fromtimestamp(item["timestamp"], tz=timezone.utc).date().isoformat())
+
+
 def ssvid_key(item):
     return item["ssvid"]
 
 
 def ssvid_and_year_key2(item):
     return (item["ssvid"], ts_to_year(item["timestamp"]))
+
+
+def date_from_year(year):
+    return datetime(year=year, month=1, day=1, tzinfo=timezone.utc).date()
+
+
+def date_from_day(day):
+    return date.fromisoformat(day)
 
 
 class SsvidAndYear(Key):
@@ -40,6 +54,24 @@ class SsvidAndYear(Key):
     def func():
         return ssvid_and_year_key
 
+    @staticmethod
+    def parse_date_func():
+        return date_from_year
+
+
+class SsvidAndDay(Key):
+    @staticmethod
+    def keynames():
+        return ["SSVID", "DAY"]
+
+    @staticmethod
+    def func():
+        return ssvid_and_day_key
+
+    @staticmethod
+    def parse_date_func():
+        return date_from_day
+
 
 class Ssvid(Key):
     @staticmethod
@@ -49,6 +81,20 @@ class Ssvid(Key):
     @staticmethod
     def func():
         return ssvid_key
+
+
+KEY_CLASSES_MAP = {
+    "ssvid_year": SsvidAndYear,
+    "ssvid_day": SsvidAndDay,
+    "ssvid": Ssvid
+}
+
+
+def key_factory(name, **kwargs):
+    if name not in KEY_CLASSES_MAP:
+        raise NotImplementedError(f"key with name {name} not implemented")
+
+    return KEY_CLASSES_MAP[name](**kwargs)
 
 
 class Boundaries:

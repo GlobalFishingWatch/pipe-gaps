@@ -143,10 +143,24 @@ class TestCases:
                 create_message(ssvid="446013750", time=datetime(2024, 1, 1, 1)),
                 create_message(ssvid="446013750", time=datetime(2024, 1, 1, 1)),
                 create_message(ssvid="446013750", time=datetime(2024, 1, 1, 5)),
-
             ],
             "threshold": 1,
             "expected_gaps": 1,
             "id": "input_message_with_same_ssvid_and_timestamp"
+        }
+    ]
+
+    GAP_BETWEEN_DAYS = [
+        {  # We only care about the second day, and the gap in between days.
+           # The interior of the previous day was processed before.
+            "messages": [
+                create_message(ssvid="446013750", time=datetime(2024, 1, 1, 10)),
+                create_message(ssvid="446013750", time=datetime(2024, 1, 1, 20)),
+                create_message(ssvid="446013750", time=datetime(2024, 1, 2, 4)),
+                create_message(ssvid="446013750", time=datetime(2024, 1, 2, 15)),
+            ],
+            "threshold": 6,
+            "expected_gaps": 2,
+            "id": "one_ssvid_three_gaps"
         }
     ]
