@@ -107,8 +107,6 @@ class DetectGaps(CoreProcess):
 
         logger.info(f"Found {len(gaps)} gap(s) for boundaries {formatted_key}...")
 
-        print("ALL GAP IDS: ", gaps.keys())
-        print(gaps.values())
         for g in gaps.values():
             yield g
 
