@@ -15,7 +15,7 @@ class Key(ABC):
 
     @classmethod
     def format(cls, key):
-        if not isinstance(key, list):
+        if not isinstance(key, (tuple, list)):
             key = [key]
 
         return "({})".format(
