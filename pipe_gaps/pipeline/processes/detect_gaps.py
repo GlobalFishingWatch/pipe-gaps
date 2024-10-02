@@ -65,7 +65,8 @@ class DetectGaps(CoreProcess):
 
         gaps = self._gd.detect(messages=list(messages))
 
-        logger.info("Found {} gaps for {}".format(len(gaps), self.groups_key().format(key)))
+        logger.info(
+            "Found {} gap(s) for group {}".format(len(gaps), self.groups_key().format(key)))
 
         for gap in gaps:
             yield gap
@@ -81,40 +82,35 @@ class DetectGaps(CoreProcess):
 
         formatted_key = self.boundaries_key().format(key)
 
-        gaps = []
-        for messages_pair in boundaries.messages():
-            gaps.extend(self._gd.detect(messages_pair))
-
-        logger.info(f"Found {len(gaps)} gaps analyzing boundaries for {formatted_key}...")
-        for g in gaps:
-            yield g
+        gaps = {}
+        for pair in boundaries.messages():
+            for g in self._gd.detect(pair):
+                gaps[g["gap_id"]] = g
 
         if self._eval_last:
             new_open_gap = self._gd.eval_open_gap(boundaries.last_message())
 
             if new_open_gap is not None:
-                logger.info(f"Creating 1 new open gap for {formatted_key}...")
-                yield new_open_gap
+                logger.info(f"Creating new open gap for {formatted_key}...")
+                gaps[new_open_gap["gap_id"]] = new_open_gap
 
-        side_inputs_list = []
-        if side_inputs is not None:
-            try:
-                side_inputs_list = list(side_inputs[key])
-            except KeyError:
-                # A key was not found for this group.
-                pass
+        open_gap = self._load_open_gap(side_inputs, key)
 
-        if len(side_inputs_list) > 0:
-            open_gap = side_inputs_list[0]
+        if open_gap is not None:
+            open_gap_id = open_gap["gap_id"]
+            logger.info("gap_id={}".format(open_gap_id))
+            logger.info(f"Closing existing open gap for {formatted_key}")
 
-            if not isinstance(open_gap, dict):
-                # beam.MultiMap encapsulates value in an iterable of iterables (wtf?).
-                open_gap = [x for x in open_gap][0]
+            if open_gap_id not in gaps:
+                closed_gap = self._close_open_gap(open_gap, boundaries)
+                gaps[closed_gap["gap_id"]] = closed_gap
 
-            logger.info(f"Closing 1 existing open gap found for {formatted_key}")
-            logger.info("gap_id={}".format(open_gap["gap_id"]))
+        logger.info(f"Found {len(gaps)} gap(s) for boundaries {formatted_key}...")
 
-            yield self._close_open_gap(open_gap, boundaries)
+        print("ALL GAP IDS: ", gaps.keys())
+        print(gaps.values())
+        for g in gaps.values():
+            yield g
 
     def get_group_boundary(self, group: tuple[Any, Iterable[dict]]) -> Boundary:
         return Boundary.from_group(group, timestamp_key=self._gd.KEY_TIMESTAMP)
@@ -129,6 +125,37 @@ class DetectGaps(CoreProcess):
 
         return None
 
+    def groups_key(self) -> Type[Key]:
+        return self._gk
+
+    def boundaries_key(self) -> Type[Key]:
+        return self._bk
+
+    def _load_side_inputs(self, side_inputs, key):
+        side_inputs_list = []
+        if side_inputs is not None:
+            try:
+                side_inputs_list = list(side_inputs[key])
+            except KeyError:
+                # A key was not found for this group.
+                pass
+
+        return side_inputs_list
+
+    def _load_open_gap(self, side_inputs, key):
+        side_inputs_list = self._load_side_inputs(side_inputs, key)
+
+        if len(side_inputs_list) > 0:
+            open_gap = side_inputs_list[0]
+
+            if not isinstance(open_gap, dict):
+                # beam.MultiMap encapsulates value in an iterable of iterables (wtf?).
+                open_gap = [x for x in open_gap][0]
+
+            return open_gap
+
+        return None
+
     def _close_open_gap(self, open_gap, boundaries):
         off_m = off_message_from_gap(open_gap)
         on_m = boundaries.first_message()
@@ -137,9 +164,3 @@ class DetectGaps(CoreProcess):
         off_m = {k: off_m[k] for k in on_m.keys() if k in off_m}
 
         return self._gd.create_gap(off_m=off_m, on_m=on_m, gap_id=open_gap["gap_id"])
-
-    def groups_key(self) -> Type[Key]:
-        return self._gk
-
-    def boundaries_key(self) -> Type[Key]:
-        return self._bk

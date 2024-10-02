@@ -151,16 +151,46 @@ class TestCases:
     ]
 
     GAP_BETWEEN_DAYS = [
-        {  # We only care about the second day, and the gap in between days.
-           # The interior of the previous day was processed before.
+        # We only care about the second day, and the gap in between days.
+        # The previous day was processed before, it is only fetched
+        # to compare the last message against the first one of current day.
+        {
             "messages": [
                 create_message(ssvid="446013750", time=datetime(2024, 1, 1, 10)),
                 create_message(ssvid="446013750", time=datetime(2024, 1, 1, 20)),
                 create_message(ssvid="446013750", time=datetime(2024, 1, 2, 4)),
                 create_message(ssvid="446013750", time=datetime(2024, 1, 2, 15)),
             ],
+            "open_gaps": [],
             "threshold": 6,
             "expected_gaps": 2,
-            "id": "one_ssvid_two_gaps"
-        }
+            "id": "one_ssvid_without_open_gap"
+        },
+        {  # In this case we have an open gap created on 2024-01-01.
+           # The existing open gap should be closed,
+           # and avioid comparison with last message of prev day.
+            "messages": [
+                create_message(ssvid="446013750", time=datetime(2024, 1, 1, 6)),
+                create_message(
+                    ssvid="446013750", lat=44.5, lon=60.1, time=datetime(2024, 1, 1, 15)),
+                create_message(ssvid="446013750", time=datetime(2024, 1, 2, 4)),
+                create_message(ssvid="446013750", time=datetime(2024, 1, 2, 15)),
+            ],
+            "open_gaps": [
+                {
+                    "ssvid": "446013750",
+                    "gap_id": "de0d9242f44cf17299203e4276c71e6a",
+                    "gap_start": datetime(2024, 1, 1, 15, tzinfo=timezone.utc).timestamp(),
+                    "gap_start_msgid": "295fa26f-cee9-1d86-8d28-d5ed96c32835",
+                    "gap_start_distance_from_shore_m": 97000.0,
+                    "gap_start_lat": 44.5,
+                    "gap_start_lon": 60.1,
+                    "gap_start_receiver_type": "terrestrial",
+                    "is_closed": False
+                },
+            ],
+            "threshold": 6,
+            "expected_gaps": 2,
+            "id": "one_ssvid_with_open_gap"
+        },
     ]

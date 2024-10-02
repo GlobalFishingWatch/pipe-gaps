@@ -135,10 +135,11 @@ def test_gap_between_years(tmp_path, messages, threshold, expected_gaps):
 
 
 @pytest.mark.parametrize(
-    "messages, threshold, expected_gaps",
+    "messages, open_gaps, threshold, expected_gaps",
     [
         pytest.param(
             case["messages"],
+            case["open_gaps"],
             case["threshold"],
             case["expected_gaps"],
             id=case["id"]
@@ -146,7 +147,7 @@ def test_gap_between_years(tmp_path, messages, threshold, expected_gaps):
         for case in TestCases.GAP_BETWEEN_DAYS
     ],
 )
-def test_gap_between_days(tmp_path, messages, threshold, expected_gaps):
+def test_gap_between_days(tmp_path, messages, open_gaps, threshold, expected_gaps):
     # Checks that a gap between days is properly detected.
 
     input_file = tmp_path.joinpath("test.json")
@@ -158,10 +159,18 @@ def test_gap_between_days(tmp_path, messages, threshold, expected_gaps):
     core_config["filter_range"] = ("2024-01-02", "2024-01-03")
 
     inputs = [get_input_file_config(input_file, schema="messages")]
+
+    side_input_file = tmp_path.joinpath("open-gaps-test.json")
+    json_save(open_gaps, side_input_file, lines=True)
+    side_inputs_config = dict(
+        kind="json", input_file=side_input_file, schema="ais_gaps", lines=True)
+
+    side_inputs = [side_inputs_config]
     outputs_config = [get_outputs_config()]
 
     pipe = BeamPipeline.build(
         inputs=inputs,
+        side_inputs=side_inputs,
         work_dir=tmp_path,
         core=core_config,
         outputs=outputs_config
