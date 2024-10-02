@@ -117,7 +117,14 @@ class Boundaries:
 
 @dataclass(eq=True, frozen=True)
 class Boundary:
-    """Encapsulates first and last AIS position messages for a specific ssvid and time interval."""
+    """Encapsulates first and last AIS position messages for a specific ssvid and time interval.
+
+    Args:
+        ssvid: id for the vessel.
+        time_interval: time interval for the group. One of ["year", "day"].
+        start: first message of the time interval.
+        end: last message of the time interval.
+    """
     ssvid: str
     time_interval: str
     start: dict
@@ -127,7 +134,13 @@ class Boundary:
         return self.__dict__[key]
 
     @classmethod
-    def from_group(cls, group, timestamp_key="timestamp"):
+    def from_group(cls, group: tuple, timestamp_key="timestamp"):
+        """Instantiates a Boundary object from a group.
+
+        Args:
+            group: tuple with (key, messages).
+            timestamp_key: name for the key containing the message timestamp.
+        """
         (ssvid, time_interval), messages = group
 
         start = min(messages, key=lambda x: x[timestamp_key])

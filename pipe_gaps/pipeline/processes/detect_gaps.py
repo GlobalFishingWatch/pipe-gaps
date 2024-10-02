@@ -1,6 +1,6 @@
 import logging
 from datetime import date
-from typing import Type, Iterable, Optional
+from typing import Type, Iterable, Optional, Any
 
 from pipe_gaps.core import GapDetector
 
@@ -60,7 +60,7 @@ class DetectGaps(CoreProcess):
             filter_range=filter_range,
         )
 
-    def process_group(self, group: tuple[tuple[str, int], Iterable[dict]]) -> Iterable[dict]:
+    def process_group(self, group: tuple[Any, Iterable[dict]]) -> Iterable[dict]:
         key, messages = group
 
         gaps = self._gd.detect(messages=list(messages))
@@ -72,8 +72,8 @@ class DetectGaps(CoreProcess):
 
     def process_boundaries(
         self,
-        group: tuple[str, Iterable[Boundary]],
-        side_inputs: Optional[dict[str, Iterable]] = None
+        group: tuple[Any, Iterable[Boundary]],
+        side_inputs: Optional[dict[Any, Iterable]] = None
     ) -> Iterable[dict]:
         key, boundaries_it = group
 
@@ -116,7 +116,7 @@ class DetectGaps(CoreProcess):
 
             yield self._close_open_gap(open_gap, boundaries)
 
-    def get_group_boundary(self, group: tuple[tuple[str, int], Iterable[dict]]) -> Boundary:
+    def get_group_boundary(self, group: tuple[Any, Iterable[dict]]) -> Boundary:
         return Boundary.from_group(group, timestamp_key=self._gd.KEY_TIMESTAMP)
 
     def sorting_key(self):
