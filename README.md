@@ -105,9 +105,10 @@ docker compose run gcloud auth application-default set-quota-project world-fishi
 
 ### Gap detection core process
 
-> **Note**  
+> [!NOTE]
 > Currently, the core algorithm takes about `(1.75 ± 0.01)` seconds to process 10M messages.  
   Tested on a i7-1355U 5.0GHz processor.
+
 
 ```python
 import json
