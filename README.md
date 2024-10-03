@@ -12,6 +12,7 @@
   </a>
 </p>
 
+
 Time gap detector for AIS position messages.
 
 Features:
@@ -61,6 +62,8 @@ possible *intentional disabling events*,
 which can obscure illegal activities,
 such as unauthorized fishing activity or
 unauthorized transshipments [[1]](#1)[[2]](#2).
+
+</div>
 
 ## Definition of gap
 
@@ -208,7 +211,8 @@ pipe.run()
 
 You can see more example [here](config/). 
 
-> **Warning**  
+
+> [!CAUTION]
 > Date ranges are inclusive for the start date and exclusive for the end date.
 
 
