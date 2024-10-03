@@ -14,6 +14,15 @@
 
 Time gap detector for AIS position messages.
 
+Features:
+* :white_check_mark: Gaps detection core process.
+* :white_check_mark: Gaps detection pipeline.
+  - :white_check_mark: command-line interface.
+  - :white_check_mark: JSON inputs/outputs.
+  - :white_check_mark: BigQuery inputs/outputs.
+  - :white_check_mark: Apache Beam integration.
+  - :white_check_mark: Incremental (daily) processing.
+
 [bigquery-emulator]: https://github.com/goccy/bigquery-emulator
 [configure a SSH-key for GitHub]: https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account
 [docker official instructions]: https://docs.docker.com/engine/install/
@@ -73,26 +82,29 @@ until it is closed in the future with new data arrives.
 ### Installation
 
 We still don't have a package in PYPI.
+
 First, clone the repository.
-
-Then
+Then run inside a virtual environment
 ```shell
-pip install .
+make install
+```
+Or, if you are going to use the dockerized process, build the docker image:
+```shell
+make build
 ```
 
-If you want to use apache beam integration:
+In order to be able to connect to BigQuery, authenticate and configure project:
 ```shell
-pip install .[beam]
+docker compose run gcloud auth application-default login
+docker compose run gcloud config set project world-fishing-827
+docker compose run gcloud auth application-default set-quota-project world-fishing-827
 ```
 
-### Using from python code
-
-#### Gap detection core process
+### Gap detection core process
 
 > **Note**  
 > Currently, the core algorithm takes about `(1.75 ± 0.01)` seconds to process 10M messages.  
   Tested on a i7-1355U 5.0GHz processor.
-
 
 ```python
 import json
@@ -125,16 +137,17 @@ gaps = gd.detect(messages)
 print(json.dumps(gaps, indent=4))
 ```
 
-#### BigQuery integration pipeline
+### Gap detection pipeline
 
-First, authenticate to bigquery and configure project:
-```shell
-docker compose run gcloud auth application-default login
-docker compose run gcloud config set project world-fishing-827
-docker compose run gcloud auth application-default set-quota-project world-fishing-827
-```
+The core process can be integrated with different kind of inputs and outputs.
+Currently JSON and BigQuery inputs are supported.
+All inputs are going to be merged before processing,
+and the outputs are going to be written in each output configured.
 
-Then you can do:
+These integration pipelines can be "naive" (without parallelization)
+or "beam" (allows parallelization with apache beam & dataflow).
+
+This is an example on how the pipeline can be configured:
 ```python
 from pipe_gaps import pipeline
 from pipe_gaps.utils import setup_logger
@@ -144,6 +157,11 @@ setup_logger()
 pipe_config = {
     "inputs": [
         {
+            "kind": "json",
+            "input_file": "pipe_gaps/data/sample_messages_lines.json",
+            "lines": true
+        },
+        {
             "kind": "query",
             "query_name": "messages",
             "query_params": {
@@ -151,21 +169,29 @@ pipe_config = {
                 "source_segments": "pipe_ais_v3_published.segs_activity",
                 "start_date": "2024-01-01",
                 "end_date": "2024-01-02",
-                "ssvids": [412331104, 477334300]
+                "ssvids": [412331104]
             },
-            "mock_db_client": False
+            "mock_db_client": false
         }
     ],
     "core": {
         "kind": "detect_gaps",
         "threshold": 1,
-        "show_progress": False,
-        "eval_last": True
+        "show_progress": false,
+        "eval_last": true,
+        "normalize_output": true
     },
     "outputs": [
         {
             "kind": "json",
             "output_prefix": "gaps"
+        },
+        {
+            "kind": "bigquery",
+            "table": "scratch_tomas_ttl30d.pipe_ais_gaps",
+            "description": "Gaps for AIS position messages.",
+            "schema": "gaps",
+            "write_disposition": "WRITE_APPEND"
         }
     ],
     "options": {
@@ -180,11 +206,16 @@ pipe = pipeline.create(pipe_type="naive", **pipe_config)
 pipe.run()
 ```
 
+You can see more example [here](config/). 
+
 > **Warning**  
 > Date ranges are inclusive for the start date and exclusive for the end date.
 
 
 ### Using from CLI:
+
+Instead of running from python code,
+you can use the provided command-line interface.
 
 ```shell
 (.venv) $ pipe-gaps
@@ -212,6 +243,7 @@ pipeline core process:
 Example: 
     pipe-gaps -c config/sample-from-file-1.json --threshold 1.3
 ```
+
 ### Apache Beam integration
 
 Just use `--pipe-type beam` option:
