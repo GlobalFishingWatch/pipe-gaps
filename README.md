@@ -55,14 +55,18 @@ unauthorized transshipments [[1]](#1)[[2]](#2).
 
 ## Definition of gap
 
-We define an **AIS** gap event when the period of time between
+We create an **AIS** gap event when the period of time between
 consecutive known good **AIS** positions from a single vessel,
-after de-noise and de-spoofing),
-exceeds a configured `threshold` (typically 12 hours).
+after de-noise and de-spoofing,
+exceeds a configured `threshold` (typically 6 hours).
+The `start/end` position messages of the gap are called `OFF/ON` messages,
+respectively.
 
 When the period of time between **last** known good position
-and the present time exceeds the `threshold`,
-we call it an **open** gap event.
+and the last time of the current day exceeds the `threshold`,
+we create an **open** gap event.
+In that case, the gap will not have an `ON` message,
+until it is closed in the future with new data arrives.
 
 ## Usage
 
