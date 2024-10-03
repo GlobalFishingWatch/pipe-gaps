@@ -24,6 +24,9 @@ Features:
   - :white_check_mark: Apache Beam integration.
   - :white_check_mark: Incremental (daily) processing.
 
+[Apache Beam]: https://beam.apache.org
+[Google Dataflow]: https://cloud.google.com/products/dataflow?hl=en
+[Google BigQuery]: https://cloud.google.com/bigquery
 [bigquery-emulator]: https://github.com/goccy/bigquery-emulator
 [configure a SSH-key for GitHub]: https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account
 [docker official instructions]: https://docs.docker.com/engine/install/
@@ -143,13 +146,15 @@ print(json.dumps(gaps, indent=4))
 
 ### Gap detection pipeline
 
-The core process can be integrated with different kind of inputs and outputs.
-Currently JSON and BigQuery inputs are supported.
-All inputs are going to be merged before processing,
-and the outputs are going to be written in each output configured.
+The core process can be integrated with different kind of inputs, and outputs.
+Currently JSON and [Google BigQuery] inputs and outputs are supported.
+All configured inputs are merged before processing,
+and the outputs are written in each output configured.
+This pipeline also allows for "side inputs",
+which in this case are existing open gaps that can be closed while processing.
 
-These integration pipelines can be "naive" (without parallelization)
-or "beam" (allows parallelization with apache beam & dataflow).
+This pipeline can be "naive" (without parallelization, useful for development)
+or "beam" (allows parallelization through [Apache Beam] & [Google Dataflow]).
 
 This is an example on how the pipeline can be configured:
 ```python
@@ -163,7 +168,7 @@ pipe_config = {
         {
             "kind": "json",
             "input_file": "pipe_gaps/data/sample_messages_lines.json",
-            "lines": true
+            "lines": True
         },
         {
             "kind": "query",
@@ -175,15 +180,26 @@ pipe_config = {
                 "end_date": "2024-01-02",
                 "ssvids": [412331104]
             },
-            "mock_db_client": false
+            "mock_db_client": False
+        }
+    ],
+    "side_inputs": [
+        {
+            "kind": "query",
+            "query_name": "gaps",
+            "query_params": {
+                "source_gaps": "scratch_tomas_ttl30d.pipe_ais_gaps",
+                "start_date": "2012-01-01"
+            },
+            "mock_db_client": False
         }
     ],
     "core": {
         "kind": "detect_gaps",
         "threshold": 1,
-        "show_progress": false,
-        "eval_last": true,
-        "normalize_output": true
+        "show_progress": False,
+        "eval_last": True,
+        "normalize_output": True
     },
     "outputs": [
         {
