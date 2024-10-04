@@ -44,6 +44,14 @@ Features:
 [slowly changing dimension]: https://en.wikipedia.org/wiki/Slowly_changing_dimension
 [Semantic Versioning]: https://semver.org
 
+[ais-gaps.py]: pipe_gaps/queries/ais_gaps.py
+[ais-messages.py]: pipe_gaps/queries/ais_messages.py
+[core.py]: pipe_gaps/pipeline/beam/transforms/core.py
+[detect_gaps.py]: pipe_gaps/pipeline/processes/detect_gaps.py
+[gap_detector.py]: pipe_gaps/core/gap_detector.py
+[pTransform]: https://beam.apache.org/documentation/programming-guide/#applying-transforms
+
+
 ## Introduction
 
 <div align="justify">
@@ -238,7 +246,7 @@ pipe = pipeline.create(pipe_type="naive", **pipe_config)
 pipe.run()
 ```
 
-You can see more example [here](config/). 
+You can see more configuration examples [here](config/). 
 
 
 > [!NOTE]
@@ -251,7 +259,7 @@ You can see more example [here](config/).
 ### Implementation details
 
 The pipeline is implemented over a (mostly) generic structure that supports:
-1. Grouping all inputs by some composite key with **SSVID** and a **time interval**, for example **(SSVID, YEAR)**.
+1. Grouping all inputs by some composite key with **SSVID** and a time interval (**TI**), for example **(SSVID, YEAR)**.
 2. Grouping side inputs by **SSVID**.
 3. Processing groups from 1.
 4. Grouping boundaries (first and last AIS message of each group) by **SSVID**.
@@ -264,10 +272,17 @@ the groups are processed in parallel.
 
 #### Important modules
 
-[detect_gaps.py](pipe_gaps/pipeline/processes/detect_gaps.py): Encapsulates the logic that describes how to process groups, boundaries and side inputs.
+<div align="center">
 
-[gap_detector.py](pipe_gaps/core/gap_detector.py): Encapsulates the logic that computes gaps in a list of AIS messages.
+| Module | Description |
+| --- | --- |
+| [ais-gaps.py]     | Encapsulates **AIS** gaps query. |
+| [ais-messages.py] | Encapsulates **AIS** position messages query. |
+| [core.py]         | Defines core [pTransform] that integrates [detect_gaps.py] to Apache Beam. |
+| [detect_gaps.py]  | Encapsulates the processing of **AIS** position messages and **open gaps**. |
+| [gap_detector.py] | Defines **GapDetector** class that computes gaps in a list of **AIS** messages. |
 
+</div>
 
 #### Flow chart
 
@@ -277,9 +292,9 @@ flowchart TD;
     C[Read Side Inputs] ==> |**Open Gaps**| D[Group Side Inputs]
 
     subgraph **Core Transform**
-    B ==> E[Process Groups]
-    B ==> F[Process Boundaries]
-    D ==> |**Open Gaps by SSVID**| F
+    B ==> |**AIS Messages <br/> by SSVID & TI**| E[Process Groups]
+    B ==> |**AIS Messages <br/> by SSVID & TI**| F[Process Boundaries]
+    D ==> |**Open Gaps  <br/> by SSVID**| F
     E ==> |**Gaps inside groups**| H[Join Outputs]
     F ==> |**Gaps in boundaries <br/> New open gaps <br/> Closed open gaps**| H
     end

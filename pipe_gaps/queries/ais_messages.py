@@ -1,4 +1,4 @@
-"""This module encapsulates database queries."""
+"""This module encapsulates the AIS position messages query."""
 import logging
 import typing
 from datetime import date, datetime
@@ -7,7 +7,6 @@ from .base import Query
 
 logger = logging.getLogger(__name__)
 
-# DB_TABLE_MESSAGES = "pipe_production_v20201001.research_messages"
 DB_TABLE_MESSAGES = "pipe_ais_v3_published.messages"
 DB_TABLE_SEGMENTS = "pipe_ais_v3_published.segs_activity"
 
