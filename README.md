@@ -270,6 +270,38 @@ Below there is a [diagram](#flow-chart) that describes this work flow.
 In the case of the Apache Beam integration with DataFlow runner,
 the groups are processed in parallel.
 
+#### :warning: Important note on how this pipeline currently groups input messages
+
+<div align="justify">
+
+The gap detection pipeline fetches **AIS** position messages,
+filtering them by `good_seg`, and groups them by **SSVID**.
+Since **we know** different vessels can broadcast with the same **SSVID**,
+this can potentially lead to the situation in which we have a gap
+with an `OFF` message from one vessel
+and a `ON` message from another vessel (or viceversa).
+This could be solved by filtering the input messages
+also by `overlapping_and_short`,
+but this was discarded because this field
+can change over time,
+adding complexity to the process.
+
+Currently,
+because the gap detection process just orders
+all the messages from the same **SSVID** by `timestamp`
+and then evaluates each pair of consecuive messages,
+it will just pick the last `OFF` (or the first `ON`)
+message in the chain when constructing a gap.
+So,
+we know we can have "inconsistent" gaps
+in the sense we described above,
+but we believe those will be a very small
+amount of the total gaps. 
+
+We aim in the future to find a solution to this problem.
+
+</div>
+
 #### Important modules
 
 <div align="center">
