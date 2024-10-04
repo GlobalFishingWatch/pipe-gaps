@@ -41,6 +41,7 @@ Features:
 [pip-tools]: https://pip-tools.readthedocs.io/en/stable/
 [requirements.txt]: requirements.txt
 [requirements/prod.in]: requirements/prod.in
+[slowly changing dimension]: https://en.wikipedia.org/wiki/Slowly_changing_dimension
 [Semantic Versioning]: https://semver.org
 
 ## Introduction
@@ -73,7 +74,9 @@ unauthorized transshipments [[1]](#1)[[2]](#2).
 
 ## Definition of gap
 
-We create an **AIS** gap event when the period of time between
+<div align="justify">
+
+We create an **AIS** **gap** event when the period of time between
 consecutive known good **AIS** positions from a single vessel,
 after de-noise and de-spoofing,
 exceeds a configured `threshold` (typically 6 hours).
@@ -82,9 +85,11 @@ respectively.
 
 When the period of time between **last** known good position
 and the last time of the current day exceeds the `threshold`,
-we create an **open** gap event.
+we create an **open gap** event.
 In that case, the gap will not have an `ON` message,
-until it is closed in the future with new data arrives.
+until it is **closed** in the future when new data arrives.
+
+</div>
 
 ## Usage
 
@@ -102,7 +107,7 @@ Or, if you are going to use the dockerized process, build the docker image:
 make build
 ```
 
-In order to be able to connect to BigQuery, authenticate and configure project:
+In order to be able to connect to BigQuery, authenticate and configure the project:
 ```shell
 docker compose run gcloud auth application-default login
 docker compose run gcloud config set project world-fishing-827
@@ -149,15 +154,19 @@ print(json.dumps(gaps, indent=4))
 
 ### Gap detection pipeline
 
+<div align="justify">
+
 The core process can be integrated with different kinds of inputs and outputs.
 Currently JSON and [Google BigQuery] inputs and outputs are supported.
 All configured inputs are merged before processing,
 and the outputs are written in each output configured.
-This pipeline also allows for "side inputs",
-which in this case are existing open gaps that can be closed while processing.
+This pipeline also allows for _side inputs_,
+which in this case are existing **open gaps** that can be closed while processing.
 
 The pipeline can be "naive" (without parallelization, useful for development)
 or "beam" (allows parallelization through [Apache Beam] & [Google Dataflow]).
+
+</div>
 
 This is an example on how the pipeline can be configured:
 ```python
@@ -232,7 +241,7 @@ pipe.run()
 You can see more example [here](config/). 
 
 
-> [!INFO]
+> [!NOTE]
 > The key "options" can be used for custom configuration of each pipeline type.
   For example, you can pass any option available in the [Apache Beam Pipeline Options]. 
 
@@ -244,6 +253,39 @@ You can see more example [here](config/).
 
 Beam integrated pipeline will parallelize grouping inputs by SSVID and year.
 
+#### BigQuery data persistence pattern
+
+<div align="justify">
+
+When an **open gap** is closed,
+a new **gap** event is created.
+
+In the case of BigQuery output,
+this means that we are using a persistence pattern
+that matches the [slowly changing dimension] type 2 
+(always add new rows).
+In consequence, the output table can contain two gap events with the same `gap_id`:
+The old **open gap**,
+and the current closed _active_ gap.
+The versioning of gaps is done with a timestamp `gap_version` field with second precision.
+
+To query all _active_ gaps,
+you will just need to query the last versions for every `gap_id`.
+For example:
+```sql
+SELECT *
+    FROM (
+      SELECT
+          *,
+          MAX(gap_version)
+              OVER (PARTITION BY gap_id)
+              AS last_version,
+      FROM `world-fishing-827.scratch_tomas_ttl30d.pipe_ais_gaps_filter_no_overlapping_and_short`
+    )
+    WHERE gap_version = last_version
+```
+
+</div>
 
 ### Using from CLI:
 
@@ -277,34 +319,9 @@ Example:
     pipe-gaps -c config/sample-from-file-1.json --threshold 1.3
 ```
 
-> [!INFO]
+> [!NOTE]
 > Any option passed to the CLI not explicitly documented will be inside "options" key of the configuration
   (see above). 
-
-
-### Handle of open gaps
-
-When an open gap is closed,
-a new gap event is created. 
-Two gap events will exist with the same `gap_id`,
-one will be an old open gap, and the other one will be the current closed active gap.
-
-To query all active gaps,
-you will just need to query the last versions for every `gap_id`.
-For example:
-```sql
-SELECT *
-    FROM (
-      SELECT
-          *,
-          MAX(gap_version)
-              OVER (PARTITION BY gap_id)
-              AS last_version,
-      FROM `world-fishing-827.scratch_tomas_ttl30d.pipe_ais_gaps_filter_no_overlapping_and_short`
-    )
-    WHERE gap_version = last_version
-```
-
 
 
 ## References
