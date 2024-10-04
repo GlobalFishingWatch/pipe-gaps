@@ -250,8 +250,25 @@ You can see more example [here](config/).
 
 ### Implementation details
 
+#### Flow chart
 
-Beam integrated pipeline will parallelize grouping inputs by SSVID and year.
+```mermaid
+graph TD;
+    A[Read Inputs] ==> |AIS Messages| B[Group Inputs]
+    C[Read Side Inputs] ==> |Open Gaps| D[Group Side Inputs]
+    subgraph **Core Transform**
+    B ==> E[Process Groups]
+    B ==> F[Process Boundaries]
+    D ==> |Open Gaps by SSVID| F
+    E ==> |Gaps inside groups| H[Join Outputs]
+    F ==> |Gaps between groups & new open gaps & closed existing gaps| H
+    end
+
+    subgraph .
+    H ==> K[Write Outputs]
+    K ==> L[(BigQuery)]
+    end
+```
 
 #### BigQuery data persistence pattern
 
