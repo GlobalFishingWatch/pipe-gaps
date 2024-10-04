@@ -23,8 +23,11 @@ Features:
   - :white_check_mark: BigQuery inputs/outputs.
   - :white_check_mark: Apache Beam integration.
   - :white_check_mark: Incremental (daily) processing.
+  - :white_check_mark: Full backfill processing.
+
 
 [Apache Beam]: https://beam.apache.org
+[Apache Beam Pipeline Options]: https://cloud.google.com/dataflow/docs/reference/pipeline-options#python
 [Google Dataflow]: https://cloud.google.com/products/dataflow?hl=en
 [Google BigQuery]: https://cloud.google.com/bigquery
 [bigquery-emulator]: https://github.com/goccy/bigquery-emulator
@@ -146,14 +149,14 @@ print(json.dumps(gaps, indent=4))
 
 ### Gap detection pipeline
 
-The core process can be integrated with different kind of inputs, and outputs.
+The core process can be integrated with different kinds of inputs and outputs.
 Currently JSON and [Google BigQuery] inputs and outputs are supported.
 All configured inputs are merged before processing,
 and the outputs are written in each output configured.
 This pipeline also allows for "side inputs",
 which in this case are existing open gaps that can be closed while processing.
 
-This pipeline can be "naive" (without parallelization, useful for development)
+The pipeline can be "naive" (without parallelization, useful for development)
 or "beam" (allows parallelization through [Apache Beam] & [Google Dataflow]).
 
 This is an example on how the pipeline can be configured:
@@ -229,8 +232,17 @@ pipe.run()
 You can see more example [here](config/). 
 
 
+> [!INFO]
+> The key "options" can be used for custom configuration of each pipeline type.
+  For example, you can pass any option available in the [Apache Beam Pipeline Options]. 
+
 > [!CAUTION]
 > Date ranges are inclusive for the start date and exclusive for the end date.
+
+### Implementation details
+
+
+Beam integrated pipeline will parallelize grouping inputs by SSVID and year.
 
 
 ### Using from CLI:
@@ -265,16 +277,10 @@ Example:
     pipe-gaps -c config/sample-from-file-1.json --threshold 1.3
 ```
 
-### Apache Beam integration
+> [!INFO]
+> Any option passed to the CLI not explicitly documented will be inside "options" key of the configuration
+  (see above). 
 
-Just use `--pipe-type beam` option:
-```
-pipe-gaps --pipe-type beam -c config/sample-from-file-1.json --threshold 1.3
-```
-This will run by default with DirectRunner.
-To run on DataFlow, add `--runner dataflow` option.
-
-Beam integrated pipeline will parallelize grouping inputs by SSVID and year.
 
 ### Handle of open gaps
 
