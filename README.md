@@ -262,18 +262,26 @@ Below there is a [diagram](#flow-chart) that describes this work flow.
 In the case of the Apache Beam integration with DataFlow runner,
 the groups are processed in parallel.
 
+#### Important modules
+
+[detect_gaps.py](pipe_gaps/pipeline/processes/detect_gaps.py): Encapsulates the logic that describes how to process groups, boundaries and side inputs.
+
+[gap_detector.py](pipe_gaps/core/gap_detector.py): Encapsulates the logic that computes gaps in a list of AIS messages.
+
+
 #### Flow chart
 
 ```mermaid
-graph TD;
-    A[Read Inputs] ==> |AIS Messages| B[Group Inputs]
-    C[Read Side Inputs] ==> |Open Gaps| D[Group Side Inputs]
+flowchart TD;
+    A[Read Inputs] ==> |**AIS Messages**| B[Group Inputs]
+    C[Read Side Inputs] ==> |**Open Gaps**| D[Group Side Inputs]
+
     subgraph **Core Transform**
     B ==> E[Process Groups]
     B ==> F[Process Boundaries]
-    D ==> |Open Gaps by SSVID| F
-    E ==> |Gaps inside groups| H[Join Outputs]
-    F ==> |Gaps between groups & new open gaps & closed existing gaps| H
+    D ==> |**Open Gaps by SSVID**| F
+    E ==> |**Gaps inside groups**| H[Join Outputs]
+    F ==> |**Gaps in boundaries <br/> New open gaps <br/> Closed open gaps**| H
     end
 
     subgraph .
@@ -281,6 +289,11 @@ graph TD;
     K ==> L[(BigQuery)]
     end
 ```
+
+#### BigQuery output schema
+
+The schema for the output **gap events** table in BigQuery
+is defined in [pipe_gaps/pipeline/schemas/ais-gaps.json](/pipe_gaps/pipeline/schemas/ais-gaps.json).
 
 #### BigQuery data persistence pattern
 
@@ -314,11 +327,6 @@ SELECT *
 ```
 
 </div>
-
-#### BigQuery output schema
-
-The schema for the output **gap events** table in BigQuery
-is defined in [pipe_gaps/pipeline/schemas/ais-gaps.json](/pipe_gaps/pipeline/schemas/ais-gaps.json).
 
 ### Using from CLI:
 
