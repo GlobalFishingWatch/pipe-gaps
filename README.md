@@ -250,6 +250,18 @@ You can see more example [here](config/).
 
 ### Implementation details
 
+The pipeline is implemented over a (mostly) generic structure that supports:
+1. Grouping all inputs by some composite key with **SSVID** and a **time interval**, for example **(SSVID, YEAR)**.
+2. Grouping side inputs by **SSVID**.
+3. Processing groups from 1.
+4. Grouping boundaries (first and last AIS message of each group) by **SSVID**.
+5. Processing boundaries from 4 together with side inputs from 2, both grouped by **SSVID**.
+
+Below there is a [diagram](#flow-chart) that describes this work flow.
+
+In the case of the Apache Beam integration with DataFlow runner,
+the groups are processed in parallel.
+
 #### Flow chart
 
 ```mermaid
