@@ -294,8 +294,7 @@ this means that we are using a persistence pattern
 that matches the [slowly changing dimension] type 2 
 (always add new rows).
 In consequence, the output table can contain two gap events with the same `gap_id`:
-The old **open gap**,
-and the current closed _active_ gap.
+the old **open gap** and the current **closed _active_ gap**.
 The versioning of gaps is done with a timestamp `gap_version` field with second precision.
 
 To query all _active_ gaps,
@@ -315,6 +314,11 @@ SELECT *
 ```
 
 </div>
+
+#### BigQuery output schema
+
+The schema for the output **gap events** table in BigQuery
+is defined in [pipe_gaps/pipeline/schemas/ais-gaps.json](/pipe_gaps/pipeline/schemas/ais-gaps.json).
 
 ### Using from CLI:
 
