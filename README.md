@@ -13,7 +13,7 @@
 </p>
 
 
-Time gap detector for AIS position messages.
+Time gap detector for **[AIS]** position messages.
 
 Features:
 * :white_check_mark: Gaps detection core process.
@@ -26,12 +26,14 @@ Features:
   - :white_check_mark: Full backfill processing.
 
 
+[AIS]: https://en.wikipedia.org/wiki/Automatic_identification_system
 [Apache Beam]: https://beam.apache.org
 [Apache Beam Pipeline Options]: https://cloud.google.com/dataflow/docs/reference/pipeline-options#python
 [Google Dataflow]: https://cloud.google.com/products/dataflow?hl=en
 [Google BigQuery]: https://cloud.google.com/bigquery
 [bigquery-emulator]: https://github.com/goccy/bigquery-emulator
 [configure a SSH-key for GitHub]: https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account
+[Dataflow runner]: https://beam.apache.org/documentation/runners/dataflow/
 [docker official instructions]: https://docs.docker.com/engine/install/
 [docker compose plugin]: https://docs.docker.com/compose/install/linux/
 [examples]: examples/
@@ -64,7 +66,7 @@ spatial and temporal variability of satellite reception,
 and dropped signals as vessels move from terrestrial coverage
 to areas of poor satellite reception.
 So, as a result,
-it’s not uncommon to see gaps in AIS data,
+it’s not uncommon to see gaps in **AIS** data,
 for hours or perhaps even days [[1]](#1). 
 
 Other causes of **AIS** gaps are:
@@ -122,10 +124,19 @@ docker compose run gcloud config set project world-fishing-827
 docker compose run gcloud auth application-default set-quota-project world-fishing-827
 ```
 
-### Gap detection core process
+### Gap detection low level process
+
+<div align="justify">
+
+The gap detection core process takes as input a list of **AIS** messages.
+Mandatory fields are `["timestamp", "distance_from_shore_m"]`.
+At this level, messages with different **SSVIDs** are not distinguished.
+The grouping is done in a higher level abstraction.
+
+</div>
 
 > [!NOTE]
-> Currently, the core algorithm takes about `(1.75 ± 0.01)` seconds to process 10M messages.  
+> Currently, the algorithm takes about `(1.75 ± 0.01)` seconds to process 10M messages.  
   Tested on a i7-1355U 5.0GHz processor.
 
 
@@ -162,16 +173,38 @@ print(json.dumps(gaps, indent=4))
 
 ### Gap detection pipeline
 
+The gaps detection pipeline is described in the following diagram:
+
+```mermaid
+flowchart LR;
+    subgraph **Main Inputs**
+    A[/**AIS** Messages/]
+    end
+    
+    subgraph **Side Inputs**
+    C[/Open Gaps/]
+    end
+
+    A ==> B[Detect Gaps]
+    C ==> B
+
+    B ==> E
+    B ==> D
+    B ==> F
+
+    subgraph **Outputs**
+    E[\New Gaps\]
+    D[\New Open gaps\]
+    F[\Closed existing open gaps\]
+    end
+```
+
 <div align="justify">
 
-The core process can be integrated with different kinds of inputs and outputs.
-Currently JSON and [Google BigQuery] inputs and outputs are supported.
-All configured inputs are merged before processing,
-and the outputs are written in each output configured.
-This pipeline also allows for _side inputs_,
-which in this case are existing **open gaps** that can be closed while processing.
+Inputs, and outputs can be implemented as different kinds of _sources_ and _sinks_.
+Currently JSON files and [Google BigQuery] tables are supported.
 
-The pipeline can be "naive" (without parallelization, useful for development)
+The pipeline can be "naive" (without parallelization, was useful for development)
 or "beam" (allows parallelization through [Apache Beam] & [Google Dataflow]).
 
 </div>
@@ -197,7 +230,7 @@ pipe_config = {
                 "source_messages": "pipe_ais_v3_published.messages",
                 "source_segments": "pipe_ais_v3_published.segs_activity",
                 "start_date": "2024-01-01",
-                "end_date": "2024-01-02",
+                "end_date": "2024-01-03",
                 "ssvids": [412331104]
             },
             "mock_db_client": False
@@ -216,10 +249,13 @@ pipe_config = {
     ],
     "core": {
         "kind": "detect_gaps",
-        "threshold": 1,
-        "show_progress": False,
-        "eval_last": True,
-        "normalize_output": True
+        "groups_key": "ssvid_day",
+        "boundaries_key": "ssvid",
+        "filter_range": ["2024-01-02", "2024-01-03"],
+        "eval_last": true,
+        "threshold": 6,
+        "show_progress": false,
+        "normalize_output": true
     },
     "outputs": [
         {
@@ -246,6 +282,10 @@ pipe = pipeline.create(pipe_type="naive", **pipe_config)
 pipe.run()
 ```
 
+All configured _main inputs_ are merged before processing,
+and the _outputs_ are written in each sink configured.
+In this pipeline, _side inputs_ are existing **open gaps** that can be closed while processing.
+
 You can see more configuration examples [here](config/). 
 
 
@@ -259,50 +299,48 @@ You can see more configuration examples [here](config/).
 ### Implementation details
 
 The pipeline is implemented over a (mostly) generic structure that supports:
-1. Grouping all inputs by some composite key with **SSVID** and a time interval (**TI**), for example **(SSVID, YEAR)**.
-2. Grouping side inputs by **SSVID**.
-3. Processing groups from 1.
-4. Grouping boundaries (first and last AIS message of each group) by **SSVID**.
-5. Processing boundaries from 4 together with side inputs from 2, both grouped by **SSVID**.
+1. Grouping all _main inputs_ by some composite key with **SSVID**
+    and a time interval (**TI**). For example, you can group by **(SSVID, YEAR)**.
+2. Grouping _side inputs_ by **SSVID**.
+3. Grouping _boundaries_ (first and last **AIS** messages of each group) by **SSVID**.
+4. Processing _main inputs_ groups from 1.
+5. Processing _boundaries_ from 4 together with _side inputs from_ 2, both grouped by **SSVID**.
 
 Below there is a [diagram](#flow-chart) that describes this work flow.
 
-In the case of the Apache Beam integration with DataFlow runner,
-the groups are processed in parallel.
+> [!TIP]
+> In the case of the Apache Beam integration with [Dataflow runner],
+  the groups can be processed in parallel accross different workers.
 
-#### :warning: Important note on how this pipeline currently groups input messages
+
+#### :warning: Important note on grouping input AIS messages by `ssvid` 
 
 <div align="justify">
 
 The gap detection pipeline fetches **AIS** position messages,
-filtering them by `good_seg`, and groups them by **SSVID**.
-Since **we know** different vessels can broadcast with the same **SSVID**,
+filtering them by `good_seg`, and groups them by `ssvid`.
+Since **we know** different vessels can broadcast with the same `ssvid`,
 this can potentially lead to the situation in which we have a gap
 with an `OFF` message from one vessel
 and a `ON` message from another vessel (or viceversa).
-This could be solved by filtering the input messages
-also by `overlapping_and_short`,
-but this was discarded because this field
-can change over time,
-adding complexity to the process.
-
-Currently,
-because the gap detection process just orders
-all the messages from the same **SSVID** by `timestamp`
-and then evaluates each pair of consecuive messages,
+This can happen because currently,
+the gap detection process just orders
+all the messages from the same `ssvid` by `timestamp`
+and then evaluates each pair of consecuive messages.
+In consequence,
 it will just pick the last `OFF` (or the first `ON`)
-message in the chain when constructing a gap.
-So,
-we know we can have "inconsistent" gaps
-in the sense we described above,
-but we believe those will be a very small
-amount of the total gaps. 
-
-We aim in the future to find a solution to this problem.
+message in the chain when constructing a gap,
+and we could have have "inconsistent" gaps
+in the sense we described above.
+We believe those will be a very small
+amount of the total gaps,
+and we aim in the future to find a solution to this problem.
+One option could be to use something more stable like `vessel_id`
+instead of `ssvid`.
 
 </div>
 
-#### Important modules
+#### Most relevant modules
 
 <div align="center">
 
@@ -311,8 +349,8 @@ We aim in the future to find a solution to this problem.
 | [ais-gaps.py]     | Encapsulates **AIS** gaps query. |
 | [ais-messages.py] | Encapsulates **AIS** position messages query. |
 | [core.py]         | Defines core [pTransform] that integrates [detect_gaps.py] to Apache Beam. |
-| [detect_gaps.py]  | Encapsulates the processing of **AIS** position messages and **open gaps**. |
-| [gap_detector.py] | Defines **GapDetector** class that computes gaps in a list of **AIS** messages. |
+| [detect_gaps.py]  | Defines **DetectGaps** class (core processing step of the pipeline). |
+| [gap_detector.py] | Defines lower level **GapDetector** class that computes gaps in a list of **AIS** messages. |
 
 </div>
 
