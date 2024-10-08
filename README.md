@@ -99,6 +99,11 @@ we create an **open gap** event.
 In that case, the gap will not have an `ON` message,
 until it is **closed** in the future when new data arrives.
 
+Additionally,
+the gaps that surpass the `threshold`
+but satisfies the condition `distance_from_shore_m = 0`
+in the `OFF` or the `ON` message are filtered out from the results.
+
 </div>
 
 ## Usage
