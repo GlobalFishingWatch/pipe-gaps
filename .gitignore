@@ -59,3 +59,6 @@ coverage.xml
 
 # Temporary files
 workdir
+
+# images
+*.png

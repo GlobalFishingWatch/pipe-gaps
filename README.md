@@ -106,6 +106,16 @@ in the `OFF` or the `ON` message are filtered out from the results.
 
 </div>
 
+## Some results
+
+These are some results for 2021-2023.
+
+<div align="center">
+
+![alt text](analysis/gaps.svg)
+
+</div>
+
 ## Usage
 
 ### Installation
@@ -283,7 +293,7 @@ pipe_config = {
     }
 }
 
-pipe = pipeline.create(pipe_type="naive", **pipe_config)
+pipe = pipeline.create(pipe_type="beam", **pipe_config)
 pipe.run()
 ```
 
