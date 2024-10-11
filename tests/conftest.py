@@ -29,7 +29,7 @@ def create_message(ssvid: str, time: datetime, lat: float = 65.4, lon: Optional[
     return {
         "ssvid": ssvid,
         "msgid": "295fa26f-cee9-1d86-8d28-d5ed96c32835",
-        "timestamp": time.astimezone(timezone.utc).timestamp(),
+        "timestamp": time.replace(tzinfo=timezone.utc).timestamp(),
         "receiver_type": "terrestrial",
         "lat": lat,
         "lon": lon,
@@ -111,7 +111,7 @@ class TestCases:
                 {
                     "ssvid": "210023456",
                     "gap_id": "0eb742651071b9e4f192b643511a3e4f",
-                    "gap_start": datetime(2024, 1, 1, 1).timestamp(),
+                    "gap_start_timestamp": datetime(2024, 1, 1, 1).timestamp(),
                     "gap_start_msgid": "3b793b64-46e4-80eb-82ae-1262a2b8eeab",
                     "gap_start_distance_from_shore_m": 97000.0,
                     "gap_start_lat": 44.5,
@@ -122,7 +122,7 @@ class TestCases:
                 {
                     "ssvid": "226013750",
                     "gap_id": "0eb742651071b9e4f192b643511a3e4f",
-                    "gap_start": datetime(2024, 1, 1, 1).timestamp(),
+                    "gap_start_timestamp": datetime(2024, 1, 1, 1).timestamp(),
                     "gap_start_msgid": "3b793b64-46e4-80eb-82ae-1262a2b8eeab",
                     "gap_start_distance_from_shore_m": 97000.0,
                     "gap_start_lat": 44.5,
@@ -143,10 +143,55 @@ class TestCases:
                 create_message(ssvid="446013750", time=datetime(2024, 1, 1, 1)),
                 create_message(ssvid="446013750", time=datetime(2024, 1, 1, 1)),
                 create_message(ssvid="446013750", time=datetime(2024, 1, 1, 5)),
-
             ],
             "threshold": 1,
             "expected_gaps": 1,
             "id": "input_message_with_same_ssvid_and_timestamp"
         }
+    ]
+
+    GAP_BETWEEN_DAYS = [
+        # We only care about the second day, and the gap in between days.
+        # The previous day was processed before, it is only fetched
+        # to compare the last message against the first one of current day.
+        {
+            "messages": [
+                create_message(ssvid="446013750", time=datetime(2024, 1, 1, 10)),
+                create_message(ssvid="446013750", time=datetime(2024, 1, 1, 20)),
+                create_message(ssvid="446013750", time=datetime(2024, 1, 2, 4)),
+                create_message(ssvid="446013750", time=datetime(2024, 1, 2, 15)),
+            ],
+            "open_gaps": [],
+            "threshold": 6,
+            "expected_gaps": 2,
+            "id": "one_ssvid_without_open_gap"
+        },
+        {  # In this case we have an open gap created on 2024-01-01.
+           # The existing open gap should be closed,
+           # and avioid comparison with last message of prev day.
+            "messages": [
+                create_message(ssvid="446013750", time=datetime(2024, 1, 1, 6)),
+                create_message(
+                    ssvid="446013750", lat=44.5, lon=60.1, time=datetime(2024, 1, 1, 15)),
+                create_message(ssvid="446013750", time=datetime(2024, 1, 2, 4)),
+                create_message(ssvid="446013750", time=datetime(2024, 1, 2, 15)),
+            ],
+            "open_gaps": [
+                {
+                    "ssvid": "446013750",
+                    "gap_id": "3751dbd5d488686957bcfe626b8676dd",
+                    "gap_start_timestamp": datetime(
+                        2024, 1, 1, 15, tzinfo=timezone.utc).timestamp(),
+                    "gap_start_msgid": "295fa26f-cee9-1d86-8d28-d5ed96c32835",
+                    "gap_start_distance_from_shore_m": 97000.0,
+                    "gap_start_lat": 44.5,
+                    "gap_start_lon": 60.1,
+                    "gap_start_receiver_type": "terrestrial",
+                    "is_closed": False
+                },
+            ],
+            "threshold": 6,
+            "expected_gaps": 2,
+            "id": "one_ssvid_with_open_gap"
+        },
     ]

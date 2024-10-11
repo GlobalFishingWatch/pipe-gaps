@@ -1,0 +1,50 @@
+[
+    {
+        "description": "A unique id, we try using the spire raw id but sometimes it is not unique.",
+        "mode": "NULLABLE",
+        "name": "msgid",
+        "type": "STRING"
+    },
+    {
+        "description": "A unique set id.",
+        "mode": "NULLABLE",
+        "name": "seg_id",
+        "type": "STRING"
+    },
+    {
+        "description": "The Specific Source Vessel ID, in this case the MMSI",
+        "mode": "NULLABLE",
+        "name": "ssvid",
+        "type": "STRING"
+    },
+    {
+        "description": "The timestap that indicates when the message was transmitted.",
+        "mode": "NULLABLE",
+        "name": "timestamp",
+        "type": "TIMESTAMP"
+    },
+    {
+        "description": "The longitude included in the spire message.",
+        "mode": "NULLABLE",
+        "name": "lon",
+        "type": "FLOAT"
+    },
+    {
+        "description": "The latitude included in the spire message.",
+        "mode": "NULLABLE",
+        "name": "lat",
+        "type": "FLOAT"
+    },
+    {
+        "description": "terrestrial or satellite. ",
+        "mode": "NULLABLE",
+        "name": "receiver_type",
+        "type": "STRING"
+    },
+    {
+        "description": "distance from shore. ",
+        "mode": "NULLABLE",
+        "name": "distance_from_shore_m",
+        "type": "FLOAT"
+    }
+]

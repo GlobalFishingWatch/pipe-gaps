@@ -97,9 +97,9 @@ class GapDetector:
 
     def eval_open_gap(self, message: dict):
         """Evaluates a single message and returns and open gap."""
-        last_m_date = datetime.fromtimestamp(message[self.KEY_TIMESTAMP]).date()
-        next_m_date = last_m_date + timedelta(days=1)
-        next_m_datetime = datetime.combine(next_m_date, datetime.min.time())
+        last_m_datetime = datetime.utcfromtimestamp(message[self.KEY_TIMESTAMP])
+        next_m_date = last_m_datetime.date() + timedelta(days=1)
+        next_m_datetime = datetime.combine(next_m_date, datetime.min.time(), tzinfo=timezone.utc)
 
         next_test_message = {
             self.KEY_TIMESTAMP: next_m_datetime.timestamp(),

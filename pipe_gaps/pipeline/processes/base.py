@@ -10,13 +10,12 @@ logger = logging.getLogger(__name__)
 class Key(ABC):
     """Defines a key function to order or group elements by processing units."""
 
-    @classmethod
-    def name(cls):
-        return cls.__name__
+    def name(self):
+        return self.__class__.__name__
 
     @classmethod
     def format(cls, key):
-        if not isinstance(key, list):
+        if not isinstance(key, (tuple, list)):
             key = [key]
 
         return "({})".format(
@@ -83,17 +82,17 @@ class CoreProcess(ABC):
         return outputs
 
     @abstractmethod
-    def process_group(self, group: tuple[Key, Iterable]) -> Iterable:
+    def process_group(self, group: tuple[Any, Iterable]) -> Iterable:
         """Receives elements inside a group (grouped by groups_key) and process them."""
 
     @abstractmethod
-    def get_group_boundary(self, group: tuple[Key, Iterable]) -> Any:
+    def get_group_boundary(self, group: tuple[Any, Iterable]) -> Any:
         """Receives elements inside a group (grouped by groups_key)
             and returns the group's boundary elements."""
 
     @abstractmethod
     def process_boundaries(
-        self, group: tuple[Key, Iterable], side_inputs: Optional[Iterable]
+        self, group: tuple[Any, Iterable], side_inputs: Optional[Iterable]
     ) -> Iterable:
         """Receives a group of boundary elements (grouped by boundaries_key) and process them."""
 

@@ -2,7 +2,6 @@
 
 import logging
 import apache_beam as beam
-
 from pipe_gaps.pipeline.processes import CoreProcess
 
 logger = logging.getLogger(__name__)
@@ -25,23 +24,41 @@ class Core(beam.PTransform):
         self._process = core_process
         self._side_inputs = side_inputs
 
+        self._filter_range = core_process.filter_range()
+
     def set_side_inputs(self, side_inputs):
         self._side_inputs = side_inputs
 
     def expand(self, pcoll):
         groups = pcoll | self.group_by()
 
-        outputs = (
-            groups | self.process_groups(),
-            groups | self.process_boundaries(),
-        )
+        out_boundaries = groups | self.process_boundaries()
 
-        return outputs | self.join_outputs()
+        if self._filter_range is not None:
+            groups = groups | self.filter_groups()
+
+        out_groups = groups | self.process_groups()
+
+        return (out_groups, out_boundaries) | self.join_outputs()
 
     def group_by(self):
         """Returns the GroupBy pTransform."""
         groups_key = self._process.groups_key()
-        return f"GroupBy{groups_key.__name__}" >> beam.GroupBy(groups_key.func())
+        return f"GroupBy{groups_key.name()}" >> beam.GroupBy(groups_key.func())
+
+    def filter_groups(self):
+        """Returns the FilterGroups pTransform."""
+        groups_key = self._process.groups_key()
+        parse = groups_key.parse_date_func()
+
+        start, end = self._filter_range
+
+        def _filter(x):
+            key, _ = x
+            time = parse(key[1])
+            return time >= start and time < end
+
+        return "FilterGroups" >> beam.Filter(_filter)
 
     def process_groups(self):
         """Returns the ProcessGroups pTransform."""
