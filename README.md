@@ -15,7 +15,7 @@
 
 Time gap detector for **[AIS]** position messages.
 
-Features:
+**Features**:
 * :white_check_mark: Gaps detection core process.
 * :white_check_mark: Gaps detection pipeline.
   - :white_check_mark: command-line interface.
@@ -53,6 +53,22 @@ Features:
 [gap_detector.py]: pipe_gaps/core/gap_detector.py
 [pTransform]: https://beam.apache.org/documentation/programming-guide/#applying-transforms
 
+**Table of contents**:
+- [Introduction](#introduction)
+- [Definition of gap](#definition-of-gap)
+- [Some results](#some-results)
+- [Usage](#usage)
+  * [Installation](#installation)
+  * [Gap detection low level process](#gap-detection-low-level-process)
+  * [Gap detection pipeline](#gap-detection-pipeline)
+    + [BigQuery output schema](#bigquery-output-schema)
+    + [BigQuery data persistence pattern](#bigquery-data-persistence-pattern)
+    + [Using from CLI](#using-from-cli)
+- [Implementation details](#implementation-details)
+  * [:warning: Important note on grouping input AIS messages by `ssvid`](#warning-important-note-on-grouping-input-ais-messages-by-ssvid)
+  * [Most relevant modules](#most-relevant-modules)
+  * [Flow chart](#flow-chart)
+- [References](#references)
 
 ## Introduction
 
@@ -311,84 +327,6 @@ You can see more configuration examples [here](config/).
 > [!CAUTION]
 > Date ranges are inclusive for the start date and exclusive for the end date.
 
-### Implementation details
-
-The pipeline is implemented over a (mostly) generic structure that supports:
-1. Grouping all _main inputs_ by some composite key with **SSVID**
-    and a time interval (**TI**). For example, you can group by **(SSVID, YEAR)**.
-2. Grouping _side inputs_ by **SSVID**.
-3. Grouping _boundaries_ (first and last **AIS** messages of each group) by **SSVID**.
-4. Processing _main inputs_ groups from 1.
-5. Processing _boundaries_ from 4 together with _side inputs from_ 2, both grouped by **SSVID**.
-
-Below there is a [diagram](#flow-chart) that describes this work flow.
-
-> [!TIP]
-> In the case of the Apache Beam integration with [Dataflow runner],
-  the groups can be processed in parallel accross different workers.
-
-
-#### :warning: Important note on grouping input AIS messages by `ssvid` 
-
-<div align="justify">
-
-The gap detection pipeline fetches **AIS** position messages,
-filtering them by `good_seg`, and groups them by `ssvid`.
-Since **we know** different vessels can broadcast with the same `ssvid`,
-this can potentially lead to the situation in which we have a gap
-with an `OFF` message from one vessel
-and a `ON` message from another vessel (or viceversa).
-This can happen because currently,
-the gap detection process just orders
-all the messages from the same `ssvid` by `timestamp`
-and then evaluates each pair of consecuive messages.
-In consequence,
-it will just pick the last `OFF` (or the first `ON`)
-message in the chain when constructing a gap,
-and we could have have "inconsistent" gaps
-in the sense we described above.
-We believe those will be a very small
-amount of the total gaps,
-and we aim in the future to find a solution to this problem.
-One option could be to use something more stable like `vessel_id`
-instead of `ssvid`.
-
-</div>
-
-#### Most relevant modules
-
-<div align="center">
-
-| Module | Description |
-| --- | --- |
-| [ais-gaps.py]     | Encapsulates **AIS** gaps query. |
-| [ais-messages.py] | Encapsulates **AIS** position messages query. |
-| [core.py]         | Defines core [pTransform] that integrates [detect_gaps.py] to Apache Beam. |
-| [detect_gaps.py]  | Defines **DetectGaps** class (core processing step of the pipeline). |
-| [gap_detector.py] | Defines lower level **GapDetector** class that computes gaps in a list of **AIS** messages. |
-
-</div>
-
-#### Flow chart
-
-```mermaid
-flowchart TD;
-    A[Read Inputs] ==> |**AIS Messages**| B[Group Inputs]
-    C[Read Side Inputs] ==> |**Open Gaps**| D[Group Side Inputs]
-
-    subgraph **Core Transform**
-    B ==> |**AIS Messages <br/> by SSVID & TI**| E[Process Groups]
-    B ==> |**AIS Messages <br/> by SSVID & TI**| F[Process Boundaries]
-    D ==> |**Open Gaps  <br/> by SSVID**| F
-    E ==> |**Gaps inside groups**| H[Join Outputs]
-    F ==> |**Gaps in boundaries <br/> New open gaps <br/> Closed open gaps**| H
-    end
-
-    subgraph .
-    H ==> K[Write Outputs]
-    K ==> L[(BigQuery)]
-    end
-```
 
 #### BigQuery output schema
 
@@ -428,7 +366,7 @@ SELECT *
 
 </div>
 
-### Using from CLI:
+#### Using from CLI
 
 Instead of running from python code,
 you can use the provided command-line interface.
@@ -463,6 +401,85 @@ Example:
 > [!NOTE]
 > Any option passed to the CLI not explicitly documented will be inside "options" key of the configuration
   (see above). 
+
+## Implementation details
+
+The pipeline is implemented over a (mostly) generic structure that supports:
+1. Grouping all _main inputs_ by some composite key with **SSVID**
+    and a time interval (**TI**). For example, you can group by **(SSVID, YEAR)**.
+2. Grouping _side inputs_ by **SSVID**.
+3. Grouping _boundaries_ (first and last **AIS** messages of each group) by **SSVID**.
+4. Processing _main inputs_ groups from 1.
+5. Processing _boundaries_ from 4 together with _side inputs from_ 2, both grouped by **SSVID**.
+
+Below there is a [diagram](#flow-chart) that describes this work flow.
+
+> [!TIP]
+> In the case of the Apache Beam integration with [Dataflow runner],
+  the groups can be processed in parallel accross different workers.
+
+
+### :warning: Important note on grouping input AIS messages by `ssvid` 
+
+<div align="justify">
+
+The gap detection pipeline fetches **AIS** position messages,
+filtering them by `good_seg`, and groups them by `ssvid`.
+Since **we know** different vessels can broadcast with the same `ssvid`,
+this can potentially lead to the situation in which we have a gap
+with an `OFF` message from one vessel
+and a `ON` message from another vessel (or viceversa).
+This can happen because currently,
+the gap detection process just orders
+all the messages from the same `ssvid` by `timestamp`
+and then evaluates each pair of consecuive messages.
+In consequence,
+it will just pick the last `OFF` (or the first `ON`)
+message in the chain when constructing a gap,
+and we could have have "inconsistent" gaps
+in the sense we described above.
+We believe those will be a very small
+amount of the total gaps,
+and we aim in the future to find a solution to this problem.
+One option could be to use something more stable like `vessel_id`
+instead of `ssvid`.
+
+</div>
+
+### Most relevant modules
+
+<div align="center">
+
+| Module | Description |
+| --- | --- |
+| [ais-gaps.py]     | Encapsulates **AIS** gaps query. |
+| [ais-messages.py] | Encapsulates **AIS** position messages query. |
+| [core.py]         | Defines core [pTransform] that integrates [detect_gaps.py] to Apache Beam. |
+| [detect_gaps.py]  | Defines **DetectGaps** class (core processing step of the pipeline). |
+| [gap_detector.py] | Defines lower level **GapDetector** class that computes gaps in a list of **AIS** messages. |
+
+</div>
+
+### Flow chart
+
+```mermaid
+flowchart TD;
+    A[Read Inputs] ==> |**AIS Messages**| B[Group Inputs]
+    C[Read Side Inputs] ==> |**Open Gaps**| D[Group Side Inputs]
+
+    subgraph **Core Transform**
+    B ==> |**AIS Messages <br/> by SSVID & TI**| E[Process Groups]
+    B ==> |**AIS Messages <br/> by SSVID & TI**| F[Process Boundaries]
+    D ==> |**Open Gaps  <br/> by SSVID**| F
+    E ==> |**Gaps inside groups**| H[Join Outputs]
+    F ==> |**Gaps in boundaries <br/> New open gaps <br/> Closed open gaps**| H
+    end
+
+    subgraph .
+    H ==> K[Write Outputs]
+    K ==> L[(BigQuery)]
+    end
+```
 
 
 ## References
