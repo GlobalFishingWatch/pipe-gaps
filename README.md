@@ -180,7 +180,6 @@ messages = [
         "receiver_type": "terrestrial",
         "lat": 30.5,
         "lon": 50.6,
-        "distance_from_shore_m": 1.0
     },
     {
         "ssvid": "226013750",
@@ -189,7 +188,6 @@ messages = [
         "receiver_type": "terrestrial",
         "lat": 30.5,
         "lon": 50.6,
-        "distance_from_shore_m": 1.0
     }
 ]
 
