@@ -158,9 +158,7 @@ docker compose run gcloud auth application-default set-quota-project world-fishi
 <div align="justify">
 
 The gap detection core process takes as input a list of **AIS** messages.
-Mandatory fields are `["timestamp", "distance_from_shore_m"]`.
-At this level, messages with different **SSVIDs** are not distinguished.
-The grouping is done in a higher level abstraction.
+Mandatory fields are `["timestamp"]`.
 
 </div>
 
@@ -348,7 +346,8 @@ The versioning of gaps is done with a timestamp `gap_version` field with second 
 
 To query all _active_ gaps,
 you will just need to query the last versions for every `gap_id`.
-For example:
+
+For example,
 ```sql
 SELECT *
     FROM (
@@ -360,6 +359,13 @@ SELECT *
       FROM `world-fishing-827.scratch_tomas_ttl30d.pipe_ais_gaps_filter_no_overlapping_and_short`
     )
     WHERE gap_version = last_version
+```
+
+Another alternative:
+```sql
+SELECT *
+    FROM `world-fishing-827.scratch_tomas_ttl30d.pipe_ais_gaps_filter_no_overlapping_and_short`
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY gap_id ORDER BY gap_version DESC) = 1
 ```
 
 </div>
@@ -439,8 +445,9 @@ in the sense we described above.
 We believe those will be a very small
 amount of the total gaps,
 and we aim in the future to find a solution to this problem.
-One option could be to use something more stable like `vessel_id`
-instead of `ssvid`.
+One option could be to use e.g. `vessel_id`
+which has a much higher chance of separating messages from different vessels
+that broadcast under the same `ssvid`.
 
 </div>
 
