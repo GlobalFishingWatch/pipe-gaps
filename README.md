@@ -43,6 +43,7 @@ Time gap detector for **[AIS]** position messages.
 [pip-tools]: https://pip-tools.readthedocs.io/en/stable/
 [requirements.txt]: requirements.txt
 [requirements/prod.in]: requirements/prod.in
+[segment pipeline]: https://github.com/GlobalFishingWatch/pipe-segment
 [slowly changing dimension]: https://en.wikipedia.org/wiki/Slowly_changing_dimension
 [Semantic Versioning]: https://semver.org
 
@@ -103,22 +104,19 @@ unauthorized transshipments [[1]](#1)[[2]](#2).
 <div align="justify">
 
 We create an **AIS** **gap** event when the period of time between
-consecutive known good **AIS** positions from a single vessel,
-after de-noise and de-spoofing,
-exceeds a configured `threshold` (typically 6 hours).
+consecutive **AIS** positions from a single vessel exceeds a configured `threshold`.
 The `start/end` position messages of the gap are called `OFF/ON` messages,
 respectively.
 
-When the period of time between **last** known good position
+When the period of time between **last** known position
 and the last time of the current day exceeds the `threshold`,
 we create an **open gap** event.
 In that case, the gap will not have an `ON` message,
 until it is **closed** in the future when new data arrives.
 
-Additionally,
-the gaps that surpass the `threshold`
-but satisfies the condition `distance_from_shore_m = 0`
-in the `OFF` or the `ON` message are filtered out from the results.
+Input position messages are filtered by `good_seg` field
+of the segments table in order to remove noise.
+This denoising process happens in the [segment pipeline].
 
 </div>
 
