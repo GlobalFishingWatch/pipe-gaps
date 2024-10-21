@@ -5,7 +5,9 @@ import operator
 
 from typing import Union
 from datetime import datetime, timedelta, timezone
+
 from rich.progress import track
+from geopy.distance import geodesic
 
 from pipe_gaps.utils import pairwise, list_sort
 
@@ -31,6 +33,8 @@ class GapDetector:
     PROGRESS_BAR_DESCRIPTION = "Detecting gaps:"
     KEY_TIMESTAMP = "timestamp"
     KEY_DISTANCE_FROM_SHORE = "distance_from_shore_m"
+    KEY_LON = "lon"
+    KEY_LAT = "lat"
 
     def __init__(
         self,
@@ -48,12 +52,16 @@ class GapDetector:
         self._normalize_output = normalize_output
 
         self._creation_time = int(datetime.now(tz=timezone.utc).timestamp())
-        self.create_gap = self._create_gap_factory()
 
     @classmethod
     def mandatory_keys(cls):
         """Returns properties that input messages must have."""
-        return [cls.KEY_TIMESTAMP, cls.KEY_DISTANCE_FROM_SHORE]
+        return [
+            cls.KEY_TIMESTAMP,
+            cls.KEY_DISTANCE_FROM_SHORE,
+            cls.KEY_LON,
+            cls.KEY_LAT,
+        ]
 
     def detect(self, messages: list[dict]) -> list[dict]:
         """Detects time gaps between AIS position messages from a single vessel.
@@ -112,6 +120,42 @@ class GapDetector:
 
         return None
 
+    def create_gap(self, off_m: dict, on_m: dict, gap_id=None, is_closed=True):
+        ssvid = off_m["ssvid"]
+
+        if gap_id is None:
+            gap_id = self._generate_gap_id(off_m)
+
+        gap = dict(
+            ssvid=ssvid,
+            gap_id=gap_id,
+            gap_version=self._creation_time,
+            gap_distance_m=self._calc_distance(off_m, on_m),
+            is_closed=is_closed,
+        )
+
+        if not self._normalize_output:
+            off_on_messages = dict(
+                OFF=off_m,
+                ON=on_m
+            )
+        else:
+            off_m_copy = {k: v for k, v in off_m.items() if k != ssvid}
+            on_m_copy = {k: v for k, v in on_m.items() if k != ssvid}
+
+            def _msg_fields(msg_type, msg):
+                return {f"gap_{msg_type}_{k}": v for k, v in msg.items()}
+
+            off_on_messages = {
+                **_msg_fields("start", off_m_copy),
+                **_msg_fields("end", on_m_copy)
+            }
+
+        return {
+            **gap,
+            **off_on_messages
+        }
+
     # @profile  # noqa  # Uncomment to run memory profiler
     def _sort_messages(self, messages):
         key = operator.itemgetter(self.KEY_TIMESTAMP)
@@ -119,6 +163,30 @@ class GapDetector:
 
     def _build_progress_bar(self, gaps, total):
         return track(gaps, total=total, description=self.PROGRESS_BAR_DESCRIPTION)
+
+    def _calc_distance(self, off_m: dict, on_m: dict) -> float:
+        def _latlon_point(message):
+            return (message["lat"], message["lon"])
+
+        off_point = _latlon_point(off_m)
+        on_point = _latlon_point(on_m)
+
+        try:
+            distance = geodesic(off_point, on_point).meters
+        except ValueError:
+            distance = None
+
+        return distance
+
+    def _generate_gap_id(self, message: dict):
+        s = "{}|{}|{}|{}".format(
+            message["ssvid"],
+            message["timestamp"],
+            message["lat"] or 0.0,
+            message["lon"] or 0.0
+        )
+
+        return hashlib.md5(s.encode('utf-8')).hexdigest()
 
     def _filter_condition(self, off_m: dict, on_m: dict) -> bool:
         off_distance_from_shore = off_m[self.KEY_DISTANCE_FROM_SHORE]
@@ -129,53 +197,3 @@ class GapDetector:
             and (on_distance_from_shore is None or on_distance_from_shore > 0)
             and (off_distance_from_shore is None or off_distance_from_shore > 0)
         )
-
-    def _create_gap_factory(self):
-        if self._normalize_output:
-            return self._create_gap_normalized
-
-        return self._create_gap_unnormalized
-
-    def _create_gap_normalized(self, off_m, on_m, gap_id=None, is_closed=True):
-        if gap_id is None:
-            gap_id = self._generate_gap_id(off_m)
-
-        ssvid = off_m["ssvid"]
-
-        off_m_copy = {k: v for k, v in off_m.items() if k != "ssvid"}
-        on_m_copy = {k: v for k, v in on_m.items() if k != "ssvid"}
-
-        gap = dict(
-            gap_id=gap_id, gap_version=self._creation_time, ssvid=ssvid, is_closed=is_closed)
-
-        def _msg_fields(msg_type, msg):
-            return {f"gap_{msg_type}_{k}": v for k, v in msg.items()}
-
-        return {
-            **gap,
-            **_msg_fields("start", off_m_copy),
-            **_msg_fields("end", on_m_copy)
-        }
-
-    def _create_gap_unnormalized(self, off_m, on_m, gap_id=None, is_closed=True):
-        if gap_id is None:
-            gap_id = self._generate_gap_id(off_m)
-
-        return dict(
-            gap_id=gap_id,
-            gap_version=self._creation_time,
-            ssvid=off_m["ssvid"],
-            is_closed=is_closed,
-            OFF=off_m,
-            ON=on_m
-        )
-
-    def _generate_gap_id(self, message):
-        s = "{}|{}|{}|{}".format(
-            message["ssvid"],
-            message["timestamp"],
-            message["lat"] or 0.0,
-            message["lon"] or 0.0
-        )
-
-        return hashlib.md5(s.encode('utf-8')).hexdigest()

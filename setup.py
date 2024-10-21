@@ -26,6 +26,7 @@ setuptools.setup(
     ],
     install_requires=[
         "importlib-resources~=6.0",
+        "geopy~=2.4",
         "google-cloud-bigquery~=3.0",
         "pandas",
         "py-cpuinfo~=9.0",
