@@ -1,4 +1,4 @@
-"""This module encapsulates database queries."""
+"""This module encapsulates AIS GAPS query."""
 import logging
 import typing
 
