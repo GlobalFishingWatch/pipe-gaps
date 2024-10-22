@@ -30,7 +30,6 @@ class GapDetector:
     THRESHOLD = timedelta(hours=12, minutes=0, seconds=0)
     PROGRESS_BAR_DESCRIPTION = "Detecting gaps:"
     KEY_TIMESTAMP = "timestamp"
-    KEY_DISTANCE_FROM_SHORE = "distance_from_shore_m"
 
     def __init__(
         self,
@@ -53,7 +52,7 @@ class GapDetector:
     @classmethod
     def mandatory_keys(cls):
         """Returns properties that input messages must have."""
-        return [cls.KEY_TIMESTAMP, cls.KEY_DISTANCE_FROM_SHORE]
+        return [cls.KEY_TIMESTAMP]
 
     def detect(self, messages: list[dict]) -> list[dict]:
         """Detects time gaps between AIS position messages from a single vessel.
@@ -103,7 +102,6 @@ class GapDetector:
 
         next_test_message = {
             self.KEY_TIMESTAMP: next_m_datetime.timestamp(),
-            self.KEY_DISTANCE_FROM_SHORE: 1,
         }
 
         if self._filter_condition(message, next_test_message):
@@ -121,14 +119,7 @@ class GapDetector:
         return track(gaps, total=total, description=self.PROGRESS_BAR_DESCRIPTION)
 
     def _filter_condition(self, off_m: dict, on_m: dict) -> bool:
-        off_distance_from_shore = off_m[self.KEY_DISTANCE_FROM_SHORE]
-        on_distance_from_shore = on_m[self.KEY_DISTANCE_FROM_SHORE]
-
-        return (
-            (on_m[self.KEY_TIMESTAMP] - off_m[self.KEY_TIMESTAMP]) > self._threshold
-            and (on_distance_from_shore is None or on_distance_from_shore > 0)
-            and (off_distance_from_shore is None or off_distance_from_shore > 0)
-        )
+        return (on_m[self.KEY_TIMESTAMP] - off_m[self.KEY_TIMESTAMP]) > self._threshold
 
     def _create_gap_factory(self):
         if self._normalize_output:
