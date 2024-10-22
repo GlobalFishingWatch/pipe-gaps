@@ -121,7 +121,9 @@ def _run_process(input_size: int = 1000) -> None:
         threshold=timedelta(hours=1, minutes=20)
     )
 
-    gd.detect(_build_input_messages(input_size))
+    messages = _build_input_messages(input_size)
+    _, elapsed = timing(gd.detect, quiet=True)(messages)
+    return elapsed
 
 
 def stats(path: Path):
@@ -156,7 +158,7 @@ def run_benchmark(
     logger.info("========== MEASUREMENTS ==========")
     times = []
     for rep in range(1, reps + 1):
-        _, elapsed = timing(_run_process, quiet=True)(input_size)
+        elapsed = _run_process(input_size)
         logger.info("Repetition {}; duration: {} sec".format(rep, round(elapsed, 3)))
         times.append(elapsed)
 
