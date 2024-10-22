@@ -61,7 +61,7 @@
 {"ssvid":"412331104","msgid":"beec835e-b243-b295-1b42-576e905ab2ac","timestamp":1704254798,"receiver_type":"terrestrial","lat":45.4,"lon":80.6,"distance_from_shore_m":1}
 {"ssvid":"412331104","msgid":"559e4db3-2f67-3b6e-f5c5-a5f5b8e29714","timestamp":1704278922,"receiver_type":"terrestrial","lat":45.4,"lon":80.6,"distance_from_shore_m":1}
 {"ssvid":"412331104","msgid":"b84ae3ed-db22-014d-70a2-49c958d2f786","timestamp":1704308258,"receiver_type":"terrestrial","lat":45.4,"lon":80.6,"distance_from_shore_m":1}
-{"ssvid":"412331104","msgid":"bdca99c0-a7d0-715f-0969-2b5dc9c150e4","timestamp":1704132937,"receiver_type":"terrestrial","lat":45.4,"lon":80.6,"distance_from_shore_m":1}
+{"ssvid":"412331104","msgid":"bdca99c0-a7d0-715f-0969-2b5dc9c150e4","timestamp":1704132937,"receiver_type":"terrestrial","lat":45.4,"lon":null,"distance_from_shore_m":1}
 {"ssvid":"412331104","msgid":"bdaaf40a-2fdd-2ed5-1c1d-c39a63c8dbee","timestamp":1704128800,"receiver_type":"terrestrial","lat":45.4,"lon":80.6,"distance_from_shore_m":1}
 {"ssvid":"412331104","msgid":"a689823a-3080-8d6d-ce63-747d8d000a9e","timestamp":1704152738,"receiver_type":"terrestrial","lat":45.4,"lon":80.6,"distance_from_shore_m":1}
 {"ssvid":"412331104","msgid":"40071bc7-0756-535b-8ac1-165faace361d","timestamp":1704120160,"receiver_type":"terrestrial","lat":45.4,"lon":80.6,"distance_from_shore_m":1}

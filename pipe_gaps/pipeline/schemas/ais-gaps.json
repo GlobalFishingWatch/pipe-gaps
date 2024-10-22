@@ -18,6 +18,12 @@
         "description": "The time in which the gap was created."
     },
     {
+        "mode": "NULLABLE",
+        "name": "gap_distance_m",
+        "type": "FLOAT",
+        "description": "Distance (in meters) between start and end positions."
+    },
+    {
         "mode": "REQUIRED",
         "name": "gap_start_timestamp",
         "type": "TIMESTAMP",
