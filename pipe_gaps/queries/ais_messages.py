@@ -24,6 +24,7 @@ class Message(typing.NamedTuple):
     lon: float
     receiver_type: str
     distance_from_shore_m: float
+    distance_from_port_m: float
 
     def __getitem__(self, key):
         """Implement dict access interface."""
