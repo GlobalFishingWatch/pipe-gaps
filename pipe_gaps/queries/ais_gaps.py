@@ -18,8 +18,8 @@ class AISGap(typing.NamedTuple):
     https://docs.pydantic.dev/latest/concepts/models/#dynamic-model-creation
     """
 
-    ssvid: str
     gap_id: str
+    gap_ssvid: str
     gap_start_timestamp: datetime
     gap_start_msgid: str
     gap_start_lat: float
