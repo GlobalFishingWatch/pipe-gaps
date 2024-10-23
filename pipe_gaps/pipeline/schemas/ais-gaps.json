@@ -61,6 +61,12 @@
     },
     {
         "mode": "NULLABLE",
+        "name": "gap_start_distance_from_port_m",
+        "type": "FLOAT",
+        "description": "distance from nearest port (meters) at start of gap (using rasterized distance)"
+    },
+    {
+        "mode": "NULLABLE",
         "name": "gap_end_timestamp",
         "type": "TIMESTAMP",
         "description": "the timestamp of the position at the end of the gap"
@@ -94,6 +100,12 @@
         "name": "gap_end_distance_from_shore_m",
         "type": "FLOAT",
         "description": "distance from shore (meters) at end of gap (using rasterized distance)"
+    },
+    {
+        "mode": "NULLABLE",
+        "name": "gap_end_distance_from_port_m",
+        "type": "FLOAT",
+        "description": "distance from nearest port (meters) at end of gap (using rasterized distance)"
     },
     {
         "mode": "REQUIRED",

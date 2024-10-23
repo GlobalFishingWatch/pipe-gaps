@@ -26,6 +26,7 @@ class AISGap(typing.NamedTuple):
     gap_start_lon: float
     gap_start_receiver_type: str
     gap_start_distance_from_shore_m: float
+    gap_start_distance_from_port_m: float
     gap_end_timestamp: datetime = None
     gap_end_msgid: str = None
     gap_end_lat: float = None
