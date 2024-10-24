@@ -20,10 +20,15 @@ class AISGap(typing.NamedTuple):
 
     gap_id: str
     gap_ssvid: str
+    gap_version: str
+    gap_distance_m: float
+    gap_duration_h: float
+    gap_implied_speed_knots: float
     gap_start_timestamp: datetime
     gap_start_msgid: str
     gap_start_lat: float
     gap_start_lon: float
+    gap_start_ais_class: str
     gap_start_receiver_type: str
     gap_start_distance_from_shore_m: float
     gap_start_distance_from_port_m: float
@@ -31,8 +36,10 @@ class AISGap(typing.NamedTuple):
     gap_end_msgid: str = None
     gap_end_lat: float = None
     gap_end_lon: float = None
+    gap_end_ais_class: str = None
     gap_end_receiver_type: str = None
     gap_end_distance_from_shore_m: float = None
+    gap_end_distance_from_port_m: float = None
     is_closed: bool = False
 
     def __getitem__(self, key):
@@ -81,7 +88,7 @@ class AISGapsQuery(Query):
         query = self.TEMPLATE.format(
             source_gaps=self._source_gaps,
             start_date=self._start_date,
-            fields=self._select_clause()
+            fields=self.select_clause()
         )
 
         if self._ssvids is not None:

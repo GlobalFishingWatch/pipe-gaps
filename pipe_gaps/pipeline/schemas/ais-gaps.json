@@ -3,7 +3,7 @@
         "mode": "REQUIRED",
         "name": "gap_id",
         "type": "STRING",
-        "description": "gap id (has of ssvid, gap_start, gap_start_lat, and gap_start_lon)"
+        "description": "Gap ID (hash of ssvid, gap_start, gap_start_lat, and gap_start_lon)."
     },
     {
         "mode": "REQUIRED",
@@ -61,6 +61,12 @@
     },
     {
         "mode": "NULLABLE",
+        "name": "gap_start_ais_class",
+        "type": "STRING",
+        "description": "AIS device class at start of gap."
+    },
+    {
+        "mode": "NULLABLE",
         "name": "gap_start_receiver_type",
         "type": "STRING",
         "description": "receiver type at start of gap"
@@ -100,6 +106,12 @@
         "name": "gap_end_lon",
         "type": "FLOAT",
         "description": "longitude at end of gap"
+    },
+    {
+        "mode": "NULLABLE",
+        "name": "gap_end_ais_class",
+        "type": "STRING",
+        "description": "AIS device class at end of gap."
     },
     {
         "mode": "NULLABLE",

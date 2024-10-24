@@ -21,7 +21,7 @@ class Query(ABC):
     def subclasses(cls):
         return {x.NAME: x for x in cls.__subclasses__()}
 
-    def _select_clause(self):
+    def select_clause(self):
         fields = typing.get_type_hints(self.schema())
 
         clause = ""

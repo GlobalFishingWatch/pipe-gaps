@@ -33,7 +33,8 @@ def create_message(ssvid: str, time: datetime, lat: float = 65.4, lon: Optional[
         "receiver_type": "terrestrial",
         "lat": lat,
         "lon": lon,
-        "distance_from_shore_m": 1.0
+        "distance_from_shore_m": 1.0,
+        "ais_class": "A",
     }
 
 
