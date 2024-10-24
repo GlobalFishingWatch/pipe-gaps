@@ -68,6 +68,7 @@ class GapDetector:
         """Detects time gaps between AIS position messages from a single vessel.
 
         Currently takes (1.75 ± 0.01) seconds to process 10M messages (i7-1355U 5.0GHz).
+        TODO: benchmark must be run again with a more representative input (more gaps found).
 
         Args:
             messages: List of AIS messages.
@@ -97,7 +98,7 @@ class GapDetector:
             gaps = list(
                 self.create_gap(start, end)
                 for start, end in gaps
-                if self._filter_condition(start, end)
+                if self._gap_condition(start, end)
             )
         except KeyError as e:
             raise GapDetectionError("Missing key in input messages: '{}'".format(e.args[0]))
@@ -114,23 +115,59 @@ class GapDetector:
             self.KEY_TIMESTAMP: next_m_datetime.timestamp(),
         }
 
-        if self._filter_condition(message, next_test_message):
-            null_msg = {k: None for k in message}
-            return self.create_gap(off_m=message, on_m=null_msg, is_closed=False)
+        if self._gap_condition(message, next_test_message):
+            return self.create_gap(off_m=message, on_m=None)
 
         return None
 
-    def create_gap(self, off_m: dict, on_m: dict, gap_id=None, is_closed=True):
+    def create_gap(self, off_m: dict, on_m: dict = None, gap_id=None):
+        """Creates a gap as a dictionary.
+
+        Args:
+            off_m: OFF message. When the AIS reception went OFF.
+            on_m: ON message. When the AIS reception went ON. If not provided,
+                an open gap will be created.
+            gap_id: unique identifier for the gap. If not provided,
+                will be generated from [ssvid, timestamp, lat, lon] of the OFF message.
+
+        Returns:
+            The resultant gap. A dictionary containing:
+                * gap_id
+                * gap_ssvid
+                * gap_version
+                * gap_distance_m
+                * gap_duration_h
+                * gap_implied_speed_knots
+                * gap_start_* (all OFF message fields)
+                * gap_end_* (all ON message fields)
+                * is_closed
+        """
         ssvid = off_m[self.KEY_SSVID]
 
         if gap_id is None:
             gap_id = self._generate_gap_id(off_m)
 
+        is_closed = on_m is not None
+
+        distance_m = None
+        duration_h = None
+        implied_speed_knots = None
+
+        if is_closed:
+            distance_m = self._gap_distance_meters(off_m, on_m)
+            duration_h = self._gap_duration_seconds(off_m, on_m) / 60 / 60
+            implied_speed_knots = self._gap_implied_speed_knots(distance_m, duration_h)
+
+        else:
+            on_m = {k: None for k in off_m}
+
         gap = dict(
-            ssvid=ssvid,
+            gap_ssvid=ssvid,
             gap_id=gap_id,
             gap_version=self._creation_time,
-            gap_distance_m=self._calc_distance(off_m, on_m),
+            gap_distance_m=distance_m,
+            gap_duration_h=duration_h,
+            gap_implied_speed_knots=implied_speed_knots,
             is_closed=is_closed,
         )
 
@@ -161,7 +198,20 @@ class GapDetector:
     def _build_progress_bar(self, gaps, total):
         return track(gaps, total=total, description=self.PROGRESS_BAR_DESCRIPTION)
 
-    def _calc_distance(self, off_m: dict, on_m: dict) -> float:
+    def _gap_condition(self, off_m: dict, on_m: dict) -> bool:
+        return self._gap_duration_seconds(off_m, on_m) > self._threshold
+
+    def _generate_gap_id(self, message: dict):
+        s = "{}|{}|{}|{}".format(
+            message[self.KEY_SSVID],
+            message[self.KEY_TIMESTAMP],
+            message[self.KEY_LAT] or 0.0,
+            message[self.KEY_LON] or 0.0
+        )
+
+        return hashlib.md5(s.encode('utf-8')).hexdigest()
+
+    def _gap_distance_meters(self, off_m: dict, on_m: dict) -> float:
         def _latlon_point(message):
             return (message[self.KEY_LAT], message[self.KEY_LON])
 
@@ -175,15 +225,13 @@ class GapDetector:
 
         return distance
 
-    def _generate_gap_id(self, message: dict):
-        s = "{}|{}|{}|{}".format(
-            message[self.KEY_SSVID],
-            message[self.KEY_TIMESTAMP],
-            message[self.KEY_LAT] or 0.0,
-            message[self.KEY_LON] or 0.0
-        )
+    def _gap_duration_seconds(self, off_m: dict, on_m: dict) -> float:
+        return on_m[self.KEY_TIMESTAMP] - off_m[self.KEY_TIMESTAMP]
 
-        return hashlib.md5(s.encode('utf-8')).hexdigest()
+    def _gap_implied_speed_knots(self, gap_distance_m: float, gap_duration_h: float) -> float:
+        try:
+            implied_speed_knots = (gap_distance_m / gap_duration_h) / 1852
+        except TypeError:  # Happens when gap_distance_m is NULL.
+            implied_speed_knots = None
 
-    def _filter_condition(self, off_m: dict, on_m: dict) -> bool:
-        return (on_m[self.KEY_TIMESTAMP] - off_m[self.KEY_TIMESTAMP]) > self._threshold
+        return implied_speed_knots

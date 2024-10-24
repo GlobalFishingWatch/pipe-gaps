@@ -1,15 +1,15 @@
 [
     {
         "mode": "REQUIRED",
-        "name": "ssvid",
-        "type": "STRING",
-        "description": "ssvid"
-    },
-    {
-        "mode": "REQUIRED",
         "name": "gap_id",
         "type": "STRING",
         "description": "gap id (has of ssvid, gap_start, gap_start_lat, and gap_start_lon)"
+    },
+    {
+        "mode": "REQUIRED",
+        "name": "gap_ssvid",
+        "type": "STRING",
+        "description": "ssvid"
     },
     {
         "mode": "REQUIRED",
@@ -22,6 +22,18 @@
         "name": "gap_distance_m",
         "type": "FLOAT",
         "description": "Distance (in meters) between start and end positions."
+    },
+    {
+        "mode": "NULLABLE",
+        "name": "gap_duration_h",
+        "type": "FLOAT",
+        "description": "Length of the gap (in hours)."
+    },
+    {
+        "mode": "NULLABLE",
+        "name": "gap_implied_speed_knots",
+        "type": "FLOAT",
+        "description": "Implied speed during the gap based on gap_duration_h and gap_distance_m."
     },
     {
         "mode": "REQUIRED",
