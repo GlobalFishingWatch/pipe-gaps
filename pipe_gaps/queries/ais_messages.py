@@ -67,6 +67,15 @@ class AISMessagesQuery(Query):
         )
     """
 
+    AIS_CLASS = """
+      (CASE
+          WHEN type IN ('AIS.1', 'AIS.2', 'AIS.3') THEN 'A'
+          WHEN type IN ('AIS.18','AIS.19') THEN 'B'
+          ELSE NULL
+       END
+      ) as ais_class
+    """
+
     def __init__(
         self,
         start_date: date,
@@ -93,7 +102,7 @@ class AISMessagesQuery(Query):
             source_segments=self._source_segments,
             start_date=self._start_date,
             end_date=self._end_date,
-            fields=self._select_clause(),
+            fields=self.select_clause(),
             overlapping_and_short=overlapping_and_short
         )
 
@@ -105,6 +114,13 @@ class AISMessagesQuery(Query):
         logger.debug(query)
 
         return query
+
+    def select_clause(self):
+        fields = super().select_clause()
+        fields = f"""
+          {fields},
+          {self.AIS_CLASS}
+        """
 
     def schema(self):
         return Message
