@@ -46,6 +46,20 @@ def create_message(
     }
 
 
+def create_open_gap(time: datetime = datetime(2024, 1, 1), ssvid: str = "446013750"):
+    return {
+        "ssvid": ssvid,
+        "gap_id": "3751dbd5d488686957bcfe626b8676dd",
+        "gap_start_timestamp": time.replace(tzinfo=timezone.utc).timestamp(),
+        "gap_start_msgid": "295fa26f-cee9-1d86-8d28-d5ed96c32835",
+        "gap_start_distance_from_shore_m": 97000.0,
+        "gap_start_lat": 44.5,
+        "gap_start_lon": 60.1,
+        "gap_start_receiver_type": "terrestrial",
+        "is_closed": False
+    }
+
+
 class TestCases:
     GAP_BETWEEN_YEARS = [
         {
@@ -117,28 +131,8 @@ class TestCases:
                 create_message(ssvid="226013750", time=datetime(2024, 1, 5, 13)),
             ],
             "open_gaps": [
-                {
-                    "ssvid": "210023456",
-                    "gap_id": "0eb742651071b9e4f192b643511a3e4f",
-                    "gap_start_timestamp": datetime(2024, 1, 1, 1).timestamp(),
-                    "gap_start_msgid": "3b793b64-46e4-80eb-82ae-1262a2b8eeab",
-                    "gap_start_distance_from_shore_m": 97000.0,
-                    "gap_start_lat": 44.5,
-                    "gap_start_lon": 60.1,
-                    "gap_start_receiver_type": "terrestrial",
-                    "is_closed": False
-                },
-                {
-                    "ssvid": "226013750",
-                    "gap_id": "0eb742651071b9e4f192b643511a3e4f",
-                    "gap_start_timestamp": datetime(2024, 1, 1, 1).timestamp(),
-                    "gap_start_msgid": "3b793b64-46e4-80eb-82ae-1262a2b8eeab",
-                    "gap_start_distance_from_shore_m": 97000.0,
-                    "gap_start_lat": 44.5,
-                    "gap_start_lon": 60.1,
-                    "gap_start_receiver_type": "terrestrial",
-                    "is_closed": False
-                },
+                create_open_gap(ssvid="210023456"),
+                create_open_gap(ssvid="226013750"),
             ],
             "threshold": 6,
             "expected_gaps": 1,
@@ -160,15 +154,16 @@ class TestCases:
     ]
 
     GAP_BETWEEN_DAYS = [
-        # We only care about the second day, and the gap in between days.
-        # The previous day was processed before, it is only fetched
-        # to compare the last message against the first one of current day.
+        # We only want to detect gaps in the second day (the current day).
+        # The previous day was processed yesterday, it is only fetched
+        # to compare the last message against the first one of current day,
+        # and to be able to compute positions before N hours before gap.
         {
             "messages": [
-                create_message(ssvid="446013750", time=datetime(2024, 1, 1, 10)),
-                create_message(ssvid="446013750", time=datetime(2024, 1, 1, 20)),
-                create_message(ssvid="446013750", time=datetime(2024, 1, 2, 4)),
-                create_message(ssvid="446013750", time=datetime(2024, 1, 2, 15)),
+                create_message(time=datetime(2024, 1, 1, 10)),
+                create_message(time=datetime(2024, 1, 1, 20)),
+                create_message(time=datetime(2024, 1, 2, 4)),
+                create_message(time=datetime(2024, 1, 2, 15)),
             ],
             "open_gaps": [],
             "threshold": 6,
@@ -177,27 +172,15 @@ class TestCases:
         },
         {  # In this case we have an open gap created on 2024-01-01.
            # The existing open gap should be closed,
-           # and avioid comparison with last message of prev day.
+           # and the comparison with last message of prev day should be skipped.
             "messages": [
-                create_message(ssvid="446013750", time=datetime(2024, 1, 1, 6)),
-                create_message(
-                    ssvid="446013750", lat=44.5, lon=60.1, time=datetime(2024, 1, 1, 15)),
-                create_message(ssvid="446013750", time=datetime(2024, 1, 2, 4)),
-                create_message(ssvid="446013750", time=datetime(2024, 1, 2, 15)),
+                create_message(time=datetime(2024, 1, 1, 6)),
+                create_message(time=datetime(2024, 1, 1, 15), lat=44.5, lon=60.1),
+                create_message(time=datetime(2024, 1, 2, 4)),
+                create_message(time=datetime(2024, 1, 2, 15)),
             ],
             "open_gaps": [
-                {
-                    "ssvid": "446013750",
-                    "gap_id": "3751dbd5d488686957bcfe626b8676dd",
-                    "gap_start_timestamp": datetime(
-                        2024, 1, 1, 15, tzinfo=timezone.utc).timestamp(),
-                    "gap_start_msgid": "295fa26f-cee9-1d86-8d28-d5ed96c32835",
-                    "gap_start_distance_from_shore_m": 97000.0,
-                    "gap_start_lat": 44.5,
-                    "gap_start_lon": 60.1,
-                    "gap_start_receiver_type": "terrestrial",
-                    "is_closed": False
-                },
+                create_open_gap(time=datetime(2024, 1, 1)),
             ],
             "threshold": 6,
             "expected_gaps": 2,
