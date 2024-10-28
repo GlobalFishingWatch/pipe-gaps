@@ -215,10 +215,9 @@ class GapDetector:
                 **_msg_fields("end", on_m)
             }
 
-        return {
-            **gap,
-            **off_on_messages
-        }
+        gap.update(off_on_messages)
+
+        return gap
 
     # @profile  # noqa  # Uncomment to run memory profiler
     def _sort_messages(self, messages):
