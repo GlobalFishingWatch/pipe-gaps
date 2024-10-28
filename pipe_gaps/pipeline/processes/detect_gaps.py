@@ -88,10 +88,11 @@ class DetectGaps(CoreProcess):
                 gaps[g["gap_id"]] = g
 
         if self._eval_last:
-            new_open_gap = self._gd.eval_open_gap(boundaries.last_message())
+            last_message = boundaries.last_message()
 
-            if new_open_gap is not None:
+            if self._gd.eval_open_gap(last_message):
                 logger.info(f"Creating new open gap for {formatted_key}...")
+                new_open_gap = self._gd.create_gap(off_m=last_message)
                 gaps[new_open_gap["gap_id"]] = new_open_gap
 
         open_gap = self._load_open_gap(side_inputs, key)

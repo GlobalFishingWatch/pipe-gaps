@@ -60,7 +60,6 @@ class GapDetector:
         self._sort_method = sort_method
         self._normalize_output = normalize_output
 
-        self._creation_time = int(datetime.now(tz=timezone.utc).timestamp())
         self._n_seconds_before = self._n_hours_before * 3600
 
     @classmethod
@@ -115,8 +114,18 @@ class GapDetector:
 
         return gaps
 
-    def eval_open_gap(self, message: dict):
-        """Evaluates a single message and returns and open gap."""
+    def eval_open_gap(self, message: dict) -> bool:
+        """Evaluates if a message constitutes an open gap.
+
+        The condition to create an open gap is that the time between
+        the message's timestamp and end-of-day's timestamp surpasses the configured threshold.
+
+        Args:
+            message: position message to evaluate.
+
+        Returns:
+            A boolean indicating if the condition for open gap is met.
+        """
         last_m_datetime = datetime.utcfromtimestamp(message[self.KEY_TIMESTAMP])
         next_m_date = last_m_datetime.date() + timedelta(days=1)
         next_m_datetime = datetime.combine(next_m_date, datetime.min.time(), tzinfo=timezone.utc)
@@ -125,10 +134,7 @@ class GapDetector:
             self.KEY_TIMESTAMP: next_m_datetime.timestamp(),
         }
 
-        if self._gap_condition(message, next_test_message):
-            return self.create_gap(off_m=message, on_m=None)
-
-        return None
+        return self._gap_condition(message, next_test_message)
 
     def create_gap(self, off_m: dict, on_m: dict = None, gap_id=None, previous_positions=None):
         """Creates a gap as a dictionary.
@@ -139,7 +145,9 @@ class GapDetector:
                 an open gap will be created.
             gap_id: unique identifier for the gap. If not provided,
                 will be generated from [ssvid, timestamp, lat, lon] of the OFF message.
-            previous_positions: previous positions N hours before the gap begins.
+            previous_positions: list of previous positions before the gap begins.
+                If provided, positions will be counted,
+                differentiating satellite and terrestrial receivers.
 
         Returns:
             The resultant gap. A dictionary containing:
@@ -175,7 +183,7 @@ class GapDetector:
         gap = dict(
             gap_ssvid=ssvid,
             gap_id=gap_id,
-            gap_version=self._creation_time,
+            gap_version=int(datetime.now(tz=timezone.utc).timestamp()),
             gap_distance_m=distance_m,
             gap_duration_h=duration_h,
             gap_implied_speed_knots=implied_speed_knots,
