@@ -170,9 +170,10 @@ class TestCases:
             "expected_gaps": 2,
             "id": "one_ssvid_without_open_gap"
         },
-        {  # In this case we have an open gap created on 2024-01-01.
-           # The existing open gap should be closed,
-           # and the comparison with last message of prev day should be skipped.
+        {
+            # In this case we have an open gap created on 2024-01-01.
+            # The existing open gap should be closed,
+            # and the comparison with last message of prev day should be skipped.
             "messages": [
                 create_message(time=datetime(2024, 1, 1, 6)),
                 create_message(time=datetime(2024, 1, 1, 15), lat=44.5, lon=60.1),
@@ -185,5 +186,24 @@ class TestCases:
             "threshold": 6,
             "expected_gaps": 2,
             "id": "one_ssvid_with_open_gap"
+        },
+    ]
+
+    POSITIONS_HOURS_BEFORE = [
+        {
+            "messages": [
+                create_message(time=datetime(2023, 12, 31, 19), receiver_type="terrestrial"),
+                create_message(time=datetime(2023, 12, 31, 20), receiver_type="satellite"),
+                create_message(time=datetime(2023, 12, 31, 21), receiver_type="terrestrial"),
+                create_message(time=datetime(2023, 12, 31, 22), receiver_type="satellite"),   # gap
+                create_message(time=datetime(2024, 1, 1, 1), receiver_type="satellite"),
+                create_message(time=datetime(2024, 1, 1, 2), receiver_type="terrestrial"),  # gap
+                create_message(time=datetime(2024, 1, 1, 5), receiver_type="terrestrial"),
+            ],
+            "open_gaps": [],
+            "threshold": 2,
+            "date_range": None,
+            "expected_gaps": 2,
+            "id": "one_ssvid"
         },
     ]

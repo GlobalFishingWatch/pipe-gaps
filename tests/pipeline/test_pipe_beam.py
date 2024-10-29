@@ -302,6 +302,58 @@ def test_no_duplicated_gaps(tmp_path, messages, threshold, expected_gaps):
     assert len(gaps) == expected_gaps
 
 
+@pytest.mark.parametrize(
+    "messages, threshold, date_range, expected_gaps",
+    [
+        pytest.param(
+            case["messages"],
+            case["threshold"],
+            case["date_range"],
+            case["expected_gaps"],
+            id=case["id"]
+        )
+        for case in TestCases.POSITIONS_HOURS_BEFORE
+    ],
+)
+def test_positions_hours_before(tmp_path, messages, threshold, date_range, expected_gaps):
+    input_file = tmp_path.joinpath("messages-test-hours-before.json")
+    json_save(messages, input_file)
+
+    core_config = get_core_config()
+    core_config["threshold"] = threshold
+    core_config["groups_key"] = "ssvid_year"
+    core_config["filter_range"] = date_range
+
+    inputs = [get_input_file_config(input_file, schema="messages")]
+
+    outputs_config = [get_outputs_config()]
+
+    pipe = BeamPipeline.build(
+        inputs=inputs,
+        work_dir=tmp_path,
+        core=core_config,
+        outputs=outputs_config
+    )
+    pipe.run()
+
+    gaps = json_load(pipe.output_path, lines=True)
+    print(gaps)
+
+    assert len(gaps) == expected_gaps
+
+    # first = gaps[0]
+
+    # assert first["positions_hours_before"] == 3
+    # assert first["positions_hours_before_ter"] == 2
+    # assert first["positions_hours_before_sat"] == 1
+
+    # second = gaps[1]
+
+    # assert second["positions_hours_before"] == 5
+    # assert second["positions_hours_before_ter"] == 2
+    # assert second["positions_hours_before_sat"] == 3
+
+
 def test_verbose(tmp_path, input_file):
     import logging
     pipe_beam.logger.setLevel(logging.DEBUG)
