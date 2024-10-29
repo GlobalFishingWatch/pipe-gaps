@@ -121,7 +121,7 @@ class Boundary:
 
     Args:
         ssvid: id for the vessel.
-        time_interval: time interval for the group. One of ["year", "day"].
+        time_interval: time window for the group as a string. Examples: ["2024", "2024-01-01"].
         start: first message of the time interval.
         end: last message of the time interval.
     """
