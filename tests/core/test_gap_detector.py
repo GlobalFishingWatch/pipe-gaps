@@ -1,3 +1,5 @@
+from datetime import date
+
 import pytest
 
 from datetime import timedelta, datetime
@@ -35,23 +37,22 @@ def test_missing_keys():
 
 def test_messages_n_hours_before():
     messages = [
-        create_message(time=datetime(2024, 1, 1, 1)),
-        create_message(time=datetime(2024, 1, 1, 2), receiver_type="satellite"),    # -3 hours
-        create_message(time=datetime(2024, 1, 1, 3), receiver_type="satellite"),    # -3 hours
-        create_message(time=datetime(2024, 1, 1, 4), receiver_type="terrestrial"),  # -3 hours
-        create_message(time=datetime(2024, 1, 1, 5)),  # OFF message. Start of gap.
-        create_message(time=datetime(2024, 1, 1, 8)),
-
+        create_message(time=datetime(2023, 12, 31, 18), receiver_type="terrestrial"),
+        create_message(time=datetime(2023, 12, 31, 19), receiver_type="terrestrial"),
+        create_message(time=datetime(2023, 12, 31, 20), receiver_type="terrestrial"),
+        create_message(time=datetime(2023, 12, 31, 23), receiver_type="satellite"),
+        create_message(time=datetime(2024, 1, 1, 0), receiver_type="satellite"),    # Gap 1
+        create_message(time=datetime(2024, 1, 1, 3), receiver_type="terrestrial"),
     ]
 
-    gd = GapDetector(threshold=2, n_hours_before=3)
-    gaps = gd.detect(messages)
+    gd = GapDetector(threshold=2, n_hours_before=6)
+    gaps = gd.detect(messages, start_date=date(2024, 1, 1))
     assert len(gaps) == 1
 
     gap = gaps[0]
-    assert gap[GapDetector.KEY_HOURS_BEFORE] == 3
-    assert gap[GapDetector.KEY_HOURS_BEFORE_SAT] == 2
-    assert gap[GapDetector.KEY_HOURS_BEFORE_TER] == 1
+    assert gap[GapDetector.KEY_HOURS_BEFORE] == 4
+    assert gap[GapDetector.KEY_HOURS_BEFORE_SAT] == 1
+    assert gap[GapDetector.KEY_HOURS_BEFORE_TER] == 3
 
 
 def test_normalize_output(messages):

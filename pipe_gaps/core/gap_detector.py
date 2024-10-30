@@ -4,7 +4,7 @@ import hashlib
 import operator
 
 from typing import Union
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date
 
 from rich.progress import track
 from geopy.distance import geodesic
@@ -71,7 +71,7 @@ class GapDetector:
             cls.KEY_LAT,
         ]
 
-    def detect(self, messages: list[dict]) -> list[dict]:
+    def detect(self, messages: list[dict], start_date: date = None) -> list[dict]:
         """Detects time gaps between AIS position messages from a single vessel.
 
         Currently takes (1.75 ± 0.01) seconds to process 10M messages (i7-1355U 5.0GHz).
@@ -79,6 +79,8 @@ class GapDetector:
 
         Args:
             messages: List of AIS messages.
+            start_date: only detect gaps after this date (inclusive). Previous messages
+                will be used to calculate messages N hours before gap.
 
         Returns:
             List of gaps. A gap object is a dictionary with form:
@@ -96,10 +98,14 @@ class GapDetector:
             logger.debug(f"Sorting messages by timestamp ({self._sort_method} algorithm)...")
             self._sort_messages(messages)
 
-            gaps = pairwise(messages)
+            start_idx = 0
+            if start_date is not None:
+                start_idx = self._get_index_for_start_date(messages, start_date)
+
+            gaps = pairwise(messages[start_idx:])
 
             if self._show_progress:
-                gaps = self._build_progress_bar(gaps, total=len(messages) - 1)
+                gaps = self._build_progress_bar(gaps, total=len(messages) - 1 - start_idx)
 
             logger.debug("Detecting gaps...")
             gaps = list(
@@ -218,6 +224,17 @@ class GapDetector:
     def _sort_messages(self, messages):
         key = operator.itemgetter(self.KEY_TIMESTAMP)
         list_sort(messages, key=key, method=self._sort_method)
+
+    def _get_index_for_start_date(self, messages: list, start_date: date):
+        start_timestamp = datetime.combine(
+            start_date, datetime.min.time(), tzinfo=timezone.utc
+        ).timestamp()
+
+        for i, m in enumerate(messages):
+            if m[self.KEY_TIMESTAMP] >= start_timestamp:
+                return i
+
+        return -1
 
     def _build_progress_bar(self, gaps, total):
         return track(gaps, total=total, description=self.PROGRESS_BAR_DESCRIPTION)
