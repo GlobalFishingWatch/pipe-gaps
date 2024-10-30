@@ -1,6 +1,5 @@
 """Module with re-usable subclass implementations."""
 import logging
-import operator
 
 from datetime import date, datetime, timezone
 from dataclasses import dataclass
@@ -100,7 +99,7 @@ def key_factory(name, **kwargs):
 class Boundaries:
     """Container for Boundary objects."""
     def __init__(self, boundaries):
-        self._boundaries = sorted(boundaries, key=operator.attrgetter("time_interval"))
+        self._boundaries = sorted(boundaries, key=lambda x: x.start["timestamp"])
 
     def messages(self):
         boundaries_pairs = list(zip(self._boundaries[:-1], self._boundaries[1:]))
@@ -109,10 +108,10 @@ class Boundaries:
         return messages_pairs
 
     def last_message(self):
-        return max(self._boundaries, key=operator.attrgetter("time_interval")).end
+        return max([b.end for b in self._boundaries], key=lambda x: x["timestamp"])
 
     def first_message(self):
-        return min(self._boundaries, key=operator.attrgetter("time_interval")).start
+        return min([b.start for b in self._boundaries], key=lambda x: x["timestamp"])
 
 
 @dataclass(eq=True, frozen=True)
@@ -121,12 +120,10 @@ class Boundary:
 
     Args:
         ssvid: id for the vessel.
-        time_interval: time window for the group as a string. Examples: ["2024", "2024-01-01"].
         start: first message of the time interval.
         end: last message of the time interval.
     """
     ssvid: str
-    time_interval: str
     start: dict
     end: dict
 
@@ -141,9 +138,9 @@ class Boundary:
             group: tuple with (key, messages).
             timestamp_key: name for the key containing the message timestamp.
         """
-        (ssvid, time_interval), messages = group
+        (ssvid, *tail), messages = group
 
         start = min(messages, key=lambda x: x[timestamp_key])
         end = max(messages, key=lambda x: x[timestamp_key])
 
-        return cls(ssvid=ssvid, time_interval=time_interval, start=start, end=end)
+        return cls(ssvid=ssvid, start=start, end=end)
