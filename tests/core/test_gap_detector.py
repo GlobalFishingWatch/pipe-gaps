@@ -1,7 +1,12 @@
+from datetime import date
+
 import pytest
 
 from datetime import timedelta, datetime
 from pipe_gaps.core import GapDetector, GapDetectionError
+
+
+from tests.conftest import create_message
 
 
 def test_detect_correct_gaps(messages):
@@ -16,26 +21,10 @@ def test_detect_correct_gaps(messages):
 
 def test_missing_keys():
     messages = [
-        {
-            "ssvid": "226013750",
-            "msgid": "295fa26f-cee9-1d86-8d28-d5ed96c32835",
-            "timestamp": datetime(2024, 1, 1, 1).timestamp(),
-            "receiver_type": "terrestrial",
-            "lat": None,
-            "lon": None,
-            "distance_from_shore_m": 1.0
-
-        },
-        {
-            "ssvid": "226013750",
-            "msgid": "295fa26f-cee9-1d86-8d28-d5ed96c32835",
-            "timestamp": datetime(2024, 1, 1, 2).timestamp(),
-            "receiver_type": "terrestrial",
-            "lat": None,
-            "lon": None,
-            "distance_from_shore_m": 1.0
-        }
+        create_message(time=datetime(2024, 1, 1, 1)),
+        create_message(time=datetime(2024, 1, 1, 2)),
     ]
+
     gd = GapDetector(threshold=0.5)
     gaps = gd.detect(messages)
     assert len(gaps) == 1
@@ -44,6 +33,26 @@ def test_missing_keys():
         wrong_messages = [{k: v for k, v in m.items() if k != key} for m in messages]
         with pytest.raises(GapDetectionError):
             gd.detect(wrong_messages)
+
+
+def test_messages_n_hours_before():
+    messages = [
+        create_message(time=datetime(2023, 12, 31, 18), receiver_type="terrestrial"),
+        create_message(time=datetime(2023, 12, 31, 19), receiver_type="terrestrial"),
+        create_message(time=datetime(2023, 12, 31, 20), receiver_type="terrestrial"),
+        create_message(time=datetime(2023, 12, 31, 23), receiver_type="satellite"),
+        create_message(time=datetime(2024, 1, 1, 0), receiver_type="satellite"),    # Gap 1
+        create_message(time=datetime(2024, 1, 1, 3), receiver_type="terrestrial"),
+    ]
+
+    gd = GapDetector(threshold=2, n_hours_before=6)
+    gaps = gd.detect(messages, start_date=date(2024, 1, 1))
+    assert len(gaps) == 1
+
+    gap = gaps[0]
+    assert gap[GapDetector.KEY_HOURS_BEFORE] == 4
+    assert gap[GapDetector.KEY_HOURS_BEFORE_SAT] == 1
+    assert gap[GapDetector.KEY_HOURS_BEFORE_TER] == 3
 
 
 def test_normalize_output(messages):

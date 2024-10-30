@@ -25,16 +25,24 @@ def input_file(tmp_path, messages):
     return path
 
 
-def create_message(ssvid: str, time: datetime, lat: float = 65.4, lon: Optional[float] = None):
+def create_message(
+    time: datetime,
+    ssvid: str = "446013750",
+    lat: float = 65.4,
+    lon: Optional[float] = None,
+    ais_class: str = "A",
+    receiver_type: str = "terrestrial",
+    **kwargs
+):
     return {
         "ssvid": ssvid,
         "msgid": "295fa26f-cee9-1d86-8d28-d5ed96c32835",
         "timestamp": time.replace(tzinfo=timezone.utc).timestamp(),
-        "receiver_type": "terrestrial",
+        "receiver_type": receiver_type,
         "lat": lat,
         "lon": lon,
-        "distance_from_shore_m": 1.0,
-        "ais_class": "A",
+        "ais_class": ais_class,
+        **kwargs
     }
 
 

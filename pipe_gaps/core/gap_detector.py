@@ -4,7 +4,7 @@ import hashlib
 import operator
 
 from typing import Union
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date
 
 from rich.progress import track
 from geopy.distance import geodesic
@@ -24,6 +24,7 @@ class GapDetector:
     Args:
         threshold: Any gap whose (end-start) is less than this threshold is discarded.
             Can be an int or float number indicating the amount of hours, or a timedelta object.
+        n_hours_before: count positions this amount of hours before each gap.
         show_progress: If True, renders a progress bar.
         sort_method: the algorithm to use when sorting messages. One of ["timsort", "heapsort"].
         normalize_output: If True, normalizes the output.
@@ -37,10 +38,15 @@ class GapDetector:
     KEY_LON = "lon"
     KEY_SSVID = "ssvid"
     KEY_TIMESTAMP = "timestamp"
+    KEY_HOURS_BEFORE = "positions_hours_before"
+    KEY_HOURS_BEFORE_TER = "positions_hours_before_ter"
+    KEY_HOURS_BEFORE_SAT = "positions_hours_before_sat"
+    KEY_RECEIVER_TYPE = "receiver_type"
 
     def __init__(
         self,
         threshold: Union[int, float, timedelta] = THRESHOLD,
+        n_hours_before: int = 12,
         show_progress: bool = False,
         sort_method: str = "timsort",
         normalize_output: bool = False
@@ -49,11 +55,12 @@ class GapDetector:
             threshold = timedelta(hours=threshold)
 
         self._threshold = threshold.total_seconds()
+        self._n_hours_before = n_hours_before
         self._show_progress = show_progress
         self._sort_method = sort_method
         self._normalize_output = normalize_output
 
-        self._creation_time = int(datetime.now(tz=timezone.utc).timestamp())
+        self._n_seconds_before = self._n_hours_before * 3600
 
     @classmethod
     def mandatory_keys(cls):
@@ -64,7 +71,7 @@ class GapDetector:
             cls.KEY_LAT,
         ]
 
-    def detect(self, messages: list[dict]) -> list[dict]:
+    def detect(self, messages: list[dict], start_date: date = None) -> list[dict]:
         """Detects time gaps between AIS position messages from a single vessel.
 
         Currently takes (1.75 ± 0.01) seconds to process 10M messages (i7-1355U 5.0GHz).
@@ -72,6 +79,8 @@ class GapDetector:
 
         Args:
             messages: List of AIS messages.
+            start_date: only detect gaps after this date (inclusive). Previous messages
+                will be used to calculate messages N hours before gap.
 
         Returns:
             List of gaps. A gap object is a dictionary with form:
@@ -89,14 +98,20 @@ class GapDetector:
             logger.debug(f"Sorting messages by timestamp ({self._sort_method} algorithm)...")
             self._sort_messages(messages)
 
-            gaps = pairwise(messages)
+            start_idx = 0
+            if start_date is not None:
+                start_idx = self._get_index_for_start_date(messages, start_date)
+
+            gaps = pairwise(messages[start_idx:])
 
             if self._show_progress:
-                gaps = self._build_progress_bar(gaps, total=len(messages) - 1)
+                gaps = self._build_progress_bar(gaps, total=len(messages) - 1 - start_idx)
 
             logger.debug("Detecting gaps...")
             gaps = list(
-                self.create_gap(start, end)
+                self.create_gap(
+                    start, end, previous_positions=self._previous_positions(messages, start)
+                )
                 for start, end in gaps
                 if self._gap_condition(start, end)
             )
@@ -105,8 +120,18 @@ class GapDetector:
 
         return gaps
 
-    def eval_open_gap(self, message: dict):
-        """Evaluates a single message and returns and open gap."""
+    def eval_open_gap(self, message: dict) -> bool:
+        """Evaluates if a message constitutes an open gap.
+
+        The condition to create an open gap is that the time between
+        the message's timestamp and end-of-day's timestamp surpasses the configured threshold.
+
+        Args:
+            message: position message to evaluate.
+
+        Returns:
+            A boolean indicating if the condition for open gap is met.
+        """
         last_m_datetime = datetime.utcfromtimestamp(message[self.KEY_TIMESTAMP])
         next_m_date = last_m_datetime.date() + timedelta(days=1)
         next_m_datetime = datetime.combine(next_m_date, datetime.min.time(), tzinfo=timezone.utc)
@@ -115,12 +140,9 @@ class GapDetector:
             self.KEY_TIMESTAMP: next_m_datetime.timestamp(),
         }
 
-        if self._gap_condition(message, next_test_message):
-            return self.create_gap(off_m=message, on_m=None)
+        return self._gap_condition(message, next_test_message)
 
-        return None
-
-    def create_gap(self, off_m: dict, on_m: dict = None, gap_id=None):
+    def create_gap(self, off_m: dict, on_m: dict = None, gap_id=None, previous_positions=None):
         """Creates a gap as a dictionary.
 
         Args:
@@ -129,6 +151,9 @@ class GapDetector:
                 an open gap will be created.
             gap_id: unique identifier for the gap. If not provided,
                 will be generated from [ssvid, timestamp, lat, lon] of the OFF message.
+            previous_positions: list of previous positions before the gap begins.
+                If provided, positions will be counted,
+                differentiating satellite and terrestrial receivers.
 
         Returns:
             The resultant gap. A dictionary containing:
@@ -164,12 +189,17 @@ class GapDetector:
         gap = dict(
             gap_ssvid=ssvid,
             gap_id=gap_id,
-            gap_version=self._creation_time,
+            gap_version=int(datetime.now(tz=timezone.utc).timestamp()),
             gap_distance_m=distance_m,
             gap_duration_h=duration_h,
             gap_implied_speed_knots=implied_speed_knots,
             is_closed=is_closed,
         )
+
+        if previous_positions is not None:
+            gap[self.KEY_HOURS_BEFORE] = len(previous_positions)
+            gap[self.KEY_HOURS_BEFORE_TER] = self._count_messages_terrestrial(previous_positions)
+            gap[self.KEY_HOURS_BEFORE_SAT] = self._count_messages_satellite(previous_positions)
 
         if not self._normalize_output:
             off_on_messages = dict(
@@ -195,8 +225,28 @@ class GapDetector:
         key = operator.itemgetter(self.KEY_TIMESTAMP)
         list_sort(messages, key=key, method=self._sort_method)
 
+    def _get_index_for_start_date(self, messages: list, start_date: date):
+        start_timestamp = datetime.combine(
+            start_date, datetime.min.time(), tzinfo=timezone.utc
+        ).timestamp()
+
+        for i, m in enumerate(messages):
+            if m[self.KEY_TIMESTAMP] >= start_timestamp:
+                return i
+
+        return -1
+
     def _build_progress_bar(self, gaps, total):
         return track(gaps, total=total, description=self.PROGRESS_BAR_DESCRIPTION)
+
+    def _previous_positions(self, messages, off_m):
+        end_timestamp = off_m[self.KEY_TIMESTAMP]
+        start_timestamp = end_timestamp - self._n_seconds_before
+
+        return [
+            m for m in messages
+            if m[self.KEY_TIMESTAMP] >= start_timestamp and m[self.KEY_TIMESTAMP] < end_timestamp
+        ]
 
     def _gap_condition(self, off_m: dict, on_m: dict) -> bool:
         return self._gap_duration_seconds(off_m, on_m) > self._threshold
@@ -235,3 +285,12 @@ class GapDetector:
             implied_speed_knots = None
 
         return implied_speed_knots
+
+    def _count_messages_terrestrial(self, messages):
+        return self._count_messages_by_receiver_type(messages, "terrestrial")
+
+    def _count_messages_satellite(self, messages):
+        return self._count_messages_by_receiver_type(messages, "satellite")
+
+    def _count_messages_by_receiver_type(self, messages, receiver_type):
+        return sum(1 for m in messages if m[self.KEY_RECEIVER_TYPE] == receiver_type)
