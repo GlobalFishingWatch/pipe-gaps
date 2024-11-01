@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 
 from pipe_gaps.pipeline.processes import DetectGaps
 from pipe_gaps.pipeline.beam.transforms import Core, ReadFromJson
@@ -24,6 +24,7 @@ def get_outputs_config():
 
 def test_with_input_file(input_file):
     core_config = get_core_config()
+
     inputs_config = [get_input_file_config(input_file, schema="messages")]
 
     pipe = BeamPipeline.build(inputs=inputs_config, core=core_config)
@@ -131,23 +132,28 @@ def test_gap_between_years(tmp_path, messages, threshold, expected_gaps):
     pipe.run()
 
     gaps = json_load(pipe.output_path, lines=True)
+
+    # for g in gaps:
+    #   print("GAP", datetime.fromtimestamp(g["OFF"]["timestamp"], tz=timezone.utc))
+
     assert len(gaps) == expected_gaps
 
 
 @pytest.mark.parametrize(
-    "messages, open_gaps, threshold, expected_gaps",
+    "messages, open_gaps, threshold, date_range, expected_gaps",
     [
         pytest.param(
             case["messages"],
             case["open_gaps"],
             case["threshold"],
+            case["date_range"],
             case["expected_gaps"],
             id=case["id"]
         )
         for case in TestCases.GAP_BETWEEN_DAYS
     ],
 )
-def test_gap_between_days(tmp_path, messages, open_gaps, threshold, expected_gaps):
+def test_gap_between_days(tmp_path, messages, open_gaps, threshold, date_range, expected_gaps):
     # Checks that a gap between days is properly detected.
 
     input_file = tmp_path.joinpath("test.json")
@@ -155,8 +161,8 @@ def test_gap_between_days(tmp_path, messages, open_gaps, threshold, expected_gap
 
     core_config = get_core_config()
     core_config["threshold"] = threshold
-    core_config["groups_key"] = "ssvid_day"
-    core_config["filter_range"] = ("2024-01-02", "2024-01-03")
+    core_config["window_period_d"] = 1
+    core_config["date_range"] = date_range
 
     inputs = [get_input_file_config(input_file, schema="messages")]
 
@@ -178,6 +184,10 @@ def test_gap_between_days(tmp_path, messages, open_gaps, threshold, expected_gap
     pipe.run()
 
     gaps = json_load(pipe.output_path, lines=True)
+
+    for g in gaps:
+        print("GAP", datetime.fromtimestamp(g["OFF"]["timestamp"], tz=timezone.utc))
+
     assert len(gaps) == expected_gaps
 
 
@@ -321,8 +331,7 @@ def test_positions_hours_before(tmp_path, messages, threshold, date_range, expec
 
     core_config = get_core_config()
     core_config["threshold"] = threshold
-    core_config["groups_key"] = "ssvid_year"
-    core_config["filter_range"] = date_range
+    core_config["date_range"] = date_range
 
     inputs = [get_input_file_config(input_file, schema="messages")]
 
@@ -337,21 +346,29 @@ def test_positions_hours_before(tmp_path, messages, threshold, date_range, expec
     pipe.run()
 
     gaps = json_load(pipe.output_path, lines=True)
-    print(gaps)
+
+    for gap in gaps:
+        print("GAP: ", datetime.utcfromtimestamp(gap["OFF"]["timestamp"]))
 
     assert len(gaps) == expected_gaps
 
-    # first = gaps[0]
+    first = gaps[0]
 
-    # assert first["positions_hours_before"] == 3
-    # assert first["positions_hours_before_ter"] == 2
-    # assert first["positions_hours_before_sat"] == 1
+    assert first["positions_hours_before"] == 3
+    assert first["positions_hours_before_ter"] == 3
+    assert first["positions_hours_before_sat"] == 0
 
-    # second = gaps[1]
+    second = gaps[1]
 
-    # assert second["positions_hours_before"] == 5
-    # assert second["positions_hours_before_ter"] == 2
-    # assert second["positions_hours_before_sat"] == 3
+    assert second["positions_hours_before"] == 4
+    assert second["positions_hours_before_ter"] == 3
+    assert second["positions_hours_before_sat"] == 1
+
+    third = gaps[2]
+
+    assert third["positions_hours_before"] == 5
+    assert third["positions_hours_before_ter"] == 2
+    assert third["positions_hours_before_sat"] == 3
 
 
 def test_verbose(tmp_path, input_file):

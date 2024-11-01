@@ -73,12 +73,13 @@ class TestCases:
         },
         {
             "messages": [
+                create_message(ssvid="226013750", time=datetime(2023, 1, 1, 1)),
                 create_message(ssvid="226013750", time=datetime(2023, 12, 1, 1)),
                 create_message(ssvid="226013750", time=datetime(2024, 1, 1, 1)),
             ],
             "threshold": 1,
-            "expected_gaps": 1,
-            "id": "same_ssvid_one_gap"
+            "expected_gaps": 2,
+            "id": "same_ssvid_two_gaps"
         },
         {
             "messages": [
@@ -161,30 +162,32 @@ class TestCases:
         {
             "messages": [
                 create_message(time=datetime(2024, 1, 1, 10)),
-                create_message(time=datetime(2024, 1, 1, 20)),
-                create_message(time=datetime(2024, 1, 2, 4)),
+                create_message(time=datetime(2024, 1, 1, 20)),  # gap 1.
+                create_message(time=datetime(2024, 1, 2, 4)),   # gap 2.
                 create_message(time=datetime(2024, 1, 2, 15)),
             ],
             "open_gaps": [],
             "threshold": 6,
+            "date_range": ("2024-01-01", "2024-01-03"),
             "expected_gaps": 2,
             "id": "one_ssvid_without_open_gap"
         },
         {
-            # In this case we have an open gap created on 2024-01-01.
+            # In this case we have an open gap created on 2024-01-01T15:00:00.
             # The existing open gap should be closed,
             # and the comparison with last message of prev day should be skipped.
             "messages": [
-                create_message(time=datetime(2024, 1, 1, 6)),
-                create_message(time=datetime(2024, 1, 1, 15), lat=44.5, lon=60.1),
-                create_message(time=datetime(2024, 1, 2, 4)),
-                create_message(time=datetime(2024, 1, 2, 15)),
+                create_message(time=datetime(2024, 1, 1, 12)),
+                create_message(time=datetime(2024, 1, 2, 0)),    # gap 1
+                create_message(time=datetime(2024, 1, 2, 10)),   # gap 2
+                create_message(time=datetime(2024, 1, 2, 20)),
             ],
             "open_gaps": [
-                create_open_gap(time=datetime(2024, 1, 1)),
+                create_open_gap(time=datetime(2024, 1, 1, 12)),  # gap 3 (open gap)
             ],
             "threshold": 6,
-            "expected_gaps": 2,
+            "date_range": ("2024-01-02", "2024-01-03"),
+            "expected_gaps": 3,
             "id": "one_ssvid_with_open_gap"
         },
     ]
@@ -192,18 +195,22 @@ class TestCases:
     POSITIONS_HOURS_BEFORE = [
         {
             "messages": [
-                create_message(time=datetime(2023, 12, 31, 19), receiver_type="terrestrial"),
-                create_message(time=datetime(2023, 12, 31, 20), receiver_type="satellite"),
-                create_message(time=datetime(2023, 12, 31, 21), receiver_type="terrestrial"),
-                create_message(time=datetime(2023, 12, 31, 22), receiver_type="satellite"),   # gap
+                create_message(time=datetime(2023, 12, 31, 12), receiver_type="terrestrial"),
+                create_message(time=datetime(2023, 12, 31, 14), receiver_type="terrestrial"),
+                create_message(time=datetime(2023, 12, 31, 16), receiver_type="terrestrial"),
+                create_message(time=datetime(2023, 12, 31, 18), receiver_type="satellite"),
+                # Gap
+                create_message(time=datetime(2023, 12, 31, 21), receiver_type="satellite"),
+                # Gap
+                create_message(time=datetime(2024, 1, 1, 0), receiver_type="satellite"),
                 create_message(time=datetime(2024, 1, 1, 1), receiver_type="satellite"),
-                create_message(time=datetime(2024, 1, 1, 2), receiver_type="terrestrial"),  # gap
-                create_message(time=datetime(2024, 1, 1, 5), receiver_type="terrestrial"),
+                # Gap
+                create_message(time=datetime(2024, 1, 1, 4), receiver_type="terrestrial"),
             ],
             "open_gaps": [],
             "threshold": 2,
             "date_range": None,
-            "expected_gaps": 2,
+            "expected_gaps": 3,
             "id": "one_ssvid"
         },
     ]

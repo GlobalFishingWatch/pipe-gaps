@@ -1,7 +1,7 @@
 """Module with re-usable subclass implementations."""
 import logging
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timezone, timedelta
 from dataclasses import dataclass
 
 from .base import Key
@@ -99,19 +99,16 @@ def key_factory(name, **kwargs):
 class Boundaries:
     """Container for Boundary objects."""
     def __init__(self, boundaries):
-        self._boundaries = sorted(boundaries, key=lambda x: x.start["timestamp"])
+        self._boundaries = sorted(boundaries, key=lambda x: x.first_message()["timestamp"])
 
-    def messages(self):
-        boundaries_pairs = list(zip(self._boundaries[:-1], self._boundaries[1:]))
-        messages_pairs = [[left.end, right.start] for left, right in boundaries_pairs]
-
-        return messages_pairs
+    def consecutive_boundaries(self):
+        return list(zip(self._boundaries[:-1], self._boundaries[1:]))
 
     def last_message(self):
-        return max([b.end for b in self._boundaries], key=lambda x: x["timestamp"])
+        return self._boundaries[-1].last_message()
 
     def first_message(self):
-        return min([b.start for b in self._boundaries], key=lambda x: x["timestamp"])
+        return self._boundaries[0].first_message()
 
 
 @dataclass(eq=True, frozen=True)
@@ -124,23 +121,36 @@ class Boundary:
         end: last message of the time interval.
     """
     ssvid: str
-    start: dict
-    end: dict
+    start: list
+    end: list
 
     def __getitem__(self, key):
         return self.__dict__[key]
 
     @classmethod
-    def from_group(cls, group: tuple, timestamp_key="timestamp"):
+    def from_group(cls, group: tuple, end_h=12, timestamp_key="timestamp"):
         """Instantiates a Boundary object from a group.
 
         Args:
             group: tuple with (key, messages).
             timestamp_key: name for the key containing the message timestamp.
         """
-        (ssvid, *tail), messages = group
+        ssvid, messages = group
 
-        start = min(messages, key=lambda x: x[timestamp_key])
-        end = max(messages, key=lambda x: x[timestamp_key])
+        for m in messages:
+            print("KEEEE", datetime.fromtimestamp(m["timestamp"], tz=timezone.utc))
+
+        first_msg = min(messages, key=lambda x: x[timestamp_key])
+        start = [first_msg]
+
+        last_msg = max(messages, key=lambda x: x[timestamp_key])
+        time_n_hours_before_last = last_msg["timestamp"] - timedelta(hours=end_h).total_seconds()
+        end = [m for m in messages if m["timestamp"] >= time_n_hours_before_last]
 
         return cls(ssvid=ssvid, start=start, end=end)
+
+    def last_message(self):
+        return self.end[-1]
+
+    def first_message(self):
+        return self.start[0]

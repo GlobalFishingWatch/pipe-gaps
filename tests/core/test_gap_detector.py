@@ -1,8 +1,6 @@
-from datetime import date
+from datetime import datetime, timezone, timedelta
 
 import pytest
-
-from datetime import timedelta, datetime
 from pipe_gaps.core import GapDetector, GapDetectionError
 
 
@@ -46,7 +44,7 @@ def test_messages_n_hours_before():
     ]
 
     gd = GapDetector(threshold=2, n_hours_before=6)
-    gaps = gd.detect(messages, start_date=date(2024, 1, 1))
+    gaps = gd.detect(messages, start_time=datetime(2024, 1, 1, tzinfo=timezone.utc))
     assert len(gaps) == 1
 
     gap = gaps[0]

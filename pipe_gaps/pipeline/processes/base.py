@@ -110,3 +110,8 @@ class CoreProcess(ABC):
     @abstractmethod
     def boundaries_key() -> Type[Key]:
         """Returns the key to group boundary elements."""
+
+    @staticmethod
+    @abstractmethod
+    def time_window_period_and_offset() -> tuple[float, float]:
+        """Returns the period and offset for time windowing, in seconds."""
