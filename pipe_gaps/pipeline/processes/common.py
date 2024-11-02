@@ -113,7 +113,7 @@ class Boundaries:
 
 @dataclass(eq=True, frozen=True)
 class Boundary:
-    """Encapsulates first and last AIS position messages for a specific ssvid and time interval.
+    """Encapsulates first N and last M AIS position messages for an ssvid and time interval.
 
     Args:
         ssvid: id for the vessel.
@@ -128,7 +128,9 @@ class Boundary:
         return self.__dict__[key]
 
     @classmethod
-    def from_group(cls, group: tuple, end_h=12, timestamp_key="timestamp"):
+    def from_group(
+        cls, group: tuple, end_h: int = 12, start_h: int = None, timestamp_key="timestamp"
+    ):
         """Instantiates a Boundary object from a group.
 
         Args:
@@ -137,15 +139,12 @@ class Boundary:
         """
         ssvid, messages = group
 
-        for m in messages:
-            print("KEEEE", datetime.fromtimestamp(m["timestamp"], tz=timezone.utc))
-
         first_msg = min(messages, key=lambda x: x[timestamp_key])
         start = [first_msg]
 
         last_msg = max(messages, key=lambda x: x[timestamp_key])
-        time_n_hours_before_last = last_msg["timestamp"] - timedelta(hours=end_h).total_seconds()
-        end = [m for m in messages if m["timestamp"] >= time_n_hours_before_last]
+        time_n_hours_before_last = last_msg[timestamp_key] - timedelta(hours=end_h).total_seconds()
+        end = [m for m in messages if m[timestamp_key] >= time_n_hours_before_last]
 
         return cls(ssvid=ssvid, start=start, end=end)
 

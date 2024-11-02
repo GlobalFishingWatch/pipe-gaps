@@ -153,8 +153,6 @@ class DetectGaps(CoreProcess):
             yield g
 
     def get_group_boundary(self, group: tuple[Any, Iterable[dict]]) -> Boundary:
-        ssvid, messages = group
-
         return Boundary.from_group(group, timestamp_key=self._gd.KEY_TIMESTAMP)
 
     def sorting_key(self):

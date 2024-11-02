@@ -24,7 +24,7 @@ def test_output_gaps_comply_schema(input_file):
     schema_keys = [f["name"] for f in schema]
 
     for k in gap:
-        assert k in schema_keys, OUTPUT_GAPS_KEY_NOT_IN_SCHEMA.fomat(k)
+        assert k in schema_keys, OUTPUT_GAPS_KEY_NOT_IN_SCHEMA.format(k)
 
     for k in schema_keys:
         assert k in gap, SCHEMA_KEY_NOT_IN_OUTPUT_GAP.format(k)
