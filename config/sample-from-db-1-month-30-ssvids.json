@@ -51,7 +51,7 @@
                 "kind": "query",
                 "query_name": "gaps",
                 "query_params": {
-                    "source_gaps": "scratch_tomas_ttl30d.pipe_ais_gaps_with_version",
+                    "source_gaps": "scratch_tomas_ttl30d.pipe_ais_gaps",
                     "start_date": "2024-01-01"
                 },
                 "mock_db_client": false
@@ -67,7 +67,7 @@
         "outputs": [
             {
                 "kind": "bigquery",
-                "table": "scratch_tomas_ttl30d.pipe_ais_gaps_with_version",
+                "table": "scratch_tomas_ttl30d.pipe_ais_gaps",
                 "description": "Gaps for AIS position messages.",
                 "schema": "gaps"
             }

@@ -23,6 +23,10 @@ def off_message_from_gap(gap: dict):
     }
     off_message["ssvid"] = gap["ssvid"]
 
+    # Remove after stop using research gaps table.
+    if "gap_start" in gap:
+        off_message["timestamp"] = gap["gap_start"]
+
     return off_message
 
 

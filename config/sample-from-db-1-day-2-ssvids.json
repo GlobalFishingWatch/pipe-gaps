@@ -38,6 +38,13 @@
             {
                 "kind": "json",
                 "output_prefix": "gaps"
+            },
+            {
+                "kind": "bigquery",
+                "table": "scratch_tomas_ttl30d.pipe_ais_gaps",
+                "description": "Gaps for AIS position messages.",
+                "schema": "gaps",
+                "write_disposition": "WRITE_TRUNCATE"
             }
         ],
         "options": {
