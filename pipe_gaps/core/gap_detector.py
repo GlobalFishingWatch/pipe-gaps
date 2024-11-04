@@ -2,9 +2,11 @@
 import logging
 import hashlib
 import operator
+from itertools import islice
 
 from typing import Union, Generator
 from datetime import datetime, timedelta, timezone
+from collections import defaultdict
 
 from rich.progress import track
 from geopy.distance import geodesic
@@ -12,6 +14,9 @@ from geopy.distance import geodesic
 from pipe_gaps.utils import pairwise, list_sort
 
 logger = logging.getLogger(__name__)
+
+
+FACTOR_SECONDS_TO_HOURS = 1 / 3600
 
 
 def copy_dict_wihtout(dictionary: dict, keys: list) -> dict:
@@ -54,6 +59,7 @@ class GapDetector:
 
     KEY_TERRESTRIAL = "terrestrial"
     KEY_SATELLITE = "satellite"
+    KEY_TOTAL = "total"
 
     FIELDS_PREFIX = "gap"
     FIELDS_PREFIX_OFF = "start"
@@ -113,9 +119,9 @@ class GapDetector:
 
             start_idx = 0
             if start_time is not None:
-                start_idx = self._get_index_for_start_date(messages, start_time)
+                start_idx = self._get_index_for_start_time(messages, start_time)
 
-            gaps = pairwise(messages[start_idx:])
+            gaps = pairwise(islice(messages, start_idx, None))
 
             if self._show_progress:
                 gaps = self._build_progress_bar(gaps, total=len(messages) - 1 - start_idx)
@@ -200,7 +206,7 @@ class GapDetector:
 
         if is_closed:
             distance_m = self._gap_distance_meters(off_m, on_m)
-            duration_h = self._gap_duration_seconds(off_m, on_m) / 60 / 60
+            duration_h = self._gap_duration_seconds(off_m, on_m) * FACTOR_SECONDS_TO_HOURS
             implied_speed_knots = self._gap_implied_speed_knots(distance_m, duration_h)
         else:
             on_m = {k: None for k in off_m}
@@ -216,9 +222,10 @@ class GapDetector:
         )
 
         if previous_positions is not None:
-            gap[self.KEY_HOURS_BEFORE] = len(previous_positions)
-            gap[self.KEY_HOURS_BEFORE_TER] = self._count_messages_terrestrial(previous_positions)
-            gap[self.KEY_HOURS_BEFORE_SAT] = self._count_messages_satellite(previous_positions)
+            count = self._count_messages_before_gap(previous_positions)
+            gap[self.KEY_HOURS_BEFORE] = count[self.KEY_TOTAL]
+            gap[self.KEY_HOURS_BEFORE_TER] = count[self.KEY_TERRESTRIAL]
+            gap[self.KEY_HOURS_BEFORE_SAT] = count[self.KEY_SATELLITE]
 
         off_m = copy_dict_wihtout(off_m, keys=[self.KEY_SSVID])
         on_m = copy_dict_wihtout(on_m, keys=[self.KEY_SSVID])
@@ -237,7 +244,7 @@ class GapDetector:
         key = operator.itemgetter(self.KEY_TIMESTAMP)
         list_sort(messages, key=key, method=self._sort_method)
 
-    def _get_index_for_start_date(self, messages: list, start_time: datetime) -> Union[int, None]:
+    def _get_index_for_start_time(self, messages: list, start_time: datetime) -> Union[int, None]:
         start_timestamp = start_time.timestamp()
 
         for i, m in enumerate(messages):
@@ -250,14 +257,17 @@ class GapDetector:
     def _build_progress_bar(self, gaps: list, total: int) -> Generator:
         return track(gaps, total=total, description=self.PROGRESS_BAR_DESCRIPTION)
 
+    # @profile  # noqa  # Uncomment to run memory profiler
     def _previous_positions(self, messages: list, off_m: dict) -> list[dict]:
         end_timestamp = off_m[self.KEY_TIMESTAMP]
         start_timestamp = end_timestamp - self._n_seconds_before
 
-        return [
-            m for m in messages
-            if m[self.KEY_TIMESTAMP] >= start_timestamp and m[self.KEY_TIMESTAMP] < end_timestamp
-        ]
+        for m in messages:
+            if m[self.KEY_TIMESTAMP] >= start_timestamp and m[self.KEY_TIMESTAMP] < end_timestamp:
+                yield m
+
+            if m[self.KEY_TIMESTAMP] >= end_timestamp:
+                break
 
     def _gap_condition(self, off_m: dict, on_m: dict) -> bool:
         return self._gap_duration_seconds(off_m, on_m) > self._threshold
@@ -297,14 +307,16 @@ class GapDetector:
 
         return implied_speed_knots
 
-    def _count_messages_terrestrial(self, messages: list) -> int:
-        return self._count_messages_by_receiver_type(messages, self.KEY_TERRESTRIAL)
+    # @profile  # noqa  # Uncomment to run memory profiler
+    def _count_messages_before_gap(self, messages: Generator):
+        count = defaultdict(int)
 
-    def _count_messages_satellite(self, messages: list) -> int:
-        return self._count_messages_by_receiver_type(messages, self.KEY_SATELLITE)
+        for m in messages:
+            count[m[self.KEY_RECEIVER_TYPE]] += 1
 
-    def _count_messages_by_receiver_type(self, messages: list, receiver_type: str) -> int:
-        return sum(1 for m in messages if m[self.KEY_RECEIVER_TYPE] == receiver_type)
+        count[self.KEY_TOTAL] = sum(count.values())
+
+        return count
 
     def _normalize_off_on_messages(self, off_m: dict, on_m: dict) -> dict:
         def _normalized_off_on_messages(msg_type: str, m: dict):
