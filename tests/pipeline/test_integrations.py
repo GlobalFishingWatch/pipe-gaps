@@ -21,7 +21,7 @@ def test_output_gaps_comply_schema(input_file):
     schema = BIGQUERY_SCHEMAS["gaps"]
 
     detector = GapDetector(threshold=1.2, normalize_output=True)
-    gap = detector.create_gap(messages[0], messages[1])
+    gap = detector.create_gap(messages[20], messages[21], previous_positions=messages[0:20])
 
     schema_keys = [f["name"] for f in schema]
 

@@ -18,6 +18,24 @@
         "description": "The time in which the gap was created."
     },
     {
+        "mode": "REQUIRED",
+        "name": "positions_hours_before",
+        "type": "INTEGER",
+        "description": "Number of positions N hours before the gap start."
+    },
+    {
+        "mode": "REQUIRED",
+        "name": "positions_hours_before_sat",
+        "type": "INTEGER",
+        "description": "Number of satellite positions N hours before the gap start."
+    },
+    {
+        "mode": "REQUIRED",
+        "name": "positions_hours_before_ter",
+        "type": "INTEGER",
+        "description": "Number of terrestrial positions N hours before the gap start."
+    },
+    {
         "mode": "NULLABLE",
         "name": "gap_distance_m",
         "type": "FLOAT",
