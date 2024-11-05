@@ -56,6 +56,14 @@ def test_messages_n_hours_before():
 def test_normalize_output(messages):
     gd = GapDetector(threshold=timedelta(hours=1, minutes=20), normalize_output=True)
     gaps = gd.detect(messages)
-    from pprint import pprint
-    pprint(gaps)
+    # from pprint import pprint
+    # pprint(gaps)
     assert len(gaps) == 7
+
+
+def test_create_gap_on_off_same_timestamp():
+    off_m = create_message(time=datetime(2023, 12, 31, 19), lon=40)
+    on_m = create_message(time=datetime(2023, 12, 31, 19), lon=90)
+
+    gd = GapDetector(threshold=2, n_hours_before=6)
+    gd.create_gap(off_m, on_m)

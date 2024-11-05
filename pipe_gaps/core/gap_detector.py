@@ -257,7 +257,6 @@ class GapDetector:
     def _build_progress_bar(self, gaps: list, total: int) -> Generator:
         return track(gaps, total=total, description=self.PROGRESS_BAR_DESCRIPTION)
 
-    # @profile  # noqa  # Uncomment to run memory profiler
     def _previous_positions(self, messages: list, off_m: dict) -> list[dict]:
         end_timestamp = off_m[self.KEY_TIMESTAMP]
         start_timestamp = end_timestamp - self._n_seconds_before
@@ -302,12 +301,13 @@ class GapDetector:
     def _gap_implied_speed_knots(self, gap_distance_m: float, gap_duration_h: float) -> float:
         try:
             implied_speed_knots = (gap_distance_m / gap_duration_h) / 1852
-        except TypeError:  # Happens when gap_distance_m is NULL.
+        except (TypeError, ZeroDivisionError):
+            # Happens when gap_distance_m is NULL.
+            # Or gap_duration_h is zero.
             implied_speed_knots = None
 
         return implied_speed_knots
 
-    # @profile  # noqa  # Uncomment to run memory profiler
     def _count_messages_before_gap(self, messages: Generator):
         count = defaultdict(int)
 
