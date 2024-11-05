@@ -108,7 +108,7 @@ class AISGapsQuery(Query):
         # when we stop using research gaps table.
 
         if self._end_date is not None:
-            query = f"{query} AND AND DATE(gap_end) < '{self._end_date}'"
+            query = f"{query} AND DATE(gap_end) < '{self._end_date}'"
         else:
             query = f"{query} AND is_closed = False"
 
