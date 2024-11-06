@@ -6,7 +6,6 @@ from itertools import islice
 
 from typing import Union, Generator
 from datetime import datetime, timedelta, timezone
-from collections import defaultdict
 
 from rich.progress import track
 from geopy.distance import geodesic
@@ -19,7 +18,7 @@ logger = logging.getLogger(__name__)
 FACTOR_SECONDS_TO_HOURS = 1 / 3600
 
 
-def copy_dict_wihtout(dictionary: dict, keys: list) -> dict:
+def copy_dict_without(dictionary: dict, keys: list) -> dict:
     """Copies a dictionary removing given keys."""
     dictionary = dictionary.copy()
     for k in keys:
@@ -55,13 +54,15 @@ class GapDetector:
     KEY_HOURS_BEFORE = "positions_hours_before"
     KEY_HOURS_BEFORE_TER = "positions_hours_before_ter"
     KEY_HOURS_BEFORE_SAT = "positions_hours_before_sat"
+    KEY_HOURS_BEFORE_DYN = "positions_hours_before_dyn"
     KEY_RECEIVER_TYPE = "receiver_type"
 
     KEY_TERRESTRIAL = "terrestrial"
     KEY_SATELLITE = "satellite"
+    KEY_DYNAMIC = "dynamic"
+
     KEY_TOTAL = "total"
 
-    FIELDS_PREFIX = "gap"
     FIELDS_PREFIX_OFF = "start"
     FIELDS_PREFIX_ON = "end"
 
@@ -93,6 +94,26 @@ class GapDetector:
             cls.KEY_LON,
             cls.KEY_LAT,
         ]
+
+    @classmethod
+    def receiver_type_keys(cls) -> list[str]:
+        """Returns valid receiver types."""
+        return [
+            cls.KEY_TERRESTRIAL,
+            cls.KEY_SATELLITE,
+            cls.KEY_DYNAMIC
+        ]
+
+    @classmethod
+    def generate_gap_id(cls, message: dict) -> str:
+        s = "{}|{}|{}|{}".format(
+            message[cls.KEY_SSVID],
+            message[cls.KEY_TIMESTAMP],
+            message[cls.KEY_LAT] or 0.0,
+            message[cls.KEY_LON] or 0.0
+        )
+
+        return hashlib.md5(s.encode('utf-8')).hexdigest()
 
     def detect(self, messages: list[dict], start_time: datetime = None) -> list[dict]:
         """Detects time gaps between AIS position messages from a single vessel.
@@ -162,7 +183,7 @@ class GapDetector:
         return self._gap_condition(message, next_test_message)
 
     def create_gap(
-        self, off_m: dict, on_m: dict = None, gap_id: str = None, previous_positions: list = None
+        self, off_m: dict, on_m: dict = None, gap_id: str = None, previous_positions: list = ()
     ) -> dict:
         """Creates a gap as a dictionary.
 
@@ -196,7 +217,7 @@ class GapDetector:
         ssvid = off_m[self.KEY_SSVID]
 
         if gap_id is None:
-            gap_id = self._generate_gap_id(off_m)
+            gap_id = self.generate_gap_id(off_m)
 
         is_closed = on_m is not None
 
@@ -212,23 +233,23 @@ class GapDetector:
             on_m = {k: None for k in off_m}
 
         gap = dict(
-            gap_ssvid=ssvid,
             gap_id=gap_id,
-            gap_version=int(datetime.now(tz=timezone.utc).timestamp()),
-            gap_distance_m=distance_m,
-            gap_duration_h=duration_h,
-            gap_implied_speed_knots=implied_speed_knots,
+            ssvid=ssvid,
+            version=int(datetime.now(tz=timezone.utc).timestamp()),
+            distance_m=distance_m,
+            duration_h=duration_h,
+            implied_speed_knots=implied_speed_knots,
             is_closed=is_closed,
         )
 
-        if previous_positions is not None:
-            count = self._count_messages_before_gap(previous_positions)
-            gap[self.KEY_HOURS_BEFORE] = count[self.KEY_TOTAL]
-            gap[self.KEY_HOURS_BEFORE_TER] = count[self.KEY_TERRESTRIAL]
-            gap[self.KEY_HOURS_BEFORE_SAT] = count[self.KEY_SATELLITE]
+        count = self._count_messages_before_gap(previous_positions)
+        gap[self.KEY_HOURS_BEFORE] = count[self.KEY_TOTAL]
+        gap[self.KEY_HOURS_BEFORE_TER] = count[self.KEY_TERRESTRIAL]
+        gap[self.KEY_HOURS_BEFORE_SAT] = count[self.KEY_SATELLITE]
+        gap[self.KEY_HOURS_BEFORE_DYN] = count[self.KEY_DYNAMIC]
 
-        off_m = copy_dict_wihtout(off_m, keys=[self.KEY_SSVID])
-        on_m = copy_dict_wihtout(on_m, keys=[self.KEY_SSVID])
+        off_m = copy_dict_without(off_m, keys=[self.KEY_SSVID])
+        on_m = copy_dict_without(on_m, keys=[self.KEY_SSVID])
 
         if not self._normalize_output:
             off_on_messages = dict(OFF=off_m, ON=on_m)
@@ -271,16 +292,6 @@ class GapDetector:
     def _gap_condition(self, off_m: dict, on_m: dict) -> bool:
         return self._gap_duration_seconds(off_m, on_m) > self._threshold
 
-    def _generate_gap_id(self, message: dict):
-        s = "{}|{}|{}|{}".format(
-            message[self.KEY_SSVID],
-            message[self.KEY_TIMESTAMP],
-            message[self.KEY_LAT] or 0.0,
-            message[self.KEY_LON] or 0.0
-        )
-
-        return hashlib.md5(s.encode('utf-8')).hexdigest()
-
     def _gap_distance_meters(self, off_m: dict, on_m: dict) -> float:
         def _latlon_point(message):
             return (message[self.KEY_LAT], message[self.KEY_LON])
@@ -308,8 +319,11 @@ class GapDetector:
 
         return implied_speed_knots
 
-    def _count_messages_before_gap(self, messages: Generator):
-        count = defaultdict(int)
+    def _count_messages_before_gap(self, messages: Generator = ()):
+        count = {}
+
+        for k in self.receiver_type_keys():
+            count[k] = 0
 
         for m in messages:
             count[m[self.KEY_RECEIVER_TYPE]] += 1
@@ -320,7 +334,7 @@ class GapDetector:
 
     def _normalize_off_on_messages(self, off_m: dict, on_m: dict) -> dict:
         def _normalized_off_on_messages(msg_type: str, m: dict):
-            return {f"{self.FIELDS_PREFIX}_{msg_type}_{k}": v for k, v in m.items()}
+            return {f"{msg_type}_{k}": v for k, v in m.items()}
 
         off_on_messages = {
             **_normalized_off_on_messages(self.FIELDS_PREFIX_OFF, off_m),

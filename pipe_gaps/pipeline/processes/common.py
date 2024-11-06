@@ -1,7 +1,7 @@
 """Module with re-usable subclass implementations."""
 import logging
 
-from datetime import date, datetime, timezone, timedelta
+from datetime import date, datetime, timezone
 from dataclasses import dataclass
 
 from .base import Key
@@ -104,11 +104,17 @@ class Boundaries:
     def consecutive_boundaries(self):
         return list(zip(self._boundaries[:-1], self._boundaries[1:]))
 
-    def last_message(self):
-        return self._boundaries[-1].last_message()
+    def first_boundary(self):
+        return self._boundaries[0]
+
+    def last_boundary(self):
+        return self._boundaries[-1]
 
     def first_message(self):
-        return self._boundaries[0].first_message()
+        return self.first_boundary().first_message()
+
+    def last_message(self):
+        return self.last_boundary().last_message()
 
 
 @dataclass(eq=True, frozen=True)
@@ -129,7 +135,7 @@ class Boundary:
 
     @classmethod
     def from_group(
-        cls, group: tuple, end_h: int = 12, start_h: int = None, timestamp_key="timestamp"
+        cls, group: tuple, offset: int, start_time: int = None, timestamp_key="timestamp"
     ):
         """Instantiates a Boundary object from a group.
 
@@ -139,14 +145,45 @@ class Boundary:
         """
         ssvid, messages = group
 
-        first_msg = min(messages, key=lambda x: x[timestamp_key])
-        start = [first_msg]
+        messages.sort(key=lambda x: x[timestamp_key])
 
-        last_msg = max(messages, key=lambda x: x[timestamp_key])
-        time_n_hours_before_last = last_msg[timestamp_key] - timedelta(hours=end_h).total_seconds()
-        end = [m for m in messages if m[timestamp_key] >= time_n_hours_before_last]
+        first_msg_index = 0
+        if start_time is not None:
+            first_msg_index = cls.get_index_for_start_time(messages, start_time)
+            assert first_msg_index is not None, "first msg index was none."
+
+        start = [messages[first_msg_index]]
+        end = cls.get_last_messages(messages, offset)
 
         return cls(ssvid=ssvid, start=start, end=end)
+
+    @classmethod
+    def get_index_for_start_time(cls, messages, start_time):
+        # TODO: move to utils. Already implemented in GapDetector.
+        for i, m in enumerate(messages):
+            if m["timestamp"] >= start_time:
+                return i
+
+        return None
+
+    @classmethod
+    def get_last_messages(cls, messages, offset=0):
+        # We get all messages within a period of time before the last message.
+
+        last_msg_timestamp = messages[-1]["timestamp"]
+        n_hours_before = last_msg_timestamp - offset
+
+        i = len(messages) - 1
+        for m in reversed(messages):
+            if m["timestamp"] == last_msg_timestamp:
+                continue
+
+            if m["timestamp"] < n_hours_before:
+                break
+
+            i -= 1
+
+        return messages[i:]
 
     def last_message(self):
         return self.end[-1]

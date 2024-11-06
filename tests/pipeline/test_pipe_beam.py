@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime, timezone
+from datetime import datetime
 
 from pipe_gaps.pipeline.processes import DetectGaps
 from pipe_gaps.pipeline.beam.transforms import Core, ReadFromJson
@@ -185,10 +185,23 @@ def test_gap_between_days(tmp_path, messages, open_gaps, threshold, date_range, 
 
     gaps = json_load(pipe.output_path, lines=True)
 
-    for g in gaps:
-        print("GAP", datetime.fromtimestamp(g["OFF"]["timestamp"], tz=timezone.utc))
+    gaps = sorted(gaps, key=lambda x: x["OFF"]["timestamp"])
 
-    assert len(gaps) == expected_gaps
+    for g in gaps:
+        from datetime import timezone
+        print(
+            "GAP",
+            "\n OFF", datetime.fromtimestamp(g["OFF"]["timestamp"], tz=timezone.utc),
+            "\n ON", datetime.fromtimestamp(g["ON"]["timestamp"], tz=timezone.utc)
+        )
+
+    assert len(gaps) == len(expected_gaps)
+
+    for gap, expected_gap in zip(gaps, expected_gaps):
+        assert gap["positions_hours_before"] == expected_gap["positions_hours_before"]
+        assert gap["positions_hours_before_ter"] == expected_gap["positions_hours_before_ter"]
+        assert gap["positions_hours_before_sat"] == expected_gap["positions_hours_before_sat"]
+        assert gap["positions_hours_before_dyn"] == expected_gap["positions_hours_before_dyn"]
 
 
 @pytest.mark.parametrize(
@@ -350,25 +363,13 @@ def test_positions_hours_before(tmp_path, messages, threshold, date_range, expec
     for gap in gaps:
         print("GAP: ", datetime.utcfromtimestamp(gap["OFF"]["timestamp"]))
 
-    assert len(gaps) == expected_gaps
+    assert len(gaps) == len(expected_gaps)
 
-    first = gaps[0]
-
-    assert first["positions_hours_before"] == 3
-    assert first["positions_hours_before_ter"] == 3
-    assert first["positions_hours_before_sat"] == 0
-
-    second = gaps[1]
-
-    assert second["positions_hours_before"] == 4
-    assert second["positions_hours_before_ter"] == 3
-    assert second["positions_hours_before_sat"] == 1
-
-    third = gaps[2]
-
-    assert third["positions_hours_before"] == 5
-    assert third["positions_hours_before_ter"] == 2
-    assert third["positions_hours_before_sat"] == 3
+    for gap, expected_gap in zip(gaps, expected_gaps):
+        assert gap["positions_hours_before"] == expected_gap["positions_hours_before"]
+        assert gap["positions_hours_before_ter"] == expected_gap["positions_hours_before_ter"]
+        assert gap["positions_hours_before_sat"] == expected_gap["positions_hours_before_sat"]
+        assert gap["positions_hours_before_dyn"] == expected_gap["positions_hours_before_dyn"]
 
 
 def test_verbose(tmp_path, input_file):

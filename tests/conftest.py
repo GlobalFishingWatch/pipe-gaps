@@ -2,8 +2,11 @@ import pytest
 
 from typing import Optional
 from datetime import datetime, timezone
-from pipe_gaps.data import get_sample_messages
+
 from pipe_gaps import utils
+from pipe_gaps.core import GapDetector
+from pipe_gaps.data import get_sample_messages
+
 
 utils.setup_logger(
     warning_level=[
@@ -47,17 +50,13 @@ def create_message(
 
 
 def create_open_gap(time: datetime = datetime(2024, 1, 1), ssvid: str = "446013750"):
-    return {
-        "ssvid": ssvid,
-        "gap_id": "3751dbd5d488686957bcfe626b8676dd",
-        "gap_start_timestamp": time.replace(tzinfo=timezone.utc).timestamp(),
-        "gap_start_msgid": "295fa26f-cee9-1d86-8d28-d5ed96c32835",
-        "gap_start_distance_from_shore_m": 97000.0,
-        "gap_start_lat": 44.5,
-        "gap_start_lon": 60.1,
-        "gap_start_receiver_type": "terrestrial",
-        "is_closed": False
-    }
+    gd = GapDetector(normalize_output=True)
+
+    gap = gd.create_gap(off_m=create_message(ssvid=ssvid, time=datetime(2024, 1, 1, 12)))
+
+    gap["gap_start"] = gap.pop("start_timestamp")  # Remove after input schema is fixed.
+
+    return gap
 
 
 class TestCases:
@@ -132,8 +131,8 @@ class TestCases:
                 create_message(ssvid="226013750", time=datetime(2024, 1, 5, 13)),
             ],
             "open_gaps": [
-                create_open_gap(ssvid="210023456"),
-                create_open_gap(ssvid="226013750"),
+                create_open_gap(ssvid="210023456", time=datetime(2023, 12, 1)),
+                create_open_gap(ssvid="226013750", time=datetime(2023, 12, 1)),
             ],
             "threshold": 6,
             "expected_gaps": 1,
@@ -161,21 +160,52 @@ class TestCases:
         # and to be able to compute positions before N hours before gap.
         {
             "messages": [
+                create_message(time=datetime(2024, 1, 1, 8)),
                 create_message(time=datetime(2024, 1, 1, 10)),
-                create_message(time=datetime(2024, 1, 1, 20)),  # gap 1.
+                create_message(time=datetime(2024, 1, 1, 13)),
+                create_message(time=datetime(2024, 1, 1, 14)),
+                create_message(time=datetime(2024, 1, 1, 17)),
+                create_message(time=datetime(2024, 1, 1, 20)),
+                create_message(time=datetime(2024, 1, 1, 21)),
+                create_message(time=datetime(2024, 1, 1, 22)),  # gap 1.
                 create_message(time=datetime(2024, 1, 2, 4)),   # gap 2.
-                create_message(time=datetime(2024, 1, 2, 15)),
+                create_message(time=datetime(2024, 1, 2, 8), receiver_type="dynamic"),
+                create_message(time=datetime(2024, 1, 2, 10)),  # gap 3.
+                create_message(time=datetime(2024, 1, 2, 14)),
+                create_message(time=datetime(2024, 1, 2, 17)),
+                create_message(time=datetime(2024, 1, 2, 20)),
+                create_message(time=datetime(2024, 1, 2, 23)),
             ],
             "open_gaps": [],
-            "threshold": 6,
-            "date_range": ("2024-01-01", "2024-01-03"),
-            "expected_gaps": 2,
+            "threshold": 3,
+            "date_range": ("2024-01-02", "2024-01-03"),
+            "expected_gaps": [
+                {
+                    "positions_hours_before": 6,
+                    "positions_hours_before_ter": 6,
+                    "positions_hours_before_sat": 0,
+                    "positions_hours_before_dyn": 0
+                },
+                {
+                    "positions_hours_before": 4,
+                    "positions_hours_before_ter": 4,
+                    "positions_hours_before_sat": 0,
+                    "positions_hours_before_dyn": 0
+                },
+                {
+                    "positions_hours_before": 3,
+                    "positions_hours_before_ter": 2,
+                    "positions_hours_before_sat": 0,
+                    "positions_hours_before_dyn": 1
+                }
+            ],
             "id": "one_ssvid_without_open_gap"
         },
         {
             # In this case we have an open gap created on 2024-01-01T15:00:00.
             # The existing open gap should be closed,
-            # and the comparison with last message of prev day should be skipped.
+            # taking care of the fact that may have already being closed by the
+            # comparison by the last message of previous day.
             "messages": [
                 create_message(time=datetime(2024, 1, 1, 12)),
                 create_message(time=datetime(2024, 1, 2, 0)),    # gap 1
@@ -183,11 +213,32 @@ class TestCases:
                 create_message(time=datetime(2024, 1, 2, 20)),
             ],
             "open_gaps": [
-                create_open_gap(time=datetime(2024, 1, 1, 12)),  # gap 3 (open gap)
+                create_open_gap(time=datetime(2024, 1, 1, 12))   # gap 3
             ],
             "threshold": 6,
             "date_range": ("2024-01-02", "2024-01-03"),
-            "expected_gaps": 3,
+            "expected_gaps": [
+                {
+                    "positions_hours_before": 0,
+                    "positions_hours_before_ter": 0,
+                    "positions_hours_before_sat": 0,
+                    "positions_hours_before_dyn": 0
+                },
+                {
+                    "positions_hours_before": 1,
+                    "positions_hours_before_ter": 1,
+                    "positions_hours_before_sat": 0,
+                    "positions_hours_before_dyn": 0
+
+                },
+                {
+                    "positions_hours_before": 1,
+                    "positions_hours_before_ter": 1,
+                    "positions_hours_before_sat": 0,
+                    "positions_hours_before_dyn": 0
+
+                },
+            ],
             "id": "one_ssvid_with_open_gap"
         },
     ]
@@ -199,18 +250,37 @@ class TestCases:
                 create_message(time=datetime(2023, 12, 31, 14), receiver_type="terrestrial"),
                 create_message(time=datetime(2023, 12, 31, 16), receiver_type="terrestrial"),
                 create_message(time=datetime(2023, 12, 31, 18), receiver_type="satellite"),
-                # Gap
+                # Gap 1
                 create_message(time=datetime(2023, 12, 31, 21), receiver_type="satellite"),
-                # Gap
+                # Gap 2
                 create_message(time=datetime(2024, 1, 1, 0), receiver_type="satellite"),
                 create_message(time=datetime(2024, 1, 1, 1), receiver_type="satellite"),
-                # Gap
+                # Gap 3
                 create_message(time=datetime(2024, 1, 1, 4), receiver_type="terrestrial"),
             ],
             "open_gaps": [],
             "threshold": 2,
             "date_range": None,
-            "expected_gaps": 3,
+            "expected_gaps": [
+                {
+                    "positions_hours_before": 3,
+                    "positions_hours_before_ter": 3,
+                    "positions_hours_before_sat": 0,
+                    "positions_hours_before_dyn": 0
+                },
+                {
+                    "positions_hours_before": 4,
+                    "positions_hours_before_ter": 3,
+                    "positions_hours_before_sat": 1,
+                    "positions_hours_before_dyn": 0
+                },
+                {
+                    "positions_hours_before": 5,
+                    "positions_hours_before_ter": 2,
+                    "positions_hours_before_sat": 3,
+                    "positions_hours_before_dyn": 0
+                }
+            ],
             "id": "one_ssvid"
         },
     ]

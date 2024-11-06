@@ -7,13 +7,13 @@
     },
     {
         "mode": "REQUIRED",
-        "name": "gap_ssvid",
+        "name": "ssvid",
         "type": "STRING",
-        "description": "ssvid"
+        "description": "The ssvid of the gap."
     },
     {
         "mode": "REQUIRED",
-        "name": "gap_version",
+        "name": "version",
         "type": "TIMESTAMP",
         "description": "The time in which the gap was created."
     },
@@ -25,134 +25,140 @@
     },
     {
         "mode": "REQUIRED",
+        "name": "positions_hours_before_ter",
+        "type": "INTEGER",
+        "description": "Number of terrestrial positions N hours before the gap start."
+    },
+    {
+        "mode": "REQUIRED",
         "name": "positions_hours_before_sat",
         "type": "INTEGER",
         "description": "Number of satellite positions N hours before the gap start."
     },
     {
         "mode": "REQUIRED",
-        "name": "positions_hours_before_ter",
+        "name": "positions_hours_before_dyn",
         "type": "INTEGER",
-        "description": "Number of terrestrial positions N hours before the gap start."
+        "description": "Number of dynamic positions N hours before the gap start."
     },
     {
         "mode": "NULLABLE",
-        "name": "gap_distance_m",
+        "name": "distance_m",
         "type": "FLOAT",
         "description": "Distance (in meters) between start and end positions."
     },
     {
         "mode": "NULLABLE",
-        "name": "gap_duration_h",
+        "name": "duration_h",
         "type": "FLOAT",
         "description": "Length of the gap (in hours)."
     },
     {
         "mode": "NULLABLE",
-        "name": "gap_implied_speed_knots",
+        "name": "implied_speed_knots",
         "type": "FLOAT",
-        "description": "Implied speed during the gap based on gap_duration_h and gap_distance_m."
+        "description": "Implied speed during the gap based on duration_h and distance_m."
     },
     {
         "mode": "REQUIRED",
-        "name": "gap_start_timestamp",
+        "name": "start_timestamp",
         "type": "TIMESTAMP",
-        "description": "the timestamp of the position at the beginning of the gap"
+        "description": "The timestamp of the position at the beginning of the gap."
     },
     {
         "mode": "REQUIRED",
-        "name": "gap_start_msgid",
+        "name": "start_msgid",
         "type": "STRING",
-        "description": "message ID for last position message before for start of gap"
+        "description": "Message ID for last position message before for start of gap."
     },
     {
         "mode": "NULLABLE",
-        "name": "gap_start_lat",
+        "name": "start_lat",
         "type": "FLOAT",
-        "description": "latitude at start of gap"
+        "description": "Latitude at start of gap."
     },
     {
         "mode": "NULLABLE",
-        "name": "gap_start_lon",
+        "name": "start_lon",
         "type": "FLOAT",
-        "description": "longitude at start of gap"
+        "description": "Longitude at start of gap."
     },
     {
         "mode": "NULLABLE",
-        "name": "gap_start_ais_class",
+        "name": "start_ais_class",
         "type": "STRING",
         "description": "AIS device class at start of gap."
     },
     {
         "mode": "NULLABLE",
-        "name": "gap_start_receiver_type",
+        "name": "start_receiver_type",
         "type": "STRING",
-        "description": "receiver type at start of gap"
+        "description": "Receiver type at start of gap."
     },
     {
         "mode": "NULLABLE",
-        "name": "gap_start_distance_from_shore_m",
+        "name": "start_distance_from_shore_m",
         "type": "FLOAT",
-        "description": "distance from shore (meters) at start of gap (using rasterized distance)"
+        "description": "Distance from shore (meters) at start of gap (using rasterized distance)."
     },
     {
         "mode": "NULLABLE",
-        "name": "gap_start_distance_from_port_m",
+        "name": "start_distance_from_port_m",
         "type": "FLOAT",
-        "description": "distance from nearest port (meters) at start of gap (using rasterized distance)"
+        "description": "Distance from nearest port (meters) at start of gap (using rasterized distance)."
     },
     {
         "mode": "NULLABLE",
-        "name": "gap_end_timestamp",
+        "name": "end_timestamp",
         "type": "TIMESTAMP",
-        "description": "the timestamp of the position at the end of the gap"
+        "description": "The timestamp of the position at the end of the gap."
     },
     {
         "mode": "NULLABLE",
-        "name": "gap_end_msgid",
+        "name": "end_msgid",
         "type": "STRING",
-        "description": "position message for end of gap"
+        "description": "Position message for end of gap."
     },
     {
         "mode": "NULLABLE",
-        "name": "gap_end_lat",
+        "name": "end_lat",
         "type": "FLOAT",
-        "description": "latitude at end of gap"
+        "description": "Latitude at end of gap."
     },
     {
         "mode": "NULLABLE",
-        "name": "gap_end_lon",
+        "name": "end_lon",
         "type": "FLOAT",
-        "description": "longitude at end of gap"
+        "description": "Longitude at end of gap."
     },
     {
         "mode": "NULLABLE",
-        "name": "gap_end_ais_class",
+        "name": "end_ais_class",
         "type": "STRING",
         "description": "AIS device class at end of gap."
     },
     {
         "mode": "NULLABLE",
-        "name": "gap_end_receiver_type",
+        "name": "end_receiver_type",
         "type": "STRING",
-        "description": "receiver type at end of gap"
+        "description": "Receiver type at end of gap."
     },
     {
         "mode": "NULLABLE",
-        "name": "gap_end_distance_from_shore_m",
+        "name": "end_distance_from_shore_m",
         "type": "FLOAT",
-        "description": "distance from shore (meters) at end of gap (using rasterized distance)"
+        "description": "Distance from shore (meters) at end of gap (using rasterized distance)."
     },
     {
         "mode": "NULLABLE",
-        "name": "gap_end_distance_from_port_m",
+        "name": "end_distance_from_port_m",
         "type": "FLOAT",
-        "description": "distance from nearest port (meters) at end of gap (using rasterized distance)"
+        "description": "Distance from nearest port (meters) at end of gap (using rasterized distance)."
     },
     {
         "mode": "REQUIRED",
         "name": "is_closed",
         "type": "BOOLEAN",
-        "description": "1 if the gap is closed, 0 if the gap is open"
+        "description": "Whether or not the gap is closed."
     }
 ]

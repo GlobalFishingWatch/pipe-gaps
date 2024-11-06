@@ -1,7 +1,7 @@
 """Module with Core beam transform, a unique step between Sources and Sinks."""
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 
 import apache_beam as beam
 from apache_beam.transforms.window import IntervalWindow
@@ -10,14 +10,6 @@ from apache_beam.transforms.core import DoFn
 from pipe_gaps.pipeline.processes import CoreProcess
 
 logger = logging.getLogger(__name__)
-
-
-def is_window_in_range(date_range: tuple[datetime, datetime], window: IntervalWindow):
-    """Checks whether a Beam window is within a given date range."""
-    window_last_day = window.end.to_utc_datetime(has_tz=True) - timedelta(days=1)
-    start, end = date_range
-
-    return start <= window_last_day <= end
 
 
 class Core(beam.PTransform):
@@ -49,10 +41,11 @@ class Core(beam.PTransform):
             | self.group_by()
         )
 
+        out_boundaries = groups | self.process_boundaries()
+
         if self._date_range is not None:
             groups = groups | self.filter_groups()
 
-        out_boundaries = groups | self.process_boundaries()
         out_groups = groups | self.process_groups()
 
         return (out_groups, out_boundaries) | self.join_outputs()
@@ -74,13 +67,8 @@ class Core(beam.PTransform):
 
     def filter_groups(self):
         """Returns the FilterGroups pTransform."""
-        date_range = [
-            datetime.fromisoformat(x).replace(tzinfo=timezone.utc) for x in self._date_range
-        ]
-
         return "FilterGroups" >> beam.Filter(
-            lambda _,
-            window=DoFn.WindowParam: is_window_in_range(date_range, window))
+            lambda _, window=DoFn.WindowParam: self._is_window_in_range(self._date_range, window))
 
     def process_groups(self):
         """Returns the ProcessGroups pTransform."""
@@ -104,9 +92,28 @@ class Core(beam.PTransform):
                 self._side_inputs | beam.GroupBy(self._process.boundaries_key().func())
             )
 
-        return (
+        tr = (
             beam.Map(self._process.get_group_boundary)
             | beam.WindowInto(beam.window.GlobalWindows())
             | beam.GroupBy(self._process.boundaries_key().func())
             | beam.FlatMap(self._process.process_boundaries, side_inputs=side_inputs)
         )
+
+        if self._date_range is not None:
+            period, _ = self._process.time_window_period_and_offset()
+            filter_tr = beam.Filter(
+                lambda _,
+                window=DoFn.WindowParam: self._is_window_in_range(
+                    self._date_range, window, start_buffer=period))
+
+            tr = filter_tr | tr
+
+        return tr
+
+    def _is_window_in_range(self, date_range, window: IntervalWindow, start_buffer: int = 0):
+        window_last_day = window.end.to_utc_datetime(has_tz=True) - timedelta(days=1)
+
+        start, end = date_range
+        start = start - timedelta(seconds=start_buffer)
+
+        return start <= window_last_day < end

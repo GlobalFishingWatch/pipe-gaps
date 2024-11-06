@@ -83,7 +83,7 @@ class NaivePipeline(base.Pipeline):
 
     def _save_stats(self, outputs):
         self._output_path_stats = self.config.work_dir.joinpath(f"{self.name}-stats.csv")
-        gaps_by_ssvid = itertools.groupby(outputs, key=lambda x: x["gap_ssvid"])
+        gaps_by_ssvid = itertools.groupby(outputs, key=lambda x: x["ssvid"])
 
         stats = []
         for ssvid, gaps in gaps_by_ssvid:

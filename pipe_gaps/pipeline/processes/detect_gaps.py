@@ -15,19 +15,25 @@ logger = logging.getLogger(__name__)
 
 def off_message_from_gap(gap: dict):
     """Extracts off message from gap object."""
-    to_remove = "gap_start_"
+
+    to_remove = ["gap_start_", "start_"]
     off_message = {
-        k.replace(to_remove, ""): v
-        for k, v in gap.items()
-        if to_remove in k
+        key.replace(j, ""): v
+        for key, v in gap.items()
+        for j in to_remove
+        if j in key
     }
+
     off_message["ssvid"] = gap["ssvid"]
 
-    # Remove after stop using research gaps table.
     if "gap_start" in gap:
-        off_message["timestamp"] = gap["gap_start"]
+        off_message["timestamp"] = gap.pop("gap_start")
 
     return off_message
+
+
+class DetectGapsError(Exception):
+    pass
 
 
 class DetectGaps(CoreProcess):
@@ -71,6 +77,13 @@ class DetectGaps(CoreProcess):
         window_offset_h: int = 12,
         **config
     ) -> "DetectGaps":
+
+        if date_range is not None:
+            date_range = [
+                datetime.fromisoformat(x).replace(tzinfo=timezone.utc)
+                for x in date_range
+            ]
+
         return cls(
             gd=GapDetector(**config),
             gk=key_factory(groups_key),
@@ -87,10 +100,12 @@ class DetectGaps(CoreProcess):
     ) -> Iterable[dict]:
         key, messages = group
 
-        messages = list(messages)
+        messages = list(messages)  # On dataflow, this is a _ConcatSequence object.
 
         if isinstance(window, IntervalWindow):
-            start_time = window.start.to_utc_datetime(has_tz=True) + timedelta(hours=12)
+            start_time = window.start.to_utc_datetime(has_tz=True) + timedelta(
+                hours=self._window_offset_h)
+
             end_time = window.end.to_utc_datetime(has_tz=True)
         else:  # Not using pipe beam pipeline.
             first = min(messages, key=lambda x: x["timestamp"])
@@ -124,14 +139,20 @@ class DetectGaps(CoreProcess):
         formatted_key = self.boundaries_key().format(key)
 
         gaps = {}
+
+        # Step one:
+        # detect potential gap between last message of a group and first message of next group.
         for left, right in boundaries.consecutive_boundaries():
             start_ts = left.last_message()["timestamp"]
             messages = left.end + right.start
+
             start_dt = datetime.fromtimestamp(start_ts, tz=timezone.utc)
 
             for g in self._gd.detect(messages, start_time=start_dt):
                 gaps[g["gap_id"]] = g
 
+        # Step two:
+        # Create open gap if last message of last group met condition.
         if self._eval_last:
             last_message = boundaries.last_message()
 
@@ -140,15 +161,17 @@ class DetectGaps(CoreProcess):
                 new_open_gap = self._gd.create_gap(off_m=last_message)
                 gaps[new_open_gap["gap_id"]] = new_open_gap
 
+        # Step three:
+        # If open gap exists, close it.
         open_gap = self._load_open_gap(side_inputs, key)
-
         if open_gap is not None:
             open_gap_id = open_gap["gap_id"]
             logger.info("gap_id={}".format(open_gap_id))
             logger.info(f"Closing existing open gap for {formatted_key}")
 
-            if open_gap_id not in gaps:
-                closed_gap = self._close_open_gap(open_gap, boundaries)
+            if open_gap_id not in gaps:  # We avoid re-calculation if already detected in step one.
+                open_gap_on_m = boundaries.last_boundary().first_message()
+                closed_gap = self._close_open_gap(open_gap, open_gap_on_m)
                 gaps[closed_gap["gap_id"]] = closed_gap
 
         logger.info(f"Found {len(gaps)} gap(s) for boundaries {formatted_key}...")
@@ -156,8 +179,25 @@ class DetectGaps(CoreProcess):
         for g in gaps.values():
             yield g
 
-    def get_group_boundary(self, group: tuple[Any, Iterable[dict]]) -> Boundary:
-        return Boundary.from_group(group, timestamp_key=self._gd.KEY_TIMESTAMP)
+    def get_group_boundary(
+        self, group: tuple[Any, Iterable[dict]],
+        window: IntervalWindow = DoFn.WindowParam
+    ) -> Boundary:
+
+        _, offset = self.time_window_period_and_offset()
+
+        start_time = None
+        if isinstance(window, IntervalWindow):
+            start_time = window.start.seconds() + offset
+
+        ssvid, messages = group
+        messages = list(messages)  # On dataflow, this is a _ConcatSequence object.
+
+        return Boundary.from_group(
+            (ssvid, messages),
+            offset=offset,
+            start_time=start_time,
+            timestamp_key=self._gd.KEY_TIMESTAMP)
 
     def sorting_key(self):
         return lambda x: (x["ssvid"], x["timestamp"])
@@ -169,10 +209,11 @@ class DetectGaps(CoreProcess):
         return self._bk
 
     def time_window_period_and_offset(self):
-        period = self._window_period_d * 24 * 60 * 60
-        offset = self._window_offset_h * 60 * 60
+        """Returns period and offset for sliding windows in seconds."""
+        period_s = self._window_period_d * 24 * 60 * 60
+        offset_s = self._window_offset_h * 60 * 60
 
-        return period, offset
+        return period_s, offset_s
 
     def _load_side_inputs(self, side_inputs, key):
         side_inputs_list = []
@@ -199,9 +240,8 @@ class DetectGaps(CoreProcess):
 
         return None
 
-    def _close_open_gap(self, open_gap, boundaries):
+    def _close_open_gap(self, open_gap, on_m):
         off_m = off_message_from_gap(open_gap)
-        on_m = boundaries.first_message()
 
         # Re-order off-message using on-message keys.
         off_m = {k: off_m[k] for k in on_m.keys() if k in off_m}

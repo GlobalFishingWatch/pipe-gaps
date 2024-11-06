@@ -36,7 +36,8 @@ class CoreProcess(ABC):
     """
 
     def process(self, elements: Iterable, side_inputs: Iterable = None) -> Iterable:
-        """Receives list of elements and process them linearly, without parallelization.
+        """Receives list of elements, performs group by operation and
+        processes groups linearly (without parallelization).
 
         This method uses subclass implementations of abstract methods.
 
