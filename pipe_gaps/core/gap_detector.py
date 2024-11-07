@@ -3,6 +3,7 @@ import logging
 import hashlib
 import operator
 from itertools import islice
+from collections import defaultdict
 
 from typing import Union, Generator
 from datetime import datetime, timedelta, timezone
@@ -320,7 +321,7 @@ class GapDetector:
         return implied_speed_knots
 
     def _count_messages_before_gap(self, messages: Generator = ()):
-        count = {}
+        count = defaultdict(int)
 
         for k in self.receiver_type_keys():
             count[k] = 0

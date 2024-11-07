@@ -246,17 +246,17 @@ class TestCases:
     POSITIONS_HOURS_BEFORE = [
         {
             "messages": [
-                create_message(time=datetime(2023, 12, 31, 12), receiver_type="terrestrial"),
+                create_message(time=datetime(2023, 12, 31, 12), receiver_type="dynamic"),
                 create_message(time=datetime(2023, 12, 31, 14), receiver_type="terrestrial"),
                 create_message(time=datetime(2023, 12, 31, 16), receiver_type="terrestrial"),
                 create_message(time=datetime(2023, 12, 31, 18), receiver_type="satellite"),
                 # Gap 1
                 create_message(time=datetime(2023, 12, 31, 21), receiver_type="satellite"),
                 # Gap 2
-                create_message(time=datetime(2024, 1, 1, 0), receiver_type="satellite"),
-                create_message(time=datetime(2024, 1, 1, 1), receiver_type="satellite"),
+                create_message(time=datetime(2024, 1, 1, 0), receiver_type="unknown"),
+                create_message(time=datetime(2024, 1, 1, 1)),
                 # Gap 3
-                create_message(time=datetime(2024, 1, 1, 4), receiver_type="terrestrial"),
+                create_message(time=datetime(2024, 1, 1, 4)),
             ],
             "open_gaps": [],
             "threshold": 2,
@@ -264,20 +264,20 @@ class TestCases:
             "expected_gaps": [
                 {
                     "positions_hours_before": 3,
-                    "positions_hours_before_ter": 3,
+                    "positions_hours_before_ter": 2,
                     "positions_hours_before_sat": 0,
-                    "positions_hours_before_dyn": 0
+                    "positions_hours_before_dyn": 1
                 },
                 {
                     "positions_hours_before": 4,
-                    "positions_hours_before_ter": 3,
+                    "positions_hours_before_ter": 2,
                     "positions_hours_before_sat": 1,
-                    "positions_hours_before_dyn": 0
+                    "positions_hours_before_dyn": 1
                 },
                 {
                     "positions_hours_before": 5,
                     "positions_hours_before_ter": 2,
-                    "positions_hours_before_sat": 3,
+                    "positions_hours_before_sat": 2,
                     "positions_hours_before_dyn": 0
                 }
             ],
