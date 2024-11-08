@@ -8,7 +8,7 @@
                 "query_params": {
                     "source_messages": "pipe_ais_v3_published.messages",
                     "source_segments": "pipe_ais_v3_published.segs_activity",
-                    "start_date": "2023-01-01",
+                    "start_date": "2022-12-31",
                     "end_date": "2023-07-01"
                 },
                 "mock_db_client": false,
@@ -33,7 +33,10 @@
             "threshold": 6,
             "show_progress": false,
             "eval_last": true,
-            "normalize_output": true
+            "normalize_output": true,
+            "window_period_d": 180,
+            "window_offset_h": 12,
+            "date_range": ["2023-01-01", "2023-07-01"]
         },
         "outputs": [
             {
@@ -51,7 +54,7 @@
             "subnetwork": "regions/us-east1/subnetworks/gfw-internal-us-east1",
             "max_num_workers": 200,
             "machine_type": "e2-standard-2",
-            "job_name": "tom-test-gaps-6-months"
+            "job_name": "tom-test-gaps-6-months-period-180"
         }
     }
 }

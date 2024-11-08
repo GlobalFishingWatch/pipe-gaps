@@ -205,6 +205,74 @@ def test_gap_between_days(tmp_path, messages, open_gaps, threshold, date_range, 
 
 
 @pytest.mark.parametrize(
+    "messages, open_gaps, expected_gaps, threshold, date_range, window_period_d, eval_last",
+    [
+        pytest.param(
+            case["messages"],
+            case["open_gaps"],
+            case["expected_gaps"],
+            case["threshold"],
+            case["date_range"],
+            case["window_period_d"],
+            case["eval_last"],
+            id=case["id"]
+        )
+        for case in TestCases.GAP_BETWEEN_ARBITRARY_PERIODS
+    ],
+)
+def test_gap_between_arbitrary_period(
+    tmp_path,
+    messages, open_gaps, expected_gaps, threshold, date_range, window_period_d, eval_last,
+):
+    # Checks that a gap between arbitrary periods is properly detected.
+
+    input_file = tmp_path.joinpath("test.json")
+    json_save(messages, input_file)
+
+    core_config = get_core_config()
+    core_config["threshold"] = threshold
+    core_config["window_period_d"] = window_period_d
+    core_config["date_range"] = date_range
+    core_config["eval_last"] = eval_last
+
+    inputs = [get_input_file_config(input_file, schema="messages")]
+
+    side_input_file = tmp_path.joinpath("open-gaps-test.json")
+    json_save(open_gaps, side_input_file, lines=True)
+    side_inputs_config = dict(
+        kind="json", input_file=side_input_file, schema="ais_gaps", lines=True)
+
+    side_inputs = [side_inputs_config]
+    outputs_config = [get_outputs_config()]
+
+    pipe = BeamPipeline.build(
+        inputs=inputs,
+        side_inputs=side_inputs,
+        work_dir=tmp_path,
+        core=core_config,
+        outputs=outputs_config
+    )
+    pipe.run()
+
+    gaps = json_load(pipe.output_path, lines=True)
+
+    gaps = sorted(gaps, key=lambda x: x["OFF"]["timestamp"])
+
+    for g in gaps:
+        from datetime import timezone
+        print(
+            "GAP",
+            "\n OFF", datetime.fromtimestamp(g["OFF"]["timestamp"], tz=timezone.utc),
+        )
+        if g["is_closed"]:
+            print(" ON", datetime.fromtimestamp(g["ON"]["timestamp"], tz=timezone.utc))
+        else:
+            print(" ON", None)
+
+    assert len(gaps) == expected_gaps
+
+
+@pytest.mark.parametrize(
     "messages, threshold, expected_gaps",
     [
         pytest.param(

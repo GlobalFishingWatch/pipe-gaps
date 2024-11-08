@@ -147,24 +147,31 @@ class Boundary:
 
         messages.sort(key=lambda x: x[timestamp_key])
 
+        if start_time is not None:
+            # print("VENTANA", "start_time=", datetime.fromtimestamp(start_time, tz=timezone.utc))
+            # for m in messages:
+            #    print("MENSAJE", datetime.fromtimestamp(m["timestamp"], tz=timezone.utc))
+            pass
+
         first_msg_index = 0
         if start_time is not None:
             first_msg_index = cls.get_index_for_start_time(messages, start_time)
-            assert first_msg_index is not None, "first msg index was none."
+            # assert first_msg_index is not None, "first msg index was none."
 
         start = [messages[first_msg_index]]
+
         end = cls.get_last_messages(messages, offset)
 
         return cls(ssvid=ssvid, start=start, end=end)
 
     @classmethod
-    def get_index_for_start_time(cls, messages, start_time):
+    def get_index_for_start_time(cls, messages, start_time, default=0):
         # TODO: move to utils. Already implemented in GapDetector.
         for i, m in enumerate(messages):
             if m["timestamp"] >= start_time:
                 return i
 
-        return None
+        return default
 
     @classmethod
     def get_last_messages(cls, messages, offset=0):

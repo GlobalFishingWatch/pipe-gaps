@@ -102,9 +102,17 @@ class DetectGaps(CoreProcess):
 
         messages = list(messages)  # On dataflow, this is a _ConcatSequence object.
 
+        messages.sort(key=lambda x: x["timestamp"])
+
+        # print("GRUPO")
+        # for m in messages:
+        #    print(datetime.fromtimestamp(m["timestamp"], tz=timezone.utc))
+
         if isinstance(window, IntervalWindow):
             start_time = window.start.to_utc_datetime(has_tz=True) + timedelta(
                 hours=self._window_offset_h)
+
+            # print("VENTANA EMPIEZA EN ", start_time)
 
             end_time = window.end.to_utc_datetime(has_tz=True)
         else:  # Not using pipe beam pipeline.
@@ -113,6 +121,19 @@ class DetectGaps(CoreProcess):
             start_time = datetime.fromtimestamp(first["timestamp"], tz=timezone.utc)
             end_time = datetime.fromtimestamp(last["timestamp"], tz=timezone.utc)
 
+        if self.date_range is not None:
+            range_start_time = self.date_range[0]
+            start_index = self._get_index_for_time(messages, range_start_time)
+            if start_index > 0:
+                # To handle border between start date and previous message
+                start_index = start_index - 1
+
+            range_start_time = datetime.fromtimestamp(
+                messages[start_index]["timestamp"], tz=timezone.utc)
+
+            start_time = max(start_time, range_start_time)
+
+        # print("START TIME FOR GROUP! ", start_time)
         gaps = self._gd.detect(messages=messages, start_time=start_time)
 
         logger.info(
@@ -135,7 +156,10 @@ class DetectGaps(CoreProcess):
     ) -> Iterable[dict]:
         key, boundaries_it = group
 
+        # logger.info("Amount of windows: {}".format(len(boundaries_it)))
+
         boundaries = Boundaries(boundaries_it)
+
         formatted_key = self.boundaries_key().format(key)
 
         gaps = {}
@@ -145,6 +169,10 @@ class DetectGaps(CoreProcess):
         for left, right in boundaries.consecutive_boundaries():
             start_ts = left.last_message()["timestamp"]
             messages = left.end + right.start
+
+            # print("BOUNDARY")
+            # for m in messages:
+            #     print("MENSAJE", datetime.fromtimestamp(m["timestamp"], tz=timezone.utc))
 
             start_dt = datetime.fromtimestamp(start_ts, tz=timezone.utc)
 
@@ -247,3 +275,13 @@ class DetectGaps(CoreProcess):
         off_m = {k: off_m[k] for k in on_m.keys() if k in off_m}
 
         return self._gd.create_gap(off_m=off_m, on_m=on_m, gap_id=open_gap["gap_id"])
+
+    def _get_index_for_time(self, messages: list, time: datetime) -> int:
+        timestamp = time.timestamp()
+
+        for i, m in enumerate(messages):
+            ts = m["timestamp"]
+            if ts >= timestamp:
+                return i
+
+        return -1

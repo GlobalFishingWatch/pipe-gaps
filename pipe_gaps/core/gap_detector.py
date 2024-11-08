@@ -267,11 +267,12 @@ class GapDetector:
         list_sort(messages, key=key, method=self._sort_method)
 
     def _get_index_for_start_time(self, messages: list, start_time: datetime) -> Union[int, None]:
-        start_timestamp = start_time.timestamp()
+        if isinstance(start_time, datetime):
+            start_time = start_time.timestamp()
 
         for i, m in enumerate(messages):
             ts = m[self.KEY_TIMESTAMP]
-            if ts >= start_timestamp:
+            if ts >= start_time:
                 return i
 
         return None

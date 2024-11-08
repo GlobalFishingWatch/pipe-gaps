@@ -163,8 +163,8 @@ class TestCases:
                 create_message(time=datetime(2024, 1, 1, 8)),
                 create_message(time=datetime(2024, 1, 1, 10)),
                 create_message(time=datetime(2024, 1, 1, 13)),
-                create_message(time=datetime(2024, 1, 1, 14)),
-                create_message(time=datetime(2024, 1, 1, 17)),
+                create_message(time=datetime(2024, 1, 1, 14)),  # This shouldn´t be detected.
+                create_message(time=datetime(2024, 1, 1, 18)),
                 create_message(time=datetime(2024, 1, 1, 20)),
                 create_message(time=datetime(2024, 1, 1, 21)),
                 create_message(time=datetime(2024, 1, 1, 22)),  # gap 1.
@@ -207,7 +207,7 @@ class TestCases:
             # taking care of the fact that may have already being closed by the
             # comparison by the last message of previous day.
             "messages": [
-                create_message(time=datetime(2024, 1, 1, 12)),
+                create_message(time=datetime(2024, 1, 1, 12)),   # Same as gap 3.
                 create_message(time=datetime(2024, 1, 2, 0)),    # gap 1
                 create_message(time=datetime(2024, 1, 2, 10)),   # gap 2
                 create_message(time=datetime(2024, 1, 2, 20)),
@@ -241,6 +241,45 @@ class TestCases:
             ],
             "id": "one_ssvid_with_open_gap"
         },
+    ]
+
+    GAP_BETWEEN_ARBITRARY_PERIODS = [
+        # We only want to detect gaps in the date range specified.
+        # Sliding windows with arbirary period will be a applied.
+        # The pipeline must handle properly the boundaries between windows.
+        {
+            "messages": [
+                create_message(time=datetime(2024, 1, 31, 8)),   # This shouldn´t be detected.
+                create_message(time=datetime(2024, 1, 31, 16)),  # gap 1
+                create_message(time=datetime(2024, 2, 1, 20)),   # gap 2.
+                create_message(time=datetime(2024, 2, 10, 1)),   # gap 3.
+                create_message(time=datetime(2024, 2, 28, 23)),
+            ],
+            "open_gaps": [],
+            "threshold": 10,
+            "date_range": ("2024-02-01", "2024-03-01"),  # We want to process february.
+            "window_period_d": 1,
+            "expected_gaps": 3,
+            "eval_last": True,
+            "id": "period_1_day"
+        },
+        {
+            "messages": [
+                create_message(time=datetime(2024, 1, 31, 12)),  # This shouldn´t be detected.
+                create_message(time=datetime(2024, 1, 31, 23)),  # gap 1
+                create_message(time=datetime(2024, 2, 1, 20)),   # gap 2.
+                create_message(time=datetime(2024, 2, 10, 1)),   # gap 3.
+                create_message(time=datetime(2024, 2, 28, 10)),  # gap 4: open gap
+            ],
+            "open_gaps": [],
+            "threshold": 10,
+            "date_range": ("2024-02-01", "2024-03-01"),  # We want to process february.
+            # "date_range": None,
+            "window_period_d": 30,
+            "eval_last": True,
+            "expected_gaps": 4,
+            "id": "period_30_days"
+        }
     ]
 
     POSITIONS_HOURS_BEFORE = [
