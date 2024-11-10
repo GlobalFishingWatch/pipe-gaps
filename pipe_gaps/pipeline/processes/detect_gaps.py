@@ -104,15 +104,9 @@ class DetectGaps(CoreProcess):
 
         messages.sort(key=lambda x: x["timestamp"])
 
-        # print("GRUPO")
-        # for m in messages:
-        #    print(datetime.fromtimestamp(m["timestamp"], tz=timezone.utc))
-
         if isinstance(window, IntervalWindow):
             start_time = window.start.to_utc_datetime(has_tz=True) + timedelta(
                 hours=self._window_offset_h)
-
-            # print("VENTANA EMPIEZA EN ", start_time)
 
             end_time = window.end.to_utc_datetime(has_tz=True)
         else:  # Not using pipe beam pipeline.
@@ -133,7 +127,6 @@ class DetectGaps(CoreProcess):
 
             start_time = max(start_time, range_start_time)
 
-        # print("START TIME FOR GROUP! ", start_time)
         gaps = self._gd.detect(messages=messages, start_time=start_time)
 
         logger.info(
@@ -169,10 +162,6 @@ class DetectGaps(CoreProcess):
         for left, right in boundaries.consecutive_boundaries():
             start_ts = left.last_message()["timestamp"]
             messages = left.end + right.start
-
-            # print("BOUNDARY")
-            # for m in messages:
-            #     print("MENSAJE", datetime.fromtimestamp(m["timestamp"], tz=timezone.utc))
 
             start_dt = datetime.fromtimestamp(start_ts, tz=timezone.utc)
 

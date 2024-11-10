@@ -147,16 +147,9 @@ class Boundary:
 
         messages.sort(key=lambda x: x[timestamp_key])
 
-        if start_time is not None:
-            # print("VENTANA", "start_time=", datetime.fromtimestamp(start_time, tz=timezone.utc))
-            # for m in messages:
-            #    print("MENSAJE", datetime.fromtimestamp(m["timestamp"], tz=timezone.utc))
-            pass
-
         first_msg_index = 0
         if start_time is not None:
             first_msg_index = cls.get_index_for_start_time(messages, start_time)
-            # assert first_msg_index is not None, "first msg index was none."
 
         start = [messages[first_msg_index]]
 
