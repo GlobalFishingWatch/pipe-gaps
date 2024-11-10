@@ -1,11 +1,8 @@
 """Module with Core beam transform, a unique step between Sources and Sinks."""
 
 import logging
-from datetime import timedelta
 
 import apache_beam as beam
-from apache_beam.transforms.window import IntervalWindow
-from apache_beam.transforms.core import DoFn
 
 from pipe_gaps.pipeline.processes import CoreProcess
 
@@ -17,19 +14,20 @@ class Core(beam.PTransform):
         """A core beam transform for pipelines.
 
         This pTransform will:
-            1. Groups input p-collection by a key defined in core_process.
-            2. Process groups in parallel, applying core_process.
-            3. Process boundaries in parallel, applying core_process.
-            4. Join outputs from groups and boundaries and assigns
+            1. Groups input p-collection into different closed sets,
+                using key and time window defined in core_process.
+            2. Process the interior of the sets obtained in 1.
+            3. Create boundary objects of each set obtained in 1 and apply a global window.
+            4. Process the boundary objects.
+            4. Join outputs from interior boundaries and assigns
                 the output schema defined in core_process.
 
         Args:
-            core_process: The class that defines the core process.
+            core_process: The instance that defines the core process.
+            side_inputs: A p-collection with side inputs that will be used for process boundaries.
         """
         self._process = core_process
         self._side_inputs = side_inputs
-
-        self._date_range = core_process.date_range
 
     def set_side_inputs(self, side_inputs):
         self._side_inputs = side_inputs
@@ -42,10 +40,6 @@ class Core(beam.PTransform):
         )
 
         out_boundaries = groups | self.process_boundaries()
-
-        # if self._date_range is not None:
-        #    groups = groups | self.filter_groups()
-
         out_groups = groups | self.process_groups()
 
         return (out_groups, out_boundaries) | self.join_outputs()
@@ -64,11 +58,6 @@ class Core(beam.PTransform):
         """Returns the GroupBy pTransform."""
         groups_key = self._process.groups_key()
         return f"GroupBy{groups_key.name()}" >> beam.GroupBy(groups_key.func())
-
-    def filter_groups(self):
-        """Returns the FilterGroups pTransform."""
-        return "FilterGroups" >> beam.Filter(
-            lambda _, window=DoFn.WindowParam: self._is_window_in_range(self._date_range, window))
 
     def process_groups(self):
         """Returns the ProcessGroups pTransform."""
@@ -99,26 +88,4 @@ class Core(beam.PTransform):
             | beam.FlatMap(self._process.process_boundaries, side_inputs=side_inputs)
         )
 
-        """
-        if self._date_range is not None:
-            _, offset = self._process.time_window_period_and_offset()
-            filter_tr = beam.Filter(
-                lambda _,
-                window=DoFn.WindowParam: self._is_window_in_range(
-                    self._date_range, window, start_buffer=offset))
-
-            tr = filter_tr | tr
-        """
         return tr
-
-    def _is_window_in_range(self, date_range, window: IntervalWindow, start_buffer: int = 0):
-
-        window_last_day = window.end.to_utc_datetime(has_tz=True) - timedelta(days=1)
-        window_first_day = window.start.to_utc_datetime(has_tz=True)
-
-        start, end = date_range
-
-        first_day_in_range = (start <= window_first_day < end)
-        last_day_in_range = (start <= window_last_day < end)
-
-        return first_day_in_range or last_day_in_range

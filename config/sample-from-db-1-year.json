@@ -34,6 +34,8 @@
             "show_progress": false,
             "eval_last": true,
             "normalize_output": true,
+            "window_period_d": 180,
+            "window_offset_h": 12,
             "date_range": ["2023-01-01", "2024-01-01"]
         },
         "outputs": [

@@ -64,7 +64,7 @@ class DetectGaps(CoreProcess):
         self._eval_last = eval_last
         self._window_period_d = window_period_d
         self._window_offset_h = window_offset_h
-        self.date_range = date_range  # TODO: improve encapsulation.
+        self._date_range = date_range
 
     @classmethod
     def build(
@@ -121,8 +121,8 @@ class DetectGaps(CoreProcess):
             start_time = datetime.fromtimestamp(first["timestamp"], tz=timezone.utc)
             end_time = datetime.fromtimestamp(last["timestamp"], tz=timezone.utc)
 
-        if self.date_range is not None:
-            range_start_time = self.date_range[0]
+        if self._date_range is not None:
+            range_start_time = self._date_range[0]
             start_index = self._get_index_for_time(messages, range_start_time)
             if start_index > 0:
                 # To handle border between start date and previous message
