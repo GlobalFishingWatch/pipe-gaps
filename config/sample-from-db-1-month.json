@@ -8,10 +8,12 @@
                 "query_params": {
                     "source_messages": "pipe_ais_v3_published.messages",
                     "source_segments": "pipe_ais_v3_published.segs_activity",
-                    "start_date": "2024-02-01",
-                    "end_date": "2024-03-01"
+                    "start_date": "2023-01-31",
+                    "end_date": "2023-03-01"
                 },
-                "mock_db_client": false
+                "mock_db_client": false,
+                "method": "DIRECT_READ"
+
             }
         ],
         "side_inputs": [
@@ -20,9 +22,11 @@
                 "query_name": "gaps",
                 "query_params": {
                     "source_gaps": "pipe_ais_v3_published.product_events_ais_gaps",
-                    "start_date": "2012-01-01"
+                    "start_date": "2012-01-01",
+                    "end_date": "2023-02-01"
                 },
-                "mock_db_client": false
+                "mock_db_client": false,
+                "method": "DIRECT_READ"
             }
         ],
         "core": {
@@ -30,7 +34,10 @@
             "threshold": 6,
             "show_progress": false,
             "eval_last": true,
-            "normalize_output": true
+            "normalize_output": true,
+            "window_period_d": 30,
+            "window_offset_h": 12,
+            "date_range": ["2023-02-01", "2024-03-01"]
         },
         "outputs": [
             {
@@ -42,13 +49,13 @@
             }
         ],
         "options": {
-            "runner": "direct",
+            "runner": "dataflow",
             "region": "us-east1",
             "network": "gfw-internal-network",
             "subnetwork": "regions/us-east1/subnetworks/gfw-internal-us-east1",
-            "max_num_workers": 150,
-            "machine_type": "e2-highcpu-4",
-            "job_name": "tom-test-gaps-1-month-multimap"
+            "max_num_workers": 200,
+            "machine_type": "e2-standard-2",
+            "job_name": "tom-test-gaps-1-month"
         }
     }
 }

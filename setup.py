@@ -15,7 +15,12 @@ setuptools.setup(
     url="https://github.com/GlobalFishingWatch/pipe-gaps",
     packages=setuptools.find_packages(),
     include_package_data=True,
-    package_data={'pipe_gaps': ['data/*.json']},
+    package_data={
+        'pipe_gaps': [
+            'data/*.json',
+            'pipeline/schemas/*.json'
+        ]
+    },
     classifiers=[
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
@@ -34,7 +39,7 @@ setuptools.setup(
         "rich~=13.0",
     ],
     extras_require={
-        "beam": ["apache-beam[gcp]~=2.59"],
+        "beam": ["apache-beam[gcp]~=2.60"],
     },
     entry_points={
         "console_scripts": [

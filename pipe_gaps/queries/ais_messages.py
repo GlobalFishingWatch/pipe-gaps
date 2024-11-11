@@ -122,5 +122,7 @@ class AISMessagesQuery(Query):
           {self.AIS_CLASS}
         """
 
+        return fields
+
     def schema(self):
         return Message

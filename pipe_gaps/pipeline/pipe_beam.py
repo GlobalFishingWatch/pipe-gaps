@@ -75,7 +75,9 @@ class BeamPipeline(base.Pipeline):
             for e in elem:
                 logger.debug(f"{message}: {json.dumps(e, indent=4)}")
 
-        elements | message >> (beam.combiners.Sample.FixedSizeGlobally(n) | beam.Map(debug))
+        elements | message >> (
+            beam.combiners.Sample.FixedSizeGlobally(n).without_defaults() | beam.Map(debug))
+        #  Defaults are not supported if you are not using a Global Window
 
     @classmethod
     def _build(cls, config: base.PipelineConfig):

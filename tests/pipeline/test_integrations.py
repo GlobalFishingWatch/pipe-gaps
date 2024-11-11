@@ -1,5 +1,7 @@
 import typing
 
+import pytest
+
 from pipe_gaps.pipeline.beam.transforms.sinks import BIGQUERY_SCHEMAS
 from pipe_gaps.core import GapDetector
 from pipe_gaps.utils import json_load
@@ -19,17 +21,18 @@ def test_output_gaps_comply_schema(input_file):
     schema = BIGQUERY_SCHEMAS["gaps"]
 
     detector = GapDetector(threshold=1.2, normalize_output=True)
-    gap = detector.create_gap(messages[0], messages[1])
+    gap = detector.create_gap(messages[20], messages[21], previous_positions=messages[0:20])
 
     schema_keys = [f["name"] for f in schema]
 
     for k in gap:
-        assert k in schema_keys, OUTPUT_GAPS_KEY_NOT_IN_SCHEMA.fomat(k)
+        assert k in schema_keys, OUTPUT_GAPS_KEY_NOT_IN_SCHEMA.format(k)
 
     for k in schema_keys:
         assert k in gap, SCHEMA_KEY_NOT_IN_OUTPUT_GAP.format(k)
 
 
+@pytest.mark.skip(reason="Enable when stop using research gaps table.")
 def test_input_gaps_comply_schema(input_file):
     schema = BIGQUERY_SCHEMAS["gaps"]
     output_gap_schema_keys = [f["name"] for f in schema]
