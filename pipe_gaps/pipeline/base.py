@@ -35,8 +35,8 @@ class Pipeline(ABC):
         config = config.model_copy(update=kwargs)
         config.validate()
 
-        logger.info("Using following configuration: ")
-        logger.info(config.to_json())
+        logger.debug("Using following configuration: ")
+        logger.debug(config.to_json())
 
         logger.info("Creating working directory {}...".format(config.work_dir.resolve()))
         os.makedirs(config.work_dir, exist_ok=True)

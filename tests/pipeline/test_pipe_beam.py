@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 
 from pipe_gaps.pipeline.processes import DetectGaps
 from pipe_gaps.pipeline.beam.transforms import Core, ReadFromJson
@@ -188,7 +188,6 @@ def test_gap_between_days(tmp_path, messages, open_gaps, threshold, date_range, 
     gaps = sorted(gaps, key=lambda x: x["OFF"]["timestamp"])
 
     for g in gaps:
-        from datetime import timezone
         print(
             "GAP",
             "\n OFF", datetime.fromtimestamp(g["OFF"]["timestamp"], tz=timezone.utc),
@@ -259,7 +258,6 @@ def test_gap_between_arbitrary_period(
     gaps = sorted(gaps, key=lambda x: x["OFF"]["timestamp"])
 
     for g in gaps:
-        from datetime import timezone
         print(
             "GAP",
             "\n OFF", datetime.fromtimestamp(g["OFF"]["timestamp"], tz=timezone.utc),
@@ -429,7 +427,7 @@ def test_positions_hours_before(tmp_path, messages, threshold, date_range, expec
     gaps = json_load(pipe.output_path, lines=True)
 
     for gap in gaps:
-        print("GAP: ", datetime.utcfromtimestamp(gap["OFF"]["timestamp"]))
+        print("GAP: ", datetime.fromtimestamp(gap["OFF"]["timestamp"], tz=timezone.utc))
 
     assert len(gaps) == len(expected_gaps)
 

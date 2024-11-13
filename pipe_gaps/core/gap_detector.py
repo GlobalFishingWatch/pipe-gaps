@@ -173,7 +173,7 @@ class GapDetector:
         Returns:
             A boolean indicating if the condition for open gap is met.
         """
-        last_m_datetime = datetime.utcfromtimestamp(message[self.KEY_TIMESTAMP])
+        last_m_datetime = datetime.fromtimestamp(message[self.KEY_TIMESTAMP],  tz=timezone.utc)
         next_m_date = last_m_datetime.date() + timedelta(days=1)
         next_m_datetime = datetime.combine(next_m_date, datetime.min.time(), tzinfo=timezone.utc)
 

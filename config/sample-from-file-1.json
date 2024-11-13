@@ -1,36 +1,7 @@
-{
-    "pipe_type": "beam",
-    "pipe_config": {
-        "inputs": [
-            {
-                "kind": "json",
-                "input_file": "pipe_gaps/data/sample_messages_lines.json",
-                "lines": true
-            }
-        ],
-        "side_inputs": [
-            {
-                "kind": "json",
-                "schema": "ais_gaps",
-                "input_file": "pipe_gaps/data/open_gaps.json",
-                "lines": true
-            }
-        ],
-        "core": {
-            "kind": "detect_gaps",
-            "threshold": 1.2,
-            "show_progress": false,
-            "eval_last": true,
-            "normalize_output": true
-        },
-        "outputs": [
-            {
-                "kind": "json",
-                "output_prefix": "gaps"
-            }
-        ],
-        "options": {
-            "runner": "direct"
-        }
-    }
+{   
+    "json_input_messages":  "pipe_gaps/data/sample_messages_lines.json",
+    "ssvids": [],
+    "min_gap_length": 1.2,
+    "n_hours_before": 12,
+    "window_period_d": 1
 }

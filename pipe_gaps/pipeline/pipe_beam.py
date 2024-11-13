@@ -70,6 +70,9 @@ class BeamPipeline(base.Pipeline):
                 self._debug_n_elements(inputs, n=1, message="Sample Input")
                 self._debug_n_elements(outputs, n=1, message="Sample Output")
 
+        if self._output_path is not None:
+            logger.info("Output JSON saved in {}".format(self._output_path.resolve()))
+
     def _debug_n_elements(self, elements, n=1, message=""):
         def debug(elem):
             for e in elem:
@@ -121,11 +124,10 @@ class BeamPipeline(base.Pipeline):
             machine_type="e2-standard-2",  # 2 cores - 8GB RAM.
             disk_size_gb=25,
             use_public_ips=False,
-            job_name="tom-test-gaps",
             project="world-fishing-827",
             temp_location="gs://pipe-temp-us-central-ttl7/dataflow_temp",
             staging_location="gs://pipe-temp-us-central-ttl7/dataflow_staging",
-            region="us-central1",
+            region="us-east1",
             network="gfw-internal-network",
-            subnetwork="regions/us-central1/subnetworks/gfw-internal-us-central1"
+            subnetwork="regions/us-east1/subnetworks/gfw-internal-us-east1"
         )
