@@ -4,6 +4,8 @@ import json
 import math
 import logging
 import argparse
+from functools import reduce
+
 from argparse import BooleanOptionalAction
 
 from pathlib import Path
@@ -26,38 +28,44 @@ DESCRIPTION = """
     The latter take precedence, so if you provide both, command-line arguments
     will overwrite options in the config file provided.
 
-    Besides the arguments defined here, you can also pass any valid argument
-    of Apache Beam PipelineOptions class. For more information, see
+    Besides the arguments defined here, you can also pass any pipeline option
+    defined for Apache Beam PipelineOptions class. For more information, see
         https://cloud.google.com/dataflow/docs/reference/pipeline-options#python.
 """
 EPILOG = (
     "Example: \n"
-    "    pipe-gaps -c config/sample-from-file-1.json --max_gap_length 1.3"
+    "    pipe-gaps -c config/sample-from-file.json --max_gap_length 1.3"
 )
 
 _DEFAULT = "(default: %(default)s)"
 # TODO: try to get this descriptions from docstrings, so we don´t duplicate them.
+# TODO: put descriptions in docstring of build_pipeline function.
 HELP_CONFIG_FILE = f"JSON file with pipeline configuration {_DEFAULT}."
 HELP_VERBOSE = "Set logger level to DEBUG."
 
+HELP_ONLY_RENDER_CLI_CALL = "Only render command-line call equivalent to provided config file."
+
 HELP_PIPE_TYPE = "Pipeline type: ['naive', 'beam']."
 HELP_BQ_INPUT_MESSAGES = "BigQuery table with with input messages."
+HELP_BQ_INPUT_SEGMENTS = "BigQuery table with with input segments."
 HELP_BQ_INPUT_OPEN_GAPS = "BigQuery table with open gaps."
 HELP_BQ_OUTPUT_GAPS = "BigQuery table in which to store the gap events."
 HELP_JSON_INPUT_MESSAGES = "JSON file with input messages [Useful for development]."
 HELP_JSON_INPUT_OPEN_GAPS = "JSON file with open gaps [Useful for development]."
-HELP_DATE_RANGE = "Detect gaps within this date range e.g., '2024-01-01 2024-01-02'."
+
 HELP_OPEN_GAPS_START_DATE = "Fetch open gaps starting from this date range e.g., '2012-01-01'."
-HELP_SKIP_OPEN_GAPS = "Whether or not to fetch open gaps [Useful for development]. "
-HELP_SSVIDS = "Detect gaps for this list of ssvids."
+HELP_SKIP_OPEN_GAPS = "If passed, pipeline will not fetch open gaps [Useful for development]. "
 HELP_FILTER_OVERLAP = "Filter messages from 'overlapping and short' (OLAS) segments."
 HELP_MOCK_DB_CLIENT = "If passed, mocks the DB client [Useful for development]."
 HELP_SAVE_JSON = "If passed, saves the results in JSON file [Useful for development]."
 HELP_WORK_DIR = "Directory to use as working directory."
+HELP_SSVIDS = "Detect gaps for this list of ssvids, e.g., «412331104 477334300»."
+HELP_DATE_RANGE = "Detect gaps within this date range e.g., «2024-01-01 2024-01-02»."
 
 HELP_MIN_GAP_LENGTH = "Minimum time difference (hours) to start considering gaps."
 HELP_WINDOW_PERIOD_D = "Period (in days) of time windows used to parallelize the process."
 HELP_EVAL_LAST = "If passed, evaluates last message of each SSVID to create an open gap."
+HELP_N_HOURS_BEFORE = "Count messages this amount of hours before each gap."
 
 
 def formatter():
@@ -69,8 +77,40 @@ def formatter():
     return formatter
 
 
-def run(config: dict) -> None:
+def render_command_line_call(config: dict) -> str:
+    """Renders command-line call from config file."""
 
+    items = config.items()
+    command = "pipe-gaps \\\n"
+    argument = "--{flag}{sep}{value} {end}"
+
+    for i, (k, v) in enumerate(items):
+        flag = k.replace("_", "-")
+        value = v
+        sep = "="
+        end = "\\\n"
+
+        if isinstance(v, str):
+            value = f"'{v}'"
+
+        if isinstance(v, (list, tuple)):
+            value = " ".join(v)
+            sep = " "
+
+        if isinstance(v, bool):
+            value = ""
+            sep = ""
+
+        if i == len(items) - 1:
+            end = ""
+
+        command += argument.format(flag=flag, value=value, sep=sep, end=end)
+
+    return command
+
+
+def run(config: dict) -> None:
+    """Builds and runs pipeline."""
     logger.info("Using following GAPS pipeline configuration: ")
     logger.info(json.dumps(config, indent=4))
 
@@ -94,15 +134,15 @@ def build_pipeline(
     eval_last: bool = True,
     normalize_output: bool = True,
     json_input_messages: str = None,
-    bq_write_disposition: str = "WRITE_APPEND",
     bq_input_messages: str = None,
     bq_input_segments: str = "pipe_ais_v3_published.segs_activity",
     bq_input_open_gaps: str = None,
     bq_output_gaps: str = None,
+    bq_write_disposition: str = "WRITE_APPEND",
     mock_db_client: bool = False,
-    beam_options: dict = None,
     save_json: bool = False,
-    work_dir: str = "workdir"
+    work_dir: str = "workdir",
+    pipeline_options: dict = None,
 ):
     """This function creates a configuration that complies with pipeline factory interface."""
 
@@ -199,8 +239,8 @@ def build_pipeline(
     if save_json:
         outputs.append(create_json_output_config())
 
-    if beam_options is not None:
-        options.update(beam_options)
+    if pipeline_options is not None:
+        options.update(pipeline_options)
 
     config = {
         "pipe_type": pipe_type,
@@ -234,43 +274,47 @@ def cli(args):
         description=DESCRIPTION,
         epilog=EPILOG,
         formatter_class=formatter(),
-        # argument_default=argparse.SUPPRESS
     )
 
     add = p.add_argument
     add("-c", "--config-file", type=Path, default=None, metavar=" ", help=HELP_CONFIG_FILE)
     add("-v", "--verbose", action="store_true", default=False, help=HELP_VERBOSE)
+    add("--only-render-cli-call", action="store_true", help=HELP_ONLY_RENDER_CLI_CALL)
 
     add = p.add_argument_group("general pipeline configuration").add_argument
     add("--pipe-type", type=str, metavar=" ", help=HELP_PIPE_TYPE)
-    add("-bi", "--bq-input-messages", type=str, metavar=" ", help=HELP_BQ_INPUT_MESSAGES)
-    add("-bs", "--bq-input-open-gaps", type=str, metavar=" ", help=HELP_BQ_INPUT_OPEN_GAPS)
-    add("-bo", "--bq-output-gaps", type=str, metavar=" ", help=HELP_BQ_OUTPUT_GAPS)
     add("-i", "--json-input-messages", type=str, metavar=" ", help=HELP_JSON_INPUT_MESSAGES)
     add("-s", "--json-input-open-gaps", type=str, metavar=" ", help=HELP_JSON_INPUT_OPEN_GAPS)
-    add("--date-range", type=str, nargs=2, metavar=" ", help=HELP_DATE_RANGE)
-    add("--filter-overlap", type=bool, default=None, metavar=" ", help=HELP_FILTER_OVERLAP)
+    add("--bq-input-messages", type=str, metavar=" ", help=HELP_BQ_INPUT_MESSAGES)
+    add("--bq-input-segments", type=str, metavar=" ", help=HELP_BQ_INPUT_SEGMENTS)
+    add("--bq-input-open-gaps", type=str, metavar=" ", help=HELP_BQ_INPUT_OPEN_GAPS)
+    add("--bq-output-gaps", type=str, metavar=" ", help=HELP_BQ_OUTPUT_GAPS)
     add("--open-gaps-start-date", type=str, metavar=" ", help=HELP_OPEN_GAPS_START_DATE)
+    add("--filter-overlap", type=bool, default=None, metavar=" ", help=HELP_FILTER_OVERLAP)
     add("--skip-open-gaps", action="store_true", default=None, help=HELP_SKIP_OPEN_GAPS)
-    add("--ssvids", type=str, nargs="+", metavar=" ", help=HELP_SSVIDS)
     add("--mock-db-client", default=None, action=BooleanOptionalAction, help=HELP_MOCK_DB_CLIENT)
-    add("--work-dir", type=str, metavar=" ", help=HELP_WORK_DIR)
     add("--save-json", default=None, action=BooleanOptionalAction, help=HELP_SAVE_JSON)
+    add("--work-dir", type=str, metavar=" ", help=HELP_WORK_DIR)
+    add("--ssvids", type=str, nargs="+", metavar=" ", help=HELP_SSVIDS)
+    add("--date-range", type=str, nargs=2, metavar=" ", help=HELP_DATE_RANGE)
 
     boolean = BooleanOptionalAction
     add = p.add_argument_group("gap detection process").add_argument
     add("--min-gap-length", type=float, metavar=" ", help=HELP_MIN_GAP_LENGTH)
-    add("--window-period_d", type=float, metavar=" ", help=HELP_WINDOW_PERIOD_D)
+    add("--window-period-d", type=float, metavar=" ", help=HELP_WINDOW_PERIOD_D)
     add("--eval-last", default=None, action=boolean, help=HELP_EVAL_LAST)
+    add("--n-hours-before", type=float, metavar=" ", help=HELP_N_HOURS_BEFORE)
 
     ns, unknown = p.parse_known_args(args=args or ["--help"])
 
     config_file = ns.config_file
     verbose = ns.verbose
+    only_render_cli_call = ns.only_render_cli_call
 
     # Delete CLI configuration from parsed namespace.
     del ns.verbose
     del ns.config_file
+    del ns.only_render_cli_call
 
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
@@ -284,16 +328,29 @@ def cli(args):
             del cli_args[arg]
 
     # Parse unknown arguments to dict.
-    extra_args = dict(zip(unknown[:-1:2], unknown[1::2]))
-    extra_args = {k.replace("--", ""): v for k, v in extra_args.items()}
+    unknown = list(reduce(lambda a, b: a + b.split('='), unknown, []))  # In case "=" sign is used.
+    unknown_args = dict(zip(unknown[:-1:2], unknown[1::2]))  # Build dict of unknown args.
+    unknown_args = {k.replace("--", ""): v for k, v in unknown_args.items()}  # Remove prefix.
+    unknown_args = {k.replace("-", "_"): v for k, v in unknown_args.items()}  # Use underscore.
 
     config = {}
     # Load config file if exists.
     if config_file is not None:
         config = utils.json_load(config_file)
+    else:
+        only_render_cli_call = False
 
-    config.update({**cli_args, **extra_args})
+    # Override configuration file with CLI args.
+    config.update(cli_args)
 
+    if only_render_cli_call:
+        # Only render equivalent command-line args call and exit.
+        logger.info("Equivalent command-line call: ")
+        call_dict = {**config, **unknown_args}
+        print(render_command_line_call(call_dict))
+        return
+
+    config["pipeline_options"] = unknown_args
     run(config)
 
 

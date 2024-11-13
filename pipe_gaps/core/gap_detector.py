@@ -92,8 +92,9 @@ class GapDetector:
         return [
             cls.KEY_SSVID,
             cls.KEY_TIMESTAMP,
-            cls.KEY_LON,
             cls.KEY_LAT,
+            cls.KEY_LON,
+            cls.KEY_RECEIVER_TYPE,
         ]
 
     @classmethod
@@ -102,7 +103,7 @@ class GapDetector:
         return [
             cls.KEY_TERRESTRIAL,
             cls.KEY_SATELLITE,
-            cls.KEY_DYNAMIC
+            cls.KEY_DYNAMIC,
         ]
 
     @classmethod
@@ -111,7 +112,7 @@ class GapDetector:
             message[cls.KEY_SSVID],
             message[cls.KEY_TIMESTAMP],
             message[cls.KEY_LAT] or 0.0,
-            message[cls.KEY_LON] or 0.0
+            message[cls.KEY_LON] or 0.0,
         )
 
         return hashlib.md5(s.encode('utf-8')).hexdigest()
@@ -119,7 +120,7 @@ class GapDetector:
     def detect(self, messages: list[dict], start_time: datetime = None) -> list[dict]:
         """Detects time gaps between AIS position messages from a single vessel.
 
-        Currently takes (1.75 ± 0.01) seconds to process 10M messages (i7-1355U 5.0GHz).
+        Currently takes (3.62 ± 0.03) seconds to process 10M messages (i7-1355U 5.0GHz).
         TODO: benchmark must be run again with a more representative input (more gaps found).
 
         Args:

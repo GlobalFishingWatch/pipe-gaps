@@ -10,7 +10,7 @@ def test_cli(tmp_path):
     ]
 
     # With config file and verbose flag.
-    args.extend(["--config-file", "config/sample-from-file-1.json", "--pipe-type", "naive"])
+    args.extend(["--config-file", "config/sample-from-file.json", "--pipe-type", "naive"])
     args.extend(["-v"])
     cli.cli(args)
 

@@ -46,7 +46,7 @@ class BeamPipeline(base.Pipeline):
         self._side_inputs = side_inputs
         self._output_path = self._resolve_output_path()
 
-        self._options = PipelineOptions(flags=[], **self._resolve_beam_options(options))
+        self._options = PipelineOptions.from_dictionary(self._resolve_beam_options(options))
 
     def run(self):
         with beam.Pipeline(options=self._options) as p:

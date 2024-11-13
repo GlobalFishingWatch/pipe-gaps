@@ -114,7 +114,7 @@
     "min_gap_length": 6,
     "n_hours_before": 12,
     "window_period_d": 30,
-    "beam_options": {
+    "pipeline_options": {
         "project": "world-fishing-827",
         "runner": "dataflow",
         "max_num_workers": 200,
