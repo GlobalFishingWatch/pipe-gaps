@@ -1,11 +1,15 @@
 """This module implements a CLI for the gaps pipeline."""
 import sys
+import json
+import math
 import logging
 import argparse
-import collections
+from functools import reduce
+
 from argparse import BooleanOptionalAction
 
 from pathlib import Path
+from datetime import date, timedelta
 
 from pipe_gaps import utils
 from pipe_gaps import pipeline
@@ -16,32 +20,52 @@ logger = logging.getLogger(__name__)
 NAME = "pipe-gaps"
 DESCRIPTION = """
     Detects time gaps in AIS position messages.
-    The definition of a gap is configurable by a time threshold.
+    The definition of a gap is configurable by a time threshold 'max_gap_length'.
+    For more information, check the documentation at
+        https://github.com/GlobalFishingWatch/pipe-gaps/tree/develop.
+
+    You can provide a configuration file or command-line arguments.
+    The latter take precedence, so if you provide both, command-line arguments
+    will overwrite options in the config file provided.
+
+    Besides the arguments defined here, you can also pass any pipeline option
+    defined for Apache Beam PipelineOptions class. For more information, see
+        https://cloud.google.com/dataflow/docs/reference/pipeline-options#python.
 """
 EPILOG = (
     "Example: \n"
-    "    pipe-gaps -c config/sample-from-file-1.json --threshold 1.3"
+    "    pipe-gaps -c config/sample-from-file.json --max_gap_length 1.3"
 )
 
 _DEFAULT = "(default: %(default)s)"
 # TODO: try to get this descriptions from docstrings, so we don´t duplicate them.
+# TODO: put descriptions in docstring of build_pipeline function.
 HELP_CONFIG_FILE = f"JSON file with pipeline configuration {_DEFAULT}."
-HELP_INPUT_FILE = "JSON file with main inputs for the pipeline."
-HELP_SIDE_INPUT_FILE = "JSON file with side inputs for the pipeline."
-HELP_THRESHOLD = "Minimum time difference (hours) to start considering gaps."
-HELP_START_DATE = "Query filter: messages after this dete, e.g., '2024-01-01'."
-HELP_END_DATE = "Query filter: messages before this date, e.g., '2024-01-02'."
-HELP_SSVIDS = "Query filter: list of ssvids."
-HELP_SORT_METHOD = "Sorting algorithm."
-HELP_EVAL_LAST = "If passed, evaluates last message of each SSVID to create an open gap."
-HELP_NORM_OUTPUT = "If passed, normalizes the output."
-HELP_SHOW_PROGRESS = "If passed, renders a progress bar."
-HELP_MOCK_DB_CLIENT = "If passed, mocks the DB client. Useful for development and testing."
-HELP_SAVE_JSON = "If passed, saves the results in JSON file."
-HELP_SAVE_STATS = "If passed, saves some statistics."
-HELP_PIPE_TYPE = "Pipeline type: ['naive', 'beam']."
-HELP_WORK_DIR = "Directory to use as working directory."
 HELP_VERBOSE = "Set logger level to DEBUG."
+
+HELP_ONLY_RENDER_CLI_CALL = "Only render command-line call equivalent to provided config file."
+
+HELP_PIPE_TYPE = "Pipeline type: ['naive', 'beam']."
+HELP_BQ_INPUT_MESSAGES = "BigQuery table with with input messages."
+HELP_BQ_INPUT_SEGMENTS = "BigQuery table with with input segments."
+HELP_BQ_INPUT_OPEN_GAPS = "BigQuery table with open gaps."
+HELP_BQ_OUTPUT_GAPS = "BigQuery table in which to store the gap events."
+HELP_JSON_INPUT_MESSAGES = "JSON file with input messages [Useful for development]."
+HELP_JSON_INPUT_OPEN_GAPS = "JSON file with open gaps [Useful for development]."
+
+HELP_OPEN_GAPS_START_DATE = "Fetch open gaps starting from this date range e.g., '2012-01-01'."
+HELP_SKIP_OPEN_GAPS = "If passed, pipeline will not fetch open gaps [Useful for development]. "
+HELP_FILTER_OVERLAP = "Filter messages from 'overlapping and short' (OLAS) segments."
+HELP_MOCK_DB_CLIENT = "If passed, mocks the DB client [Useful for development]."
+HELP_SAVE_JSON = "If passed, saves the results in JSON file [Useful for development]."
+HELP_WORK_DIR = "Directory to use as working directory."
+HELP_SSVIDS = "Detect gaps for this list of ssvids, e.g., «412331104 477334300»."
+HELP_DATE_RANGE = "Detect gaps within this date range e.g., «2024-01-01 2024-01-02»."
+
+HELP_MIN_GAP_LENGTH = "Minimum time difference (hours) to start considering gaps."
+HELP_WINDOW_PERIOD_D = "Period (in days) of time windows used to parallelize the process."
+HELP_EVAL_LAST = "If passed, evaluates last message of each SSVID to create an open gap."
+HELP_N_HOURS_BEFORE = "Count messages this amount of hours before each gap."
 
 
 def formatter():
@@ -53,14 +77,183 @@ def formatter():
     return formatter
 
 
-def dict_update(d, u):
-    """Updates a nested dictionary."""
-    for k, v in u.items():
-        if isinstance(v, collections.abc.Mapping):
-            d[k] = dict_update(d.get(k) or {}, v)
-        else:
-            d[k] = v
-    return d
+def render_command_line_call(config: dict) -> str:
+    """Renders command-line call from config file."""
+
+    items = config.items()
+    command = "pipe-gaps \\\n"
+    argument = "--{flag}{sep}{value} {end}"
+
+    for i, (k, v) in enumerate(items):
+        flag = k.replace("_", "-")
+        value = v
+        sep = "="
+        end = "\\\n"
+
+        if isinstance(v, str):
+            value = f"'{v}'"
+
+        if isinstance(v, (list, tuple)):
+            value = " ".join(v)
+            sep = " "
+
+        if isinstance(v, bool):
+            value = ""
+            sep = ""
+
+        if i == len(items) - 1:
+            end = ""
+
+        command += argument.format(flag=flag, value=value, sep=sep, end=end)
+
+    return command
+
+
+def run(config: dict) -> None:
+    """Builds and runs pipeline."""
+    logger.info("Using following GAPS pipeline configuration: ")
+    logger.info(json.dumps(config, indent=4))
+
+    pipe = build_pipeline(**config)
+    try:
+        pipe.run()
+    except pipeline.PipelineError as e:
+        logger.error(e)
+
+
+def build_pipeline(
+    pipe_type: str = "beam",
+    date_range: tuple = ("2024-01-01", "2024-01-02"),
+    filter_overlap: bool = False,
+    open_gaps_start_date: str = "2019-01-01",
+    skip_open_gaps: bool = False,
+    ssvids: list = (),
+    min_gap_length: float = 6,
+    n_hours_before: int = 12,
+    window_period_d: int = 30,
+    eval_last: bool = True,
+    normalize_output: bool = True,
+    json_input_messages: str = None,
+    bq_input_messages: str = None,
+    bq_input_segments: str = "pipe_ais_v3_published.segs_activity",
+    bq_input_open_gaps: str = None,
+    bq_output_gaps: str = None,
+    bq_write_disposition: str = "WRITE_APPEND",
+    mock_db_client: bool = False,
+    save_json: bool = False,
+    work_dir: str = "workdir",
+    pipeline_options: dict = None,
+):
+    """This function creates a configuration that complies with pipeline factory interface."""
+
+    start_date, end_date = date_range
+
+    start_date = date.fromisoformat(start_date)
+    end_date = date.fromisoformat(end_date)
+
+    if json_input_messages is None and (bq_input_messages is None or bq_input_segments is None):
+        raise ValueError("You need to provide either a JSON inputs or BQ input.")
+
+    def create_bigquery_input_config():
+        buffer_days = math.ceil(n_hours_before / 24)
+        query_start_date = start_date - timedelta(days=buffer_days)
+
+        return {
+            "kind": "query",
+            "query_name": "messages",
+            "query_params": {
+                "source_messages": bq_input_messages,
+                "source_segments": bq_input_segments,
+                "start_date": query_start_date,
+                "end_date": end_date,
+                "ssvids": ssvids,
+                "filter_overlapping_and_short": filter_overlap
+            },
+            "mock_db_client": mock_db_client,
+        }
+
+    def create_bq_side_input():
+        return {
+            "kind": "query",
+            "query_name": "gaps",
+            "query_params": {
+                "source_gaps": bq_input_open_gaps,
+                "start_date": open_gaps_start_date,
+                "end_date": start_date
+            },
+            "mock_db_client": mock_db_client
+        }
+
+    def create_json_input_config():
+        return {
+            "kind": "json",
+            "input_file": json_input_messages,
+            "lines": True
+        }
+
+    def create_bq_output_config():
+        return {
+            "kind": "bigquery",
+            "table": bq_output_gaps,
+            "schema": "gaps",
+            "write_disposition": bq_write_disposition
+        }
+
+    def create_json_output_config():
+        return {
+            "kind": "json",
+            "output_prefix": "gaps",
+            "output_dir": work_dir
+        }
+
+    def create_core_config():
+        return {
+            "kind": "detect_gaps",
+            "groups_key": "ssvid",
+            "boundaries_key": "ssvid",
+            "eval_last": eval_last,
+            "threshold": min_gap_length,
+            "normalize_output": normalize_output,
+            "date_range": date_range,
+            "window_period_d": window_period_d,
+            "window_offset_h": n_hours_before,
+        }
+
+    inputs = []
+    outputs = []
+    side_inputs = []
+    options = {}
+
+    if json_input_messages is not None:
+        inputs.append(create_json_input_config())
+
+    if bq_input_messages is not None:
+        inputs.append(create_bigquery_input_config())
+
+    if bq_input_open_gaps is not None and not skip_open_gaps:
+        side_inputs.append(create_bq_side_input())
+
+    if bq_output_gaps is not None:
+        outputs.append(create_bq_output_config())
+
+    if save_json:
+        outputs.append(create_json_output_config())
+
+    if pipeline_options is not None:
+        options.update(pipeline_options)
+
+    config = {
+        "pipe_type": pipe_type,
+        "pipe_config": {
+            "inputs": inputs,
+            "side_inputs": side_inputs,
+            "core": create_core_config(),
+            "outputs": outputs,
+            "options": options
+        }
+    }
+
+    return pipeline.factory.from_config(config)
 
 
 def cli(args):
@@ -68,7 +261,8 @@ def cli(args):
     utils.setup_logger(
         warning_level=[
             "apache_beam.runners.portability",
-            "apache_beam.runners.worker.bundle_processor",
+            "apache_beam.runners.worker",
+            "apache_beam.transforms.core",
             "apache_beam.io.filesystem",
             "apache_beam.io.gcp.bigquery_tools",
             "urllib3"
@@ -80,87 +274,84 @@ def cli(args):
         description=DESCRIPTION,
         epilog=EPILOG,
         formatter_class=formatter(),
-        argument_default=argparse.SUPPRESS
     )
 
     add = p.add_argument
     add("-c", "--config-file", type=Path, default=None, metavar=" ", help=HELP_CONFIG_FILE)
-    add("--pipe-type", type=str, metavar=" ", help=HELP_PIPE_TYPE)
-    add("--save-stats", default=None, action=BooleanOptionalAction, help=HELP_SAVE_STATS)
-    add("--work-dir", type=Path, metavar=" ", help=HELP_WORK_DIR)
     add("-v", "--verbose", action="store_true", default=False, help=HELP_VERBOSE)
+    add("--only-render-cli-call", action="store_true", help=HELP_ONLY_RENDER_CLI_CALL)
 
-    # TODO: see if we want to support these CLI args.
-
-    # add("--save-json", default=None, action=BooleanOptionalAction, help=HELP_SAVE_JSON)
-
-    # add = p.add_argument_group("pipeline inputs").add_argument
-    # add("-i", "--input-file", type=Path, metavar=" ", help=HELP_INPUT_FILE)
-    # add("-s", "--side-input-file", type=Path, metavar=" ", help=HELP_SIDE_INPUT_FILE)
-    # add("--start-date", type=str, metavar=" ", help=HELP_START_DATE)
-    # add("--end-date", type=str, metavar=" ", help=HELP_END_DATE)
-    # add("--ssvids", type=str, nargs="+", metavar=" ", help=HELP_SSVIDS)
-    # add("--mock-db-client", default=None, action=BooleanOptionalAction, help=HELP_MOCK_DB_CLIENT)
+    add = p.add_argument_group("general pipeline configuration").add_argument
+    add("--pipe-type", type=str, metavar=" ", help=HELP_PIPE_TYPE)
+    add("-i", "--json-input-messages", type=str, metavar=" ", help=HELP_JSON_INPUT_MESSAGES)
+    add("-s", "--json-input-open-gaps", type=str, metavar=" ", help=HELP_JSON_INPUT_OPEN_GAPS)
+    add("--bq-input-messages", type=str, metavar=" ", help=HELP_BQ_INPUT_MESSAGES)
+    add("--bq-input-segments", type=str, metavar=" ", help=HELP_BQ_INPUT_SEGMENTS)
+    add("--bq-input-open-gaps", type=str, metavar=" ", help=HELP_BQ_INPUT_OPEN_GAPS)
+    add("--bq-output-gaps", type=str, metavar=" ", help=HELP_BQ_OUTPUT_GAPS)
+    add("--open-gaps-start-date", type=str, metavar=" ", help=HELP_OPEN_GAPS_START_DATE)
+    add("--filter-overlap", type=bool, default=None, metavar=" ", help=HELP_FILTER_OVERLAP)
+    add("--skip-open-gaps", action="store_true", default=None, help=HELP_SKIP_OPEN_GAPS)
+    add("--mock-db-client", default=None, action=BooleanOptionalAction, help=HELP_MOCK_DB_CLIENT)
+    add("--save-json", default=None, action=BooleanOptionalAction, help=HELP_SAVE_JSON)
+    add("--work-dir", type=str, metavar=" ", help=HELP_WORK_DIR)
+    add("--ssvids", type=str, nargs="+", metavar=" ", help=HELP_SSVIDS)
+    add("--date-range", type=str, nargs=2, metavar=" ", help=HELP_DATE_RANGE)
 
     boolean = BooleanOptionalAction
-    add = p.add_argument_group("pipeline core process").add_argument
-    add("--threshold", type=float, metavar=" ", help=HELP_THRESHOLD)
-    add("--sort-method", type=str, metavar=" ", help=HELP_SORT_METHOD)
-    add("--show-progress", default=None, action=boolean, help=HELP_SHOW_PROGRESS)
+    add = p.add_argument_group("gap detection process").add_argument
+    add("--min-gap-length", type=float, metavar=" ", help=HELP_MIN_GAP_LENGTH)
+    add("--window-period-d", type=float, metavar=" ", help=HELP_WINDOW_PERIOD_D)
     add("--eval-last", default=None, action=boolean, help=HELP_EVAL_LAST)
-    add("--norm", dest="normalize_output", default=None, action=boolean, help=HELP_NORM_OUTPUT)
-
-    CORE_KEYS = ["threshold", "show_progress", "eval_last", "normalize_output"]
+    add("--n-hours-before", type=float, metavar=" ", help=HELP_N_HOURS_BEFORE)
 
     ns, unknown = p.parse_known_args(args=args or ["--help"])
 
     config_file = ns.config_file
     verbose = ns.verbose
+    only_render_cli_call = ns.only_render_cli_call
 
     # Delete CLI configuration from parsed namespace.
     del ns.verbose
     del ns.config_file
+    del ns.only_render_cli_call
 
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
+
+    # Convert namespace of args to dict.
+    cli_args = vars(ns)
+
+    # Erase null arguments.
+    for arg in list(cli_args):
+        if cli_args[arg] is None:
+            del cli_args[arg]
+
+    # Parse unknown arguments to dict.
+    unknown = list(reduce(lambda a, b: a + b.split('='), unknown, []))  # In case "=" sign is used.
+    unknown_args = dict(zip(unknown[:-1:2], unknown[1::2]))  # Build dict of unknown args.
+    unknown_args = {k.replace("--", ""): v for k, v in unknown_args.items()}  # Remove prefix.
+    unknown_args = {k.replace("-", "_"): v for k, v in unknown_args.items()}  # Use underscore.
 
     config = {}
     # Load config file if exists.
     if config_file is not None:
         config = utils.json_load(config_file)
+    else:
+        only_render_cli_call = False
 
-    # Convert namespace of args to dict.
-    cli_args = vars(ns)
+    # Override configuration file with CLI args.
+    config.update(cli_args)
 
-    for arg in list(cli_args):
-        if cli_args[arg] is None:
-            del cli_args[arg]
+    if only_render_cli_call:
+        # Only render equivalent command-line args call and exit.
+        logger.info("Equivalent command-line call: ")
+        call_dict = {**config, **unknown_args}
+        print(render_command_line_call(call_dict))
+        return
 
-    for k in CORE_KEYS:
-        if k in cli_args:
-            cli_args.setdefault("core", {})[k] = cli_args.pop(k)
-
-    # Parse unknown arguments to dict.
-    options = dict(zip(unknown[:-1:2], unknown[1::2]))
-    options = {k.replace("--", ""): v for k, v in options.items()}
-
-    # Build config dictionary from CLI params
-    cli_config = {}
-    pipe_type = cli_args.pop("pipe_type", None)
-    if pipe_type is not None:
-        cli_config["pipe_type"] = pipe_type
-
-    cli_config["pipe_config"] = cli_args
-    cli_config["pipe_config"]["options"] = options
-
-    # Override config file with CLI params
-    config = dict_update(config, cli_config)
-
-    # Run pipeline with parsed config.
-    try:
-        pipeline.factory.from_config(config).run()
-    except pipeline.PipelineError as e:
-        logger.error(e)
+    config["pipeline_options"] = unknown_args
+    run(config)
 
 
 def main():

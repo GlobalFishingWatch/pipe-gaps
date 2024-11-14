@@ -94,7 +94,12 @@ class ReadFromQuery(beam.PTransform):
     @classmethod
     def build(
         cls,
-        query_name: str, query_params: dict, use_schema=False, mock_db_client=False, **kwargs
+        query_name: str,
+        query_params: dict,
+        use_schema=False,
+        mock_db_client=False,
+        method=beam.io.ReadFromBigQuery.Method.DIRECT_READ,
+        **kwargs
     ) -> "ReadFromQuery":
         """Builds a ReadFromQuery instance.
 
@@ -103,6 +108,7 @@ class ReadFromQuery(beam.PTransform):
             query_params: The parameters of the query.
             use_schema: If true, uses query defined schema as p-collection type. If not, uses dict.
             mock_db_client: If True, uses a mock for the database client.
+            method: The method to use to read from BigQuery. It may be EXPORT or DIRECT_READ.
             **kwargs: Extra keyword arguments for beam.io.ReadFromBigQuery constructor.
 
         Returns:
@@ -115,7 +121,7 @@ class ReadFromQuery(beam.PTransform):
         if mock_db_client:
             class_ = ReadFromBigQueryMock
 
-        transform = class_(use_standard_sql=True, query=query.render(), **kwargs)
+        transform = class_(use_standard_sql=True, query=query.render(), method=method, **kwargs)
 
         if use_schema:
             transform = transform.with_output_types(query.schema())

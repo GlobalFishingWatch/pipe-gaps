@@ -1,60 +1,23 @@
-{
-    "pipe_type": "beam",
-    "pipe_config": {
-        "inputs": [
-            {
-                "kind": "query",
-                "query_name": "messages",
-                "query_params": {
-                    "source_messages": "pipe_ais_v3_published.messages",
-                    "source_segments": "pipe_ais_v3_published.segs_activity",
-                    "start_date": "2022-12-31",
-                    "end_date": "2023-07-01"
-                },
-                "mock_db_client": false,
-                "method": "DIRECT_READ"
-            }
-        ],
-        "side_inputs": [
-            {
-                "kind": "query",
-                "query_name": "gaps",
-                "query_params": {
-                    "source_gaps": "pipe_ais_v3_published.product_events_ais_gaps",
-                    "start_date": "2012-01-01",
-                    "end_date": "2023-01-01"
-                },
-                "mock_db_client": false,
-                "method": "DIRECT_READ"
-            }
-        ],
-        "core": {
-            "kind": "detect_gaps",
-            "threshold": 6,
-            "show_progress": false,
-            "eval_last": true,
-            "normalize_output": true,
-            "window_period_d": 180,
-            "window_offset_h": 12,
-            "date_range": ["2023-01-01", "2023-07-01"]
-        },
-        "outputs": [
-            {
-                "kind": "bigquery",
-                "table": "scratch_tomas_ttl30d.pipe_ais_gaps",
-                "description": "Gaps for AIS position messages.",
-                "schema": "gaps",
-                "write_disposition": "WRITE_TRUNCATE"
-            }
-        ],
-        "options": {
-            "runner": "dataflow",
-            "region": "us-east1",
-            "network": "gfw-internal-network",
-            "subnetwork": "regions/us-east1/subnetworks/gfw-internal-us-east1",
-            "max_num_workers": 200,
-            "machine_type": "e2-standard-2",
-            "job_name": "tom-test-gaps-6-months-period-180"
-        }
+{   
+    "bq_input_messages": "pipe_ais_v3_published.messages",
+    "bq_input_segments": "pipe_ais_v3_published.segs_activity",
+    "bq_input_open_gaps": "pipe_ais_v3_published.product_events_ais_gaps",
+    "bq_output_gaps": "scratch_tomas_ttl30d.pipe_ais_gaps",
+    "skip_open_gaps": false,
+    "open_gaps_start_date": "2012-01-01",
+    "ssvids": [],
+    "date_range": [
+        "2023-01-01",
+        "2023-07-01"
+    ],
+    "min_gap_length": 6,
+    "n_hours_before": 12,
+    "window_period_d": 180,
+    "pipeline_options": {
+        "project": "world-fishing-827",
+        "runner": "dataflow",
+        "max_num_workers": 200,
+        "machine_type": "e2-standard-2",
+        "job_name": "tom-test-gaps-6-months-period-180"
     }
 }

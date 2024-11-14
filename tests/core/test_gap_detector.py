@@ -20,12 +20,15 @@ def test_detect_correct_gaps(messages):
 def test_missing_keys():
     messages = [
         create_message(time=datetime(2024, 1, 1, 1)),
-        create_message(time=datetime(2024, 1, 1, 2)),
+        create_message(time=datetime(2024, 1, 1, 3)),
+        create_message(time=datetime(2024, 1, 1, 5)),
+        create_message(time=datetime(2024, 1, 1, 9)),
     ]
 
-    gd = GapDetector(threshold=0.5)
+    gd = GapDetector(threshold=2, n_hours_before=12)
     gaps = gd.detect(messages)
     assert len(gaps) == 1
+    assert gaps[0]["positions_hours_before"] == 2
 
     for key in gd.mandatory_keys():
         wrong_messages = [{k: v for k, v in m.items() if k != key} for m in messages]

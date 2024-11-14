@@ -1,5 +1,6 @@
 """Module with beam transforms for writing output pcollections."""
 import json
+from datetime import datetime
 from pathlib import Path
 from importlib_resources import files
 
@@ -42,15 +43,17 @@ class WriteJson(beam.PTransform):
         output_dir: Output directory.
         output_prefix: Prefix to use in filename/s.
     """
-    def __init__(self, output_dir: Path = Path("workdir"), output_prefix: str = ""):
-        self._output_dir = output_dir
-        self._output_prefix = f"beam-{output_prefix}"
+    def __init__(self, output_dir: str = "workdir", output_prefix: str = ""):
+        self._output_dir = Path(output_dir)
+
+        time = datetime.now().isoformat(timespec="seconds").replace("-", "").replace(":", "")
+        self._output_prefix = f"beam-{output_prefix}-{time}"
 
         self._prefix = self._output_dir.joinpath(self._output_prefix).as_posix()
         self._shard_name_template = ''
         self._suffix = ".json"
 
-        # This is what WriteToText does to construct the path.
+        # This is what beam.io.WriteToText does to construct the path.
         self.path = Path(''.join([self._prefix, self._shard_name_template, self._suffix]))
 
     @classmethod

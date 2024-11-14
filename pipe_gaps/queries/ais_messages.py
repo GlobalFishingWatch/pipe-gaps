@@ -106,7 +106,7 @@ class AISMessagesQuery(Query):
             overlapping_and_short=overlapping_and_short
         )
 
-        if self._ssvids is not None:
+        if self._ssvids is not None and len(self._ssvids) > 0:
             ssvid_filter = ",".join(f'"{s}"' for s in self._ssvids)
             query = f"{query} AND ssvid IN ({ssvid_filter})"
 
