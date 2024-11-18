@@ -315,22 +315,22 @@ Example:
 ```
 
 > [!CAUTION]
-> Date ranges are inclusive for the start date and exclusive for the end date.
+  Note that the separator for words in parameters is hyphen `-` and not underscore `_`. 
+
+> [!CAUTION]
+> Date ranges are inclusive for the start date and **exclusive for the end date**.
 
 > [!NOTE]
 > The pipe-type can be "naive" (without parallelization, was useful for development)
   or "beam" (allows parallelization through [Apache Beam] & [Google Dataflow]).
 
 > [!NOTE]
-> Any option passed to the CLI not explicitly documented will be treated as
-  custom configuration of each pipeline type. For example,
-  you can pass any option available in the [Apache Beam Pipeline Options]. 
+> Any option passed to the CLI not explicitly declared will not be parsed by the main CLI,
+  and will be passed to the pipeline that will parse it internally.
+  For example, you can pass any option available in the [Apache Beam Pipeline Options].
+  **For those parameters, the convention is to use underscores instead of hyphens**
+  as words separator.
 
-> [!CAUTION]
-  In the case of [Apache Beam Pipeline Options], be careful with flags.
-  You should pass the _option name_ and not the _flag name_, 
-  e.g., pass `--use_public_ips=False` instead of `--no-use-public-ips`,
-  otherwise the parameter **will be ignored**.
 
 This is an example of a JSON config file:
 ```json
@@ -357,6 +357,13 @@ This is an example of a JSON config file:
     }
 }
 ```
+
+> [!CAUTION]
+  Inside `pipeline_options` you can put, for example, any [Apache Beam Pipeline Options].
+  In that case, be careful with flags. You should put the _option name_ and not the _flag name_, 
+  e.g., put `"use_public_ips": false` instead of `"no_use_public_ips": true`,
+  otherwise the parameter **will be ignored**. This is different from using it from the CLI,
+  where _you should_ pass `--no_use_public_ips` argument. 
 
 You can see more configuration examples [here](config/). 
 
