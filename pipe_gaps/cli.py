@@ -4,7 +4,6 @@ import json
 import math
 import logging
 import argparse
-from functools import reduce
 
 from argparse import BooleanOptionalAction
 
@@ -77,21 +76,21 @@ def formatter():
     return formatter
 
 
-def render_command_line_call(config: dict) -> str:
+def render_command_line_call(config: dict, flags: list) -> str:
     """Renders command-line call from config file."""
 
-    items = config.items()
-    command = "pipe-gaps \\\n"
+    command = f"{NAME} \\\n"
     argument = "--{flag}{sep}{value} {end}"
 
+    for f in flags:
+        command += f"{f} \\\n"
+
+    items = {k: v for k, v in config.items() if k != "pipeline_options"}.items()
     for i, (k, v) in enumerate(items):
         flag = k.replace("_", "-")
         value = v
         sep = "="
         end = "\\\n"
-
-        if isinstance(v, str):
-            value = f"'{v}'"
 
         if isinstance(v, (list, tuple)):
             value = " ".join(v)
@@ -307,6 +306,9 @@ def cli(args):
 
     ns, unknown = p.parse_known_args(args=args or ["--help"])
 
+    logger.info(
+        "Following unknown args will be parsed internally by the pipeline: {}".format(unknown))
+
     config_file = ns.config_file
     verbose = ns.verbose
     only_render_cli_call = ns.only_render_cli_call
@@ -327,12 +329,6 @@ def cli(args):
         if cli_args[arg] is None:
             del cli_args[arg]
 
-    # Parse unknown arguments to dict.
-    unknown = list(reduce(lambda a, b: a + b.split('='), unknown, []))  # In case "=" sign is used.
-    unknown_args = dict(zip(unknown[:-1:2], unknown[1::2]))  # Build dict of unknown args.
-    unknown_args = {k.replace("--", ""): v for k, v in unknown_args.items()}  # Remove prefix.
-    unknown_args = {k.replace("-", "_"): v for k, v in unknown_args.items()}  # Use underscore.
-
     config = {}
     # Load config file if exists.
     if config_file is not None:
@@ -346,11 +342,10 @@ def cli(args):
     if only_render_cli_call:
         # Only render equivalent command-line args call and exit.
         logger.info("Equivalent command-line call: ")
-        call_dict = {**config, **unknown_args}
-        print(render_command_line_call(call_dict))
+        print(render_command_line_call(config, unknown))
         return
 
-    config["pipeline_options"] = unknown_args
+    config.setdefault("pipeline_options", {})["unparsed"] = unknown
     run(config)
 
 

@@ -108,6 +108,18 @@ class BeamPipeline(base.Pipeline):
         return path
 
     def _resolve_beam_options(self, options):
+        args_list = options.pop("unparsed", [])
+
+        # We let apache beam parse its options: they have the CLI argparse definition.
+        # They can cast properly each value.
+        unparsed_options = {}
+        if len(args_list) > 0:
+            unparsed_options = PipelineOptions(args_list).get_all_options(drop_default=True)
+
+        logger.info("Options parsed by beam: {}".format(unparsed_options))
+
+        options.update(unparsed_options)  # CLI args takes precedence.
+
         beam_options = self.default_options()
         beam_options.update(**options)
 
