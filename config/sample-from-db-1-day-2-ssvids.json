@@ -12,12 +12,13 @@
         "2024-01-01",
         "2024-01-02"
     ],
-    "min_gap_length": 6,
+    "min_gap_length": 0.1,
     "n_hours_before": 12,
     "window_period_d": 1,
     "pipeline_options": {
         "project": "world-fishing-827",
-        "runner": "direct",
-        "job_name": "tom-test-gaps-1-day-2-ssvids"
+        "runner": "dataflow",
+        "job_name": "tom-test-gaps-1-day-2-ssvids-5",
+        "sdk_container_image": "gcr.io/world-fishing-827/github.com/globalfishingwatch/pipe-gaps:v0.1.0.dev.20241118"
     }
 }
