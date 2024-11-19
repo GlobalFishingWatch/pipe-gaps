@@ -8,6 +8,9 @@
     <img alt="Python versions" src="https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue">
   </a>
   <a>
+    <img alt="Apache Beam version" src="https://img.shields.io/badge/ApacheBeam-2.60.0-orange">
+  </a>
+  <a>
     <img alt="Last release" src="https://img.shields.io/github/v/release/GlobalFishingWatch/pipe-gaps">
   </a>
 </p>
