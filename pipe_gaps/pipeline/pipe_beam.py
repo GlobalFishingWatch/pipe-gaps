@@ -137,8 +137,8 @@ class BeamPipeline(base.Pipeline):
             disk_size_gb=25,
             use_public_ips=False,
             project="world-fishing-827",
-            temp_location="gs://pipe-temp-us-central-ttl7/dataflow_temp",
-            staging_location="gs://pipe-temp-us-central-ttl7/dataflow_staging",
+            temp_location="gs://pipe-temp-us-east-ttl7/dataflow_temp",
+            staging_location="gs://pipe-temp-us-east-ttl7/dataflow_staging",
             region="us-east1",
             network="gfw-internal-network",
             subnetwork="regions/us-east1/subnetworks/gfw-internal-us-east1"
