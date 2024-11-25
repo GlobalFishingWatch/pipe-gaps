@@ -1,0 +1,8 @@
+.git
+.venv
+
+Dockerfile
+docker-compose.yaml
+
+examples
+sandbox

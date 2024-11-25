@@ -1,0 +1,22 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    id: build
+    args:
+      - build
+      - '-t'
+      - '${_IMAGE_NAME}:${TAG_NAME}'
+      - '-t'
+      - '${_IMAGE_NAME}:latest'
+      - '-f'
+      - Dockerfile
+      - '--target'
+      - prod
+      - .
+images:
+  - '${_IMAGE_NAME}:${TAG_NAME}'
+  - '${_IMAGE_NAME}:latest'
+timeout: 600s
+substitutions:
+  _IMAGE_NAME: 'gcr.io/${PROJECT_ID}/github.com/globalfishingwatch/pipe-gaps'
+options:
+  dynamic_substitutions: true
