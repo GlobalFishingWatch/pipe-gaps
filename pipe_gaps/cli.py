@@ -129,7 +129,7 @@ def build_pipeline(
     ssvids: list = (),
     min_gap_length: float = 6,
     n_hours_before: int = 12,
-    window_period_d: int = 30,
+    window_period_d: int = None,
     eval_last: bool = True,
     normalize_output: bool = True,
     json_input_messages: str = None,
@@ -147,11 +147,14 @@ def build_pipeline(
 
     start_date, end_date = date_range
 
-    start_date = date.fromisoformat(start_date)
-    end_date = date.fromisoformat(end_date)
+    start_date, end_date = [date.fromisoformat(start_date) for x in date_range]
+    open_gaps_start_date = date.fromisoformat(open_gaps_start_date)
 
     if json_input_messages is None and (bq_input_messages is None or bq_input_segments is None):
         raise ValueError("You need to provide either a JSON inputs or BQ input.")
+
+    if bq_input_open_gaps is None:
+        bq_input_open_gaps = bq_output_gaps
 
     def create_bigquery_input_config():
         buffer_days = math.ceil(n_hours_before / 24)
@@ -229,7 +232,7 @@ def build_pipeline(
     if bq_input_messages is not None:
         inputs.append(create_bigquery_input_config())
 
-    if bq_input_open_gaps is not None and not skip_open_gaps:
+    if bq_input_open_gaps is not None and not skip_open_gaps and start_date > open_gaps_start_date:
         side_inputs.append(create_bq_side_input())
 
     if bq_output_gaps is not None:

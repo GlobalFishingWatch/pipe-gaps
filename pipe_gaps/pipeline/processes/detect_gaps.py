@@ -1,5 +1,5 @@
 import logging
-from datetime import timedelta, datetime, timezone
+from datetime import timedelta, datetime, timezone, date
 from typing import Type, Iterable, Optional, Any
 
 from apache_beam.transforms.window import IntervalWindow
@@ -11,6 +11,9 @@ from .base import CoreProcess, Key
 from .common import Boundary, Boundaries, key_factory
 
 logger = logging.getLogger(__name__)
+
+
+MAX_WINDOW_PERIOD_D = 180  # Max. window period in days. Requires further testing. Could be higher.
 
 
 def off_message_from_gap(gap: dict):
@@ -46,6 +49,7 @@ class DetectGaps(CoreProcess):
         eval_last: If True, evaluates last message of each vessel to create an open gap.
         window_period_d: period for the time window in days.
         window_offset_h: offset for the time window in hours.
+        date_range: only detect gaps within this date range.
     """
 
     def __init__(
@@ -54,9 +58,9 @@ class DetectGaps(CoreProcess):
         gk: Key,
         bk: Key,
         eval_last: bool = False,
-        window_period_d: int = 365,
+        window_period_d: int = MAX_WINDOW_PERIOD_D,
         window_offset_h: int = 12,
-        date_range: tuple = None,
+        date_range: tuple[date, date] = None,
     ):
         self._gd = gd
         self._gk = gk
@@ -73,16 +77,16 @@ class DetectGaps(CoreProcess):
         boundaries_key: str = "ssvid",
         date_range: tuple = None,
         eval_last: bool = False,
-        window_period_d: int = 365,
+        window_period_d: int = MAX_WINDOW_PERIOD_D,
         window_offset_h: int = 12,
         **config
     ) -> "DetectGaps":
 
         if date_range is not None:
-            date_range = [
-                datetime.fromisoformat(x).replace(tzinfo=timezone.utc)
-                for x in date_range
-            ]
+            date_range = [date.fromisoformat(x) for x in date_range]
+
+            date_range_size = (date_range[1] - date_range[0]).days
+            window_period_d = min(date_range_size, MAX_WINDOW_PERIOD_D)
 
         return cls(
             gd=GapDetector(**config),
@@ -116,7 +120,9 @@ class DetectGaps(CoreProcess):
             end_time = datetime.fromtimestamp(last["timestamp"], tz=timezone.utc)
 
         if self._date_range is not None:
-            range_start_time = self._date_range[0]
+            range_start_time = datetime.combine(
+                self._date_range[0], datetime.min.time(), tzinfo=timezone.utc)
+
             start_index = self._get_index_for_time(messages, range_start_time)
             if start_index > 0:
                 # To handle border between start date and previous message
