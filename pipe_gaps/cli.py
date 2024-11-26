@@ -54,7 +54,8 @@ HELP_JSON_INPUT_OPEN_GAPS = "JSON file with open gaps [Useful for development]."
 
 HELP_OPEN_GAPS_START_DATE = "Fetch open gaps starting from this date range e.g., '2012-01-01'."
 HELP_SKIP_OPEN_GAPS = "If passed, pipeline will not fetch open gaps [Useful for development]. "
-HELP_FILTER_OVERLAP = "Filter messages from 'overlapping and short' (OLAS) segments."
+HELP_OVERL = "Fetch messages that don't belong to 'overlapping_and_short' segments."
+HELP_GOOD_SEG = "Fetch messages that belong to 'good_seg' segments."
 HELP_MOCK_DB_CLIENT = "If passed, mocks the DB client [Useful for development]."
 HELP_SAVE_JSON = "If passed, saves the results in JSON file [Useful for development]."
 HELP_WORK_DIR = "Directory to use as working directory."
@@ -123,7 +124,8 @@ def run(config: dict) -> None:
 def build_pipeline(
     pipe_type: str = "beam",
     date_range: tuple = ("2024-01-01", "2024-01-02"),
-    filter_overlap: bool = False,
+    filter_not_overlapping_and_short: bool = False,
+    filter_good_seg: bool = False,
     open_gaps_start_date: str = "2019-01-01",
     skip_open_gaps: bool = False,
     ssvids: list = (),
@@ -169,7 +171,9 @@ def build_pipeline(
                 "start_date": query_start_date,
                 "end_date": end_date,
                 "ssvids": ssvids,
-                "filter_overlapping_and_short": filter_overlap
+                "filter_not_overlapping_and_short": filter_not_overlapping_and_short,
+                "filter_good_seg": filter_good_seg
+
             },
             "mock_db_client": mock_db_client,
         }
@@ -283,6 +287,8 @@ def cli(args):
     add("-v", "--verbose", action="store_true", default=False, help=HELP_VERBOSE)
     add("--only-render-cli-call", action="store_true", help=HELP_ONLY_RENDER_CLI_CALL)
 
+    default_args = dict(default=None, metavar=" ")
+
     add = p.add_argument_group("general pipeline configuration").add_argument
     add("--pipe-type", type=str, metavar=" ", help=HELP_PIPE_TYPE)
     add("-i", "--json-input-messages", type=str, metavar=" ", help=HELP_JSON_INPUT_MESSAGES)
@@ -292,7 +298,8 @@ def cli(args):
     add("--bq-input-open-gaps", type=str, metavar=" ", help=HELP_BQ_INPUT_OPEN_GAPS)
     add("--bq-output-gaps", type=str, metavar=" ", help=HELP_BQ_OUTPUT_GAPS)
     add("--open-gaps-start-date", type=str, metavar=" ", help=HELP_OPEN_GAPS_START_DATE)
-    add("--filter-overlap", type=bool, default=None, metavar=" ", help=HELP_FILTER_OVERLAP)
+    add("--filter-not-overlapping-and-short", type=bool, **default_args, help=HELP_OVERL)
+    add("--filter-good-seg", type=bool, **default_args, help=HELP_GOOD_SEG)
     add("--skip-open-gaps", action="store_true", default=None, help=HELP_SKIP_OPEN_GAPS)
     add("--mock-db-client", default=None, action=BooleanOptionalAction, help=HELP_MOCK_DB_CLIENT)
     add("--save-json", default=None, action=BooleanOptionalAction, help=HELP_SAVE_JSON)
