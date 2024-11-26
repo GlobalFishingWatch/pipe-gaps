@@ -147,9 +147,7 @@ def build_pipeline(
 ):
     """This function creates a configuration that complies with pipeline factory interface."""
 
-    start_date, end_date = date_range
-
-    start_date, end_date = [date.fromisoformat(start_date) for x in date_range]
+    start_date, end_date = [date.fromisoformat(x) for x in date_range]
     open_gaps_start_date = date.fromisoformat(open_gaps_start_date)
 
     if json_input_messages is None and (bq_input_messages is None or bq_input_segments is None):
