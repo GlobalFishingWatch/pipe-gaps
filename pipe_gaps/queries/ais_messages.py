@@ -46,6 +46,9 @@ class AISMessagesQuery(Query):
         source_messages: table with AIS messages.
         source_segments: table with AIS segments.
         ssvids: list of ssvdis to filter.
+        filter_good_seg: If true, only fetch messages that belong to 'good_seg' segments.
+        filter_not_overlapping_and_short: If true, only fetch messages that don't belong to
+            'overlapping_and_short' segments.
     """
 
     NAME = "messages"
@@ -62,8 +65,7 @@ class AISMessagesQuery(Query):
             seg_id
           FROM
             `{source_segments}`
-          WHERE
-            good_seg {overlapping_and_short}
+        {segment_filters}
         )
     """
 
@@ -83,27 +85,25 @@ class AISMessagesQuery(Query):
         source_messages: str = DB_TABLE_MESSAGES,
         source_segments: str = DB_TABLE_SEGMENTS,
         ssvids: list = None,
-        filter_overlapping_and_short: bool = False
+        filter_good_seg: bool = False,
+        filter_not_overlapping_and_short: bool = False
     ):
         self._start_date = start_date
         self._end_date = end_date
         self._source_messages = source_messages
         self._source_segments = source_segments
         self._ssvids = ssvids
-        self._filter_overlapping_and_short = filter_overlapping_and_short
+        self._filter_good_seg = filter_good_seg
+        self._filter_not_overlapping_and_short = filter_not_overlapping_and_short
 
     def render(self):
-        overlapping_and_short = ""
-        if self._filter_overlapping_and_short:
-            overlapping_and_short = "and not overlapping_and_short"
-
         query = self.TEMPLATE.format(
             source_messages=self._source_messages,
             source_segments=self._source_segments,
             start_date=self._start_date,
             end_date=self._end_date,
             fields=self.select_clause(),
-            overlapping_and_short=overlapping_and_short
+            segment_filters=self.segment_filters(),
         )
 
         if self._ssvids is not None and len(self._ssvids) > 0:
@@ -123,6 +123,26 @@ class AISMessagesQuery(Query):
         """
 
         return fields
+
+    def segment_filters(self):
+        segment_filters = []
+
+        if self._filter_good_seg:
+            segment_filters.append("good_seg2")
+
+        if self._filter_not_overlapping_and_short:
+            segment_filters.append("not overlapping_and_short")
+
+        segment_filters_str = ""
+        if len(segment_filters) > 0:
+            it = iter(segment_filters)
+
+            segment_filters_str = f"WHERE {next(it)}"
+
+            for filter_ in it:
+                segment_filters_str += f" and {filter_}"
+
+        return segment_filters_str
 
     def schema(self):
         return Message

@@ -78,13 +78,17 @@ class GapDetector:
         if isinstance(threshold, (int, float)):
             threshold = timedelta(hours=threshold)
 
-        self._threshold = threshold.total_seconds()
+        if isinstance(n_hours_before, (int, float)):
+            n_hours_before = timedelta(hours=n_hours_before)
+
+        self._threshold = threshold
         self._n_hours_before = n_hours_before
         self._show_progress = show_progress
         self._sort_method = sort_method
         self._normalize_output = normalize_output
 
-        self._n_seconds_before = self._n_hours_before * 3600
+        self._n_seconds_before = self._n_hours_before.total_seconds()
+        self._threshold_s = threshold.total_seconds()
 
     @classmethod
     def mandatory_keys(cls) -> list[str]:
@@ -135,7 +139,7 @@ class GapDetector:
             GapDetectionError: When input messages are missing a mandatory key.
         """
 
-        logger.debug("Using threshold: {}".format(self._threshold))
+        logger.debug("Using threshold: {} hours.".format(self._threshold))
         try:
             logger.debug(f"Sorting messages by timestamp ({self._sort_method} algorithm)...")
             self._sort_messages(messages)
@@ -293,7 +297,7 @@ class GapDetector:
                 break
 
     def _gap_condition(self, off_m: dict, on_m: dict) -> bool:
-        return self._gap_duration_seconds(off_m, on_m) > self._threshold
+        return self._gap_duration_seconds(off_m, on_m) > self._threshold_s
 
     def _gap_distance_meters(self, off_m: dict, on_m: dict) -> float:
         def _latlon_point(message):

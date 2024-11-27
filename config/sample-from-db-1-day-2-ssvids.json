@@ -15,6 +15,8 @@
     "min_gap_length": 0.1,
     "n_hours_before": 12,
     "window_period_d": 1,
+    "filter_not_overlapping_and_short": true,
+    "filter_good_seg": true,
     "pipeline_options": {
         "project": "world-fishing-827",
         "runner": "direct",
