@@ -18,7 +18,7 @@ GCP_DOCKER_VOLUME:=gcp
 ## test: Runs unit tests.
 ## testintegration: Runs unit and integration tests.
 ## testdocker: Runs unit and integration tests inside docker container.
-
+## profile: Runs profiling.
 
 help:
 	@echo "\nUsage: \n"
