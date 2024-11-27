@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib.ticker import ScalarFormatter
 
-
 plt.style.use("style.mplstyle")
 
 
@@ -13,10 +12,15 @@ class ScalarFormatterForceFormat(ScalarFormatter):
         self.format = "%1.1f"  # Give format here
 
 
-filename_w_filter = "gaps_per_day_with_ov_short_filter.csv"
-filename_wo_filter = "gaps_per_day_without_ov_short_filter.csv"
-filename_per_country = "gaps_per_country-2021-2023.csv"
+# filename_w_filter = "gaps_per_day_with_good_seg_and_ov_short_filter.csv"
+# filename_w_filter = "gaps_per_day_with_good_seg_filter.csv"
 
+filename_w_filter = "gaps_per_day_with_good_seg2_filter.csv"
+filename_wo_filter = "gaps_per_day_without_filters.csv"
+
+
+filename_per_country = "gaps_per_country-2021-2023.csv"
+output = "gaps_good_seg2"
 
 w_filter = pd.read_csv(
     filename_w_filter, index_col=False, parse_dates=["day_mon_year"])
@@ -36,13 +40,17 @@ fig, axs = plt.subplots(1, 2, figsize=(8, 4.4))
 axs[0].set_title("Gaps per Month \n(2021-2023)")
 
 difference = abs(w_ys - wo_ys)
+avg_diff = round(difference.mean())
 
-axs[0].plot(time, w_ys, ".--", lw=2, label="Filtering ov_short")
-axs[0].plot(time, wo_ys, "-", lw=1, label="Not filtering ov_short", alpha=1)
-axs[0].plot(time, difference, "-", lw=2, label="Difference")
-axs[0].legend(fontsize=12)
+print("Average difference: ", avg_diff)
 
-axs[0].set_ylim(top=6.5e6)
+axs[0].plot(time, w_ys, ".--", lw=2, label="Filtering good_seg2")
+axs[0].plot(time, wo_ys, "-", lw=1, label="No filters", alpha=1)
+axs[0].plot(time, difference, "-", lw=2, label=f"Difference\nAvg: {avg_diff}")
+axs[0].legend(fontsize=10)
+
+axs[0].set_ylim(top=7e6)
+axs[0].set_xlim(time[0] - pd.Timedelta(weeks=30))
 axs[0].xaxis.set_major_locator(mdates.MonthLocator(1, 12))
 axs[0].xaxis.set_minor_locator(mdates.MonthLocator())
 axs[0].set_ylabel('Gaps Count')
@@ -70,7 +78,7 @@ for label in axs[1].get_xticklabels(which='major'):
 
 fig.subplots_adjust(hspace=3)
 fig.tight_layout()
-plt.savefig("gaps.svg")
-plt.savefig("gaps.png")
+plt.savefig(f"{output}.svg")
+plt.savefig(f"{output}.png")
 
 plt.show()
