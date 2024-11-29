@@ -253,7 +253,8 @@ def build_pipeline(
             "side_inputs": side_inputs,
             "core": create_core_config(),
             "outputs": outputs,
-            "options": options
+            "options": options,
+            "work_dir": work_dir
         }
     }
 
