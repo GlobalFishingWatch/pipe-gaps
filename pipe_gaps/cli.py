@@ -70,6 +70,7 @@ HELP_SAVE_JSON = "If passed, saves the results in JSON file [Useful for developm
 HELP_WORK_DIR = "Directory to use as working directory."
 HELP_SSVIDS = "Detect gaps for this list of ssvids, e.g., «412331104 477334300»."
 HELP_DATE_RANGE = "Detect gaps within this date range e.g., «2024-01-01 2024-01-02»."
+HELP_DATE_RANGE_STR = "Detect gaps within this date range (string), e.g., '2024-01-01 2024-01-02'."
 
 HELP_MIN_GAP_LENGTH = "Minimum time difference (hours) to start considering gaps."
 HELP_WINDOW_PERIOD_D = "Period (in days) of time windows used to parallelize the process."
@@ -270,6 +271,14 @@ def build_pipeline(
     return pipeline.factory.from_config(config)
 
 
+def date_range_tuple(date_string):
+    date_range = date_string.split(" ")
+    if len(date_range) != 2:
+        raise argparse.ArgumentTypeError("Must be a string with two dates separated by a space.")
+
+    return date_range
+
+
 def cli(args):
     """CLI for gaps pipeline."""
 
@@ -304,6 +313,7 @@ def cli(args):
     add("--save-json", default=None, action=BooleanOptionalAction, help=HELP_SAVE_JSON)
     add("--work-dir", type=str, metavar=" ", help=HELP_WORK_DIR)
     add("--ssvids", type=str, nargs="+", metavar=" ", help=HELP_SSVIDS)
+    add("--date-range-str", type=date_range_tuple, metavar=" ", help=HELP_DATE_RANGE_STR)
     add("--date-range", type=str, nargs=2, metavar=" ", help=HELP_DATE_RANGE)
 
     boolean = BooleanOptionalAction
@@ -325,6 +335,9 @@ def cli(args):
     del ns.config_file
     del ns.only_render_cli_call
     del ns.no_rich_logging
+
+    ns.date_range = ns.date_range or ns.date_range_str
+    del ns.date_range_str
 
     utils.setup_logger(warning_level=LOGGER_LEVEL_WARNING, rich=not no_rich_logging)
 
