@@ -36,12 +36,21 @@ EPILOG = (
     "    pipe-gaps -c config/sample-from-file.json --max_gap_length 1.3"
 )
 
+LOGGER_LEVEL_WARNING = [
+    "apache_beam.runners.portability",
+    "apache_beam.runners.worker",
+    "apache_beam.transforms.core",
+    "apache_beam.io.filesystem",
+    "apache_beam.io.gcp.bigquery_tools",
+    "urllib3"
+]
+
 _DEFAULT = "(default: %(default)s)"
 # TODO: try to get this descriptions from docstrings, so we don´t duplicate them.
 # TODO: put descriptions in docstring of build_pipeline function.
 HELP_CONFIG_FILE = f"JSON file with pipeline configuration {_DEFAULT}."
 HELP_VERBOSE = "Set logger level to DEBUG."
-
+HELP_NO_RICH_LOGGING = "Disable rich logging (useful prof production environments)."
 HELP_ONLY_RENDER_CLI_CALL = "Only render command-line call equivalent to provided config file."
 
 HELP_PIPE_TYPE = "Pipeline type: ['naive', 'beam']."
@@ -263,16 +272,6 @@ def build_pipeline(
 
 def cli(args):
     """CLI for gaps pipeline."""
-    utils.setup_logger(
-        warning_level=[
-            "apache_beam.runners.portability",
-            "apache_beam.runners.worker",
-            "apache_beam.transforms.core",
-            "apache_beam.io.filesystem",
-            "apache_beam.io.gcp.bigquery_tools",
-            "urllib3"
-        ]
-    )
 
     p = argparse.ArgumentParser(
         prog=NAME,
@@ -284,6 +283,7 @@ def cli(args):
     add = p.add_argument
     add("-c", "--config-file", type=Path, default=None, metavar=" ", help=HELP_CONFIG_FILE)
     add("-v", "--verbose", action="store_true", default=False, help=HELP_VERBOSE)
+    add("--no-rich-logging", action="store_true", default=False, help=HELP_NO_RICH_LOGGING)
     add("--only-render-cli-call", action="store_true", help=HELP_ONLY_RENDER_CLI_CALL)
 
     default_args = dict(default=None, metavar=" ")
@@ -315,17 +315,18 @@ def cli(args):
 
     ns, unknown = p.parse_known_args(args=args or ["--help"])
 
-    logger.info(
-        "Following unknown args will be parsed internally by the pipeline: {}".format(unknown))
-
     config_file = ns.config_file
     verbose = ns.verbose
+    no_rich_logging = ns.no_rich_logging
     only_render_cli_call = ns.only_render_cli_call
 
     # Delete CLI configuration from parsed namespace.
     del ns.verbose
     del ns.config_file
     del ns.only_render_cli_call
+    del ns.no_rich_logging
+
+    utils.setup_logger(warning_level=LOGGER_LEVEL_WARNING, rich=not no_rich_logging)
 
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
@@ -353,6 +354,9 @@ def cli(args):
         logger.info("Equivalent command-line call: ")
         print(render_command_line_call(config, unknown))
         return
+
+    logger.info(
+        "Following unknown args will be parsed internally by the pipeline: {}".format(unknown))
 
     config.setdefault("pipeline_options", {})["unparsed"] = unknown
     run(config)

@@ -3,7 +3,8 @@ import logging
 from rich.logging import RichHandler
 
 
-_DEFAULT_LOG_FORMAT = "%(name)s - %(message)s"
+_TIME_ENTRY = "%(asctime)s - "
+_DEFAULT_LOG_FORMAT = f"{_TIME_ENTRY}%(name)s - %(message)s"
 
 
 def setup_logger(
@@ -12,6 +13,7 @@ def setup_logger(
     warning_level: tuple = (),
     error_level: tuple = (),
     force: bool = False,
+    rich: bool = True,
 ) -> None:
     """Configures the root logger.
 
@@ -23,9 +25,15 @@ def setup_logger(
         force: If true, forces the root logger config replacing the one done on other places.
     """
 
-    logging.basicConfig(
-        level=level, format=format_, handlers=[RichHandler(level="NOTSET")], force=force
-    )
+    handlers = []
+
+    if rich:
+        handlers.append(RichHandler())
+        format_ = format_.replace(_TIME_ENTRY, "")
+    else:
+        handlers.append(logging.StreamHandler())
+
+    logging.basicConfig(level=level, format=format_, handlers=handlers, force=force)
 
     for module in warning_level:
         logging.getLogger(module).setLevel(logging.WARNING)
