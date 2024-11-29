@@ -17,6 +17,7 @@
     "window_period_d": 1,
     "filter_not_overlapping_and_short": true,
     "filter_good_seg": true,
+    "save_json": true,
     "pipeline_options": {
         "project": "world-fishing-827",
         "runner": "direct",

@@ -19,6 +19,7 @@ GCP_DOCKER_VOLUME:=gcp
 ## testintegration: Runs unit and integration tests.
 ## testdocker: Runs unit and integration tests inside docker container.
 ## profile: Runs profiling.
+## ci-test: Runs tests for the CI exporting coverage.xml report.
 
 help:
 	@echo "\nUsage: \n"
@@ -63,9 +64,11 @@ testintegration:
 	INTEGRATION_TESTS=true python -m pytest
 	docker compose down bigquery
 
-testdocker:
-	make docker-volume
+testdocker: docker-volume
 	docker compose run test
+
+ci-test: docker-volume
+	docker compose run --entrypoint pytest test --cov-report=xml
 
 profile:
 	python -m cProfile -o gaps.prof tests/benchmark.py 10e6

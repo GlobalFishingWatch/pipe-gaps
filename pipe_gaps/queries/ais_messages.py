@@ -19,6 +19,7 @@ class Message(typing.NamedTuple):
     """
     ssvid: str
     msgid: str
+    seg_id: str
     timestamp: datetime
     lat: float
     lon: float

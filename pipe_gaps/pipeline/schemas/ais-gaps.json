@@ -15,31 +15,31 @@
         "mode": "REQUIRED",
         "name": "version",
         "type": "TIMESTAMP",
-        "description": "The time in which the gap was created."
+        "description": "Timestamp of the gap version, to be used for retrieving the most recent version of a gap."
     },
     {
         "mode": "REQUIRED",
         "name": "positions_hours_before",
         "type": "INTEGER",
-        "description": "Number of positions N hours before the gap start."
+        "description": "Number of positions 12 hours before the gap start."
     },
     {
         "mode": "REQUIRED",
         "name": "positions_hours_before_ter",
         "type": "INTEGER",
-        "description": "Number of terrestrial positions N hours before the gap start."
+        "description": "Number of terrestrial positions 12 hours before the gap start."
     },
     {
         "mode": "REQUIRED",
         "name": "positions_hours_before_sat",
         "type": "INTEGER",
-        "description": "Number of satellite positions N hours before the gap start."
+        "description": "Number of satellite positions 12 hours before the gap start."
     },
     {
         "mode": "REQUIRED",
         "name": "positions_hours_before_dyn",
         "type": "INTEGER",
-        "description": "Number of dynamic positions N hours before the gap start."
+        "description": "Number of dynamic positions 12 hours before the gap start."
     },
     {
         "mode": "NULLABLE",
@@ -69,7 +69,13 @@
         "mode": "REQUIRED",
         "name": "start_msgid",
         "type": "STRING",
-        "description": "Message ID for last position message before for start of gap."
+        "description": "Message ID of last position message before start of gap."
+    },
+    {
+        "mode": "REQUIRED",
+        "name": "start_seg_id",
+        "type": "STRING",
+        "description": "Segment ID of last position message before start of gap."
     },
     {
         "mode": "NULLABLE",
@@ -117,7 +123,13 @@
         "mode": "NULLABLE",
         "name": "end_msgid",
         "type": "STRING",
-        "description": "Position message for end of gap."
+        "description": "Message ID of first position message after end of gap."
+    },
+    {
+        "mode": "NULLABLE",
+        "name": "end_seg_id",
+        "type": "STRING",
+        "description": "Segment ID of first position message after end of gap."
     },
     {
         "mode": "NULLABLE",
