@@ -3,5 +3,6 @@
     "ssvids": [],
     "min_gap_length": 1.2,
     "n_hours_before": 12,
-    "window_period_d": 1
+    "window_period_d": 1,
+    "save_json": true
 }

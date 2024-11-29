@@ -18,8 +18,8 @@ def get_core_config():
     return dict(kind="detect_gaps", threshold=0.5, eval_last=False)
 
 
-def get_outputs_config():
-    return dict(kind="json", output_prefix="gaps")
+def get_outputs_config(output_dir):
+    return dict(kind="json", output_dir=output_dir, output_prefix="gaps")
 
 
 def test_with_input_file(input_file):
@@ -85,7 +85,7 @@ def test_with_input_query():
 def test_save_json(tmp_path, input_file):
     inputs = [get_input_file_config(input_file, schema="messages")]
     core_config = get_core_config()
-    outputs_config = [get_outputs_config()]
+    outputs_config = [get_outputs_config(output_dir=tmp_path)]
 
     pipe = BeamPipeline.build(
         inputs=inputs,
@@ -121,7 +121,7 @@ def test_gap_between_years(tmp_path, messages, threshold, expected_gaps):
     core_config["threshold"] = threshold
 
     inputs = [get_input_file_config(input_file, schema="messages")]
-    outputs_config = [get_outputs_config()]
+    outputs_config = [get_outputs_config(output_dir=tmp_path)]
 
     pipe = BeamPipeline.build(
         inputs=inputs,
@@ -172,7 +172,7 @@ def test_gap_between_days(tmp_path, messages, open_gaps, threshold, date_range, 
         kind="json", input_file=side_input_file, schema="ais_gaps", lines=True)
 
     side_inputs = [side_inputs_config]
-    outputs_config = [get_outputs_config()]
+    outputs_config = [get_outputs_config(output_dir=tmp_path)]
 
     pipe = BeamPipeline.build(
         inputs=inputs,
@@ -242,7 +242,7 @@ def test_gap_between_arbitrary_period(
         kind="json", input_file=side_input_file, schema="ais_gaps", lines=True)
 
     side_inputs = [side_inputs_config]
-    outputs_config = [get_outputs_config()]
+    outputs_config = [get_outputs_config(output_dir=tmp_path)]
 
     pipe = BeamPipeline.build(
         inputs=inputs,
@@ -298,7 +298,7 @@ def test_open_gaps(tmp_path, messages, threshold, expected_gaps):
         inputs=inputs,
         work_dir=tmp_path,
         core=core_config,
-        outputs=[get_outputs_config()]
+        outputs=[get_outputs_config(output_dir=tmp_path)]
     )
     pipe.run()
 
@@ -345,7 +345,7 @@ def test_closing_gaps(tmp_path, messages, open_gaps, threshold, expected_gaps):
         side_inputs=side_inputs,
         work_dir=tmp_path,
         core=core_config,
-        outputs=[get_outputs_config()]
+        outputs=[get_outputs_config(output_dir=tmp_path)]
     )
     pipe.run()
 
@@ -383,7 +383,7 @@ def test_no_duplicated_gaps(tmp_path, messages, threshold, expected_gaps):
         inputs=inputs,
         work_dir=tmp_path,
         core=core_config,
-        outputs=[get_outputs_config()]
+        outputs=[get_outputs_config(output_dir=tmp_path)]
     )
     pipe.run()
 
@@ -414,7 +414,7 @@ def test_positions_hours_before(tmp_path, messages, threshold, date_range, expec
 
     inputs = [get_input_file_config(input_file, schema="messages")]
 
-    outputs_config = [get_outputs_config()]
+    outputs_config = [get_outputs_config(output_dir=tmp_path)]
 
     pipe = BeamPipeline.build(
         inputs=inputs,
