@@ -60,7 +60,7 @@ jobs:
         run: make build
     
       - name: Run tests
-        run: make testdocker
+        run: make ci-test
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4.0.1
