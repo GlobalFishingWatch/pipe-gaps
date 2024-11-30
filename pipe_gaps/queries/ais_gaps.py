@@ -18,34 +18,35 @@ class AISGap(typing.NamedTuple):
     https://docs.pydantic.dev/latest/concepts/models/#dynamic-model-creation
     """
 
-    # TODO: Use commented fields when we stop using research gaps table.
-
     gap_id: str
-    # gap_ssvid: str
     ssvid: str
-    # gap_version: str
-    gap_distance_m: float
-    # gap_duration_h: float
-    gap_hours: float  # TODO: replace with gap_duration_h
-    gap_implied_speed_knots: float
-    # gap_start_timestamp: datetime
-    gap_start: datetime
-    gap_start_msgid: str
-    gap_start_lat: float
-    gap_start_lon: float
-    # gap_start_ais_class: str
-    # gap_start_receiver_type: str
-    # gap_start_distance_from_shore_m: float
-    # gap_start_distance_from_port_m: float
-    # gap_end_timestamp: datetime = None
-    gap_end: datetime = None
-    gap_end_msgid: str = None
-    gap_end_lat: float = None
-    gap_end_lon: float = None
-    # gap_end_ais_class: str = None
-    # gap_end_receiver_type: str = None
-    # gap_end_distance_from_shore_m: float = None
-    # gap_end_distance_from_port_m: float = None
+    ssvid: str
+    version: str
+    positions_hours_before: int
+    positions_hours_before_ter: int
+    positions_hours_before_sat: int
+    positions_hours_before_dyn: int
+    distance_m: float
+    duration_h: float
+    implied_speed_knots: float
+    start_timestamp: datetime
+    start_seg_id: str
+    start_msgid: str
+    start_lat: float
+    start_lon: float
+    start_ais_class: str
+    start_receiver_type: str
+    start_distance_from_shore_m: float
+    start_distance_from_port_m: float
+    end_timestamp: datetime = None
+    end_msgid: str = None
+    end_seg_id: str = None
+    end_lat: float = None
+    end_lon: float = None
+    end_ais_class: str = None
+    end_receiver_type: str = None
+    end_distance_from_shore_m: float = None
+    end_distance_from_port_m: float = None
     is_closed: bool = False
 
     def __getitem__(self, key):
