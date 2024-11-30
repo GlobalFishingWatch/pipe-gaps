@@ -79,7 +79,7 @@ class AISGapsQuery(Query):
         {fields}
       FROM `{source_gaps}`
       WHERE
-          DATE(gap_start) >= "{start_date}"
+          DATE(start_timestamp) >= "{start_date}"
     """
 
     def __init__(
@@ -105,11 +105,8 @@ class AISGapsQuery(Query):
             ssvid_filter = ",".join(f'"{s}"' for s in self._ssvids)
             query = f"{query} AND ssvid IN ({ssvid_filter})"
 
-        # TODO change gap_end to gap_end_timestamp
-        # when we stop using research gaps table.
-
         if self._end_date is not None:
-            query = f"{query} AND DATE(gap_end) < '{self._end_date}'"
+            query = f"{query} AND DATE(end_timestamp) < '{self._end_date}'"
         else:
             query = f"{query} AND is_closed = False"
 
