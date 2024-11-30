@@ -51,7 +51,7 @@ _DEFAULT = "(default: %(default)s)"
 HELP_CONFIG_FILE = f"JSON file with pipeline configuration {_DEFAULT}."
 HELP_VERBOSE = "Set logger level to DEBUG."
 HELP_NO_RICH_LOGGING = "Disable rich logging (useful prof production environments)."
-HELP_ONLY_RENDER_CLI_CALL = "Only render command-line call equivalent to provided config file."
+HELP_ONLY_RENDER = "Only render command-line call equivalent to provided config file."
 
 HELP_PIPE_TYPE = "Pipeline type: ['naive', 'beam']."
 HELP_BQ_INPUT_MESSAGES = "BigQuery table with with input messages."
@@ -69,13 +69,15 @@ HELP_MOCK_DB_CLIENT = "If passed, mocks the DB client [Useful for development]."
 HELP_SAVE_JSON = "If passed, saves the results in JSON file [Useful for development]."
 HELP_WORK_DIR = "Directory to use as working directory."
 HELP_SSVIDS = "Detect gaps for this list of ssvids, e.g., «412331104 477334300»."
-HELP_DATE_RANGE = "Detect gaps within this date range e.g., «2024-01-01 2024-01-02»."
-HELP_DATE_RANGE_STR = "Detect gaps within this date range (string), e.g., '2024-01-01 2024-01-02'."
+HELP_DATE_RANGE = "Detect gaps within this date range, e.g., «2024-01-01,2024-01-02»."
 
 HELP_MIN_GAP_LENGTH = "Minimum time difference (hours) to start considering gaps."
 HELP_WINDOW_PERIOD_D = "Period (in days) of time windows used to parallelize the process."
 HELP_EVAL_LAST = "If passed, evaluates last message of each SSVID to create an open gap."
 HELP_N_HOURS_BEFORE = "Count messages this amount of hours before each gap."
+
+
+ERROR_DATE_RANGE = "Must be a string with two dates in ISO format separated by a space."
 
 
 def formatter():
@@ -87,25 +89,35 @@ def formatter():
     return formatter
 
 
-def render_command_line_call(config: dict, flags: list) -> str:
-    """Renders command-line call from config file."""
+def render_command_line_call(config: dict, unparsed: list) -> str:
+    """Renders command-line call from config dictionary.
+
+    Args:
+        config: dictionary with config.
+        unparsed: list of unparsed CLI args.
+
+    Returns:
+        Multiline string with CLI full command.
+    """
 
     command = f"{NAME} \\\n"
-    argument = "--{flag}{sep}{value} {end}"
+    argument = "--{name}{sep}{value} {end}"
 
-    for f in flags:
-        command += f"{f} \\\n"
+    for flag in unparsed:
+        command += f"{flag} \\\n"
 
     items = {k: v for k, v in config.items() if k != "pipeline_options"}.items()
     for i, (k, v) in enumerate(items):
-        flag = k.replace("_", "-")
+        name = k.replace("_", "-")
         value = v
         sep = "="
         end = "\\\n"
 
         if isinstance(v, (list, tuple)):
-            value = " ".join(v)
-            sep = " "
+            if len(v) == 0:
+                continue
+
+            value = ",".join(v)
 
         if isinstance(v, bool):
             value = ""
@@ -114,7 +126,7 @@ def render_command_line_call(config: dict, flags: list) -> str:
         if i == len(items) - 1:
             end = ""
 
-        command += argument.format(flag=flag, value=value, sep=sep, end=end)
+        command += argument.format(name=name, value=value, sep=sep, end=end)
 
     return command
 
@@ -271,12 +283,26 @@ def build_pipeline(
     return pipeline.factory.from_config(config)
 
 
-def date_range_tuple(date_string):
-    date_range = date_string.split(" ")
+def validate_date(date_str):
+    try:
+        date.fromisoformat(date_str)
+    except Exception as e:
+        raise argparse.ArgumentTypeError(f"{ERROR_DATE_RANGE} \n {e}")
+
+
+def date_range(date_str):
+    date_range = date_str.split(",")
     if len(date_range) != 2:
-        raise argparse.ArgumentTypeError("Must be a string with two dates separated by a space.")
+        raise argparse.ArgumentTypeError(ERROR_DATE_RANGE)
+
+    for d in date_range:
+        validate_date(d)
 
     return date_range
+
+
+def ssvids(ssvids_str):
+    return ssvids_str.split(",")
 
 
 def cli(args):
@@ -293,7 +319,7 @@ def cli(args):
     add("-c", "--config-file", type=Path, default=None, metavar=" ", help=HELP_CONFIG_FILE)
     add("-v", "--verbose", action="store_true", default=False, help=HELP_VERBOSE)
     add("--no-rich-logging", action="store_true", default=False, help=HELP_NO_RICH_LOGGING)
-    add("--only-render-cli-call", action="store_true", help=HELP_ONLY_RENDER_CLI_CALL)
+    add("--only-render", action="store_true", help=HELP_ONLY_RENDER)
 
     default_args = dict(default=None, metavar=" ")
 
@@ -312,9 +338,8 @@ def cli(args):
     add("--mock-db-client", default=None, action=BooleanOptionalAction, help=HELP_MOCK_DB_CLIENT)
     add("--save-json", default=None, action=BooleanOptionalAction, help=HELP_SAVE_JSON)
     add("--work-dir", type=str, metavar=" ", help=HELP_WORK_DIR)
-    add("--ssvids", type=str, nargs="+", metavar=" ", help=HELP_SSVIDS)
-    add("--date-range-str", type=date_range_tuple, metavar=" ", help=HELP_DATE_RANGE_STR)
-    add("--date-range", type=str, nargs=2, metavar=" ", help=HELP_DATE_RANGE)
+    add("--ssvids", type=ssvids, metavar=" ", help=HELP_SSVIDS)
+    add("--date-range", type=date_range, metavar=" ", help=HELP_DATE_RANGE)
 
     boolean = BooleanOptionalAction
     add = p.add_argument_group("gap detection process").add_argument
@@ -328,16 +353,13 @@ def cli(args):
     config_file = ns.config_file
     verbose = ns.verbose
     no_rich_logging = ns.no_rich_logging
-    only_render_cli_call = ns.only_render_cli_call
+    only_render = ns.only_render
 
     # Delete CLI configuration from parsed namespace.
     del ns.verbose
     del ns.config_file
-    del ns.only_render_cli_call
+    del ns.only_render
     del ns.no_rich_logging
-
-    ns.date_range = ns.date_range or ns.date_range_str
-    del ns.date_range_str
 
     utils.setup_logger(warning_level=LOGGER_LEVEL_WARNING, rich=not no_rich_logging)
 
@@ -356,13 +378,11 @@ def cli(args):
     # Load config file if exists.
     if config_file is not None:
         config = utils.json_load(config_file)
-    else:
-        only_render_cli_call = False
 
     # Override configuration file with CLI args.
     config.update(cli_args)
 
-    if only_render_cli_call:
+    if only_render:
         # Only render equivalent command-line args call and exit.
         logger.info("Equivalent command-line call: ")
         print(render_command_line_call(config, unknown))
