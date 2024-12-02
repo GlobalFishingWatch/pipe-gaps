@@ -267,12 +267,12 @@ flowchart LR;
 The easiest way of running the gaps detection pipeline is to use the provided command-line interface:
 ```shell
 (.venv) $ pipe-gaps
-usage: pipe-gaps [-h] [-c ] [-v] [--only-render-cli-call] [--pipe-type ] [-i ] [-s ] [--bq-input-messages ] [--bq-input-segments ] [--bq-input-open-gaps ] [--bq-output-gaps ]
-                 [--open-gaps-start-date ] [--filter-overlap ] [--skip-open-gaps] [--mock-db-client | --no-mock-db-client] [--save-json | --no-save-json] [--work-dir ] [--ssvids   [ ...]]
-                 [--date-range   ] [--min-gap-length ] [--window-period-d ] [--eval-last | --no-eval-last] [--n-hours-before ]
+usage: pipe-gaps [-h] [-c ] [-v] [--no-rich-logging] [--only-render] [--pipe-type ] [-i ] [-s ] [--bq-input-messages ] [--bq-input-segments ] [--bq-input-open-gaps ] [--bq-output-gaps ]
+                 [--open-gaps-start-date ] [--filter-not-overlapping-and-short ] [--filter-good-seg ] [--skip-open-gaps] [--mock-db-client | --no-mock-db-client]
+                 [--save-json | --no-save-json] [--work-dir ] [--ssvids ] [--date-range ] [--min-gap-length ] [--window-period-d ] [--eval-last | --no-eval-last] [--n-hours-before ]
 
     Detects time gaps in AIS position messages.
-    The definition of a gap is configurable by a time threshold 'max_gap_length'.
+    The definition of a gap is configurable by a time threshold 'min-gap-length'.
     For more information, check the documentation at
         https://github.com/GlobalFishingWatch/pipe-gaps/tree/develop.
 
@@ -288,7 +288,8 @@ options:
   -h, --help                             show this help message and exit
   -c  , --config-file                    JSON file with pipeline configuration (default: None).
   -v, --verbose                          Set logger level to DEBUG.
-  --only-render-cli-call                 Only render command-line call equivalent to provided config file.
+  --no-rich-logging                      Disable rich logging (useful prof production environments).
+  --only-render                          Only render command-line call equivalent to provided config file.
 
 general pipeline configuration:
   --pipe-type                            Pipeline type: ['naive', 'beam'].
@@ -299,13 +300,14 @@ general pipeline configuration:
   --bq-input-open-gaps                   BigQuery table with open gaps.
   --bq-output-gaps                       BigQuery table in which to store the gap events.
   --open-gaps-start-date                 Fetch open gaps starting from this date range e.g., '2012-01-01'.
-  --filter-overlap                       Filter messages from 'overlapping and short' (OLAS) segments.
+  --filter-not-overlapping-and-short     Fetch messages that do not belong to 'overlapping_and_short' segments.
+  --filter-good-seg                      Fetch messages that belong to 'good_seg2' segments.
   --skip-open-gaps                       If passed, pipeline will not fetch open gaps [Useful for development]. 
   --mock-db-client, --no-mock-db-client  If passed, mocks the DB client [Useful for development].
   --save-json, --no-save-json            If passed, saves the results in JSON file [Useful for development].
   --work-dir                             Directory to use as working directory.
-  --ssvids   [  ...]                     Detect gaps for this list of ssvids, e.g., «412331104 477334300».
-  --date-range                           Detect gaps within this date range e.g., «2024-01-01 2024-01-02».
+  --ssvids                               Detect gaps for this list of ssvids, e.g., «412331104 477334300».
+  --date-range                           Detect gaps within this date range, e.g., «2024-01-01,2024-01-02».
 
 gap detection process:
   --min-gap-length                       Minimum time difference (hours) to start considering gaps.
@@ -314,7 +316,7 @@ gap detection process:
   --n-hours-before                       Count messages this amount of hours before each gap.
 
 Example: 
-    pipe-gaps -c config/sample-from-file.json --max_gap_length 1.3
+    pipe-gaps -c config/sample-from-file.json --min-gap-length 1.3
 ```
 
 > [!CAUTION]

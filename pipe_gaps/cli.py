@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 NAME = "pipe-gaps"
 DESCRIPTION = """
     Detects time gaps in AIS position messages.
-    The definition of a gap is configurable by a time threshold 'max_gap_length'.
+    The definition of a gap is configurable by a time threshold 'min-gap-length'.
     For more information, check the documentation at
         https://github.com/GlobalFishingWatch/pipe-gaps/tree/develop.
 
@@ -33,7 +33,7 @@ DESCRIPTION = """
 """
 EPILOG = (
     "Example: \n"
-    "    pipe-gaps -c config/sample-from-file.json --max_gap_length 1.3"
+    "    pipe-gaps -c config/sample-from-file.json --min-gap-length 1.3"
 )
 
 LOGGER_LEVEL_WARNING = [
@@ -63,8 +63,8 @@ HELP_JSON_INPUT_OPEN_GAPS = "JSON file with open gaps [Useful for development]."
 
 HELP_OPEN_GAPS_START_DATE = "Fetch open gaps starting from this date range e.g., '2012-01-01'."
 HELP_SKIP_OPEN_GAPS = "If passed, pipeline will not fetch open gaps [Useful for development]. "
-HELP_OVERL = "Fetch messages that don't belong to 'overlapping_and_short' segments."
-HELP_GOOD_SEG = "Fetch messages that belong to 'good_seg' segments."
+HELP_OVERL = "Fetch messages that do not belong to 'overlapping_and_short' segments."
+HELP_GOOD_SEG = "Fetch messages that belong to 'good_seg2' segments."
 HELP_MOCK_DB_CLIENT = "If passed, mocks the DB client [Useful for development]."
 HELP_SAVE_JSON = "If passed, saves the results in JSON file [Useful for development]."
 HELP_WORK_DIR = "Directory to use as working directory."
