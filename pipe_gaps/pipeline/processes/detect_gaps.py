@@ -77,7 +77,7 @@ class DetectGaps(CoreProcess):
         boundaries_key: str = "ssvid",
         date_range: tuple = None,
         eval_last: bool = False,
-        window_period_d: int = MAX_WINDOW_PERIOD_D,
+        window_period_d: int = None,
         window_offset_h: int = 12,
         **config
     ) -> "DetectGaps":
@@ -85,8 +85,22 @@ class DetectGaps(CoreProcess):
         if date_range is not None:
             date_range = [date.fromisoformat(x) for x in date_range]
 
-            date_range_size = (date_range[1] - date_range[0]).days
-            window_period_d = min(date_range_size, MAX_WINDOW_PERIOD_D)
+        if window_period_d is None:
+            window_period_d = MAX_WINDOW_PERIOD_D
+            if date_range is not None:
+                logger.info("Window period not provided. Will be adjusted to provided date range.")
+                date_range_size = (date_range[1] - date_range[0]).days
+                window_period_d = min(date_range_size, MAX_WINDOW_PERIOD_D)
+        else:
+            if window_period_d > MAX_WINDOW_PERIOD_D:
+                logger.warning(
+                    "window period {} surpassed maximum of {}"
+                    .format(window_period_d, MAX_WINDOW_PERIOD_D)
+                )
+                logger.warning("Max value will be used.")
+                window_period_d = MAX_WINDOW_PERIOD_D
+
+        logger.info("Using window period of {} day(s)".format(window_period_d))
 
         return cls(
             gd=GapDetector(**config),

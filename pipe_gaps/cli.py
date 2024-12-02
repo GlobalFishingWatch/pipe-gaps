@@ -144,8 +144,8 @@ def run(config: dict) -> None:
 
 
 def build_pipeline(
+    date_range: tuple,
     pipe_type: str = "beam",
-    date_range: tuple = ("2024-01-01", "2024-01-02"),
     filter_not_overlapping_and_short: bool = False,
     filter_good_seg: bool = False,
     open_gaps_start_date: str = "2019-01-01",
