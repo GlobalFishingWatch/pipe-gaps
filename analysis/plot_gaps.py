@@ -12,15 +12,15 @@ class ScalarFormatterForceFormat(ScalarFormatter):
         self.format = "%1.1f"  # Give format here
 
 
-# filename_w_filter = "gaps_per_day_with_good_seg_and_ov_short_filter.csv"
-# filename_w_filter = "gaps_per_day_with_good_seg_filter.csv"
+# filename_w_filter = "2021-2023-gaps_per_day_with_good_seg_and_ov_short.csv"
+# filename_w_filter = "2021-2023-gaps_per_day_with_good_seg.csv"
 
-filename_w_filter = "gaps_per_day_with_good_seg2_filter.csv"
-filename_wo_filter = "gaps_per_day_without_filters.csv"
+filename_w_filter = "2021-2023-gaps_per_day_with_good_seg2.csv"
+filename_wo_filter = "2021-2023-gaps_per_day_without_filters.csv"
 
+filename_per_country = "2021-2023-gaps_per_country.csv"
 
-filename_per_country = "gaps_per_country-2021-2023.csv"
-output = "gaps_good_seg2"
+output = "2021-2023-gaps-good-seg2"
 
 w_filter = pd.read_csv(
     filename_w_filter, index_col=False, parse_dates=["day_mon_year"])
