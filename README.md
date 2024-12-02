@@ -252,26 +252,35 @@ The gaps detection pipeline is described in the following diagram:
 
 ```mermaid
 flowchart LR;
-    subgraph **Main Inputs**
-    A[/**AIS** Messages/]
+    subgraph tables [**BigQuery Tables**]
+        A[(messages)]
+        B[(segments)]
+        C[(gaps)]
+    end
+
+    subgraph inputs [**Inputs**]
+        D[/**AIS** Messages/]
+        E[/Open gaps/]
+    end
+
+    F[Detect Gaps]
+
+
+    subgraph outputs [**Outputs**]
+        direction TB
+        G[/gaps/]
     end
     
-    subgraph **Side Inputs**
-    C[/Open Gaps/]
-    end
-
-    A ==> B[Detect Gaps]
-    C ==> B
-
-    B ==> E
+    A ==> D
     B ==> D
-    B ==> F
+    C ==> E
 
-    subgraph **Outputs**
-    E[\New Gaps\]
-    D[\New Open gaps\]
-    F[\Closed existing open gaps\]
-    end
+    D ==> F
+    E ==> F
+
+    F ==> outputs
+
+    outputs ==> C
 ```
 
 #### BigQuery output schema
