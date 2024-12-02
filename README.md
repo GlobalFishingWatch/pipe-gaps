@@ -462,21 +462,18 @@ Below there is a [diagram](#flow-chart) that describes this work flow.
 
 ```mermaid
 flowchart TD;
-    A[Read Inputs] ==> |**AIS Messages**| B[Group Inputs]
+    A[Read Main Inputs] ==> |**AIS Messages**| B[Group Inputs]
     C[Read Side Inputs] ==> |**Open Gaps**| D[Group Side Inputs]
 
-    subgraph **Core Transform**
+    subgraph **Detect Gaps**
     B ==> |**AIS Messages <br/> by SSVID & TI**| E[Process Groups]
     B ==> |**AIS Messages <br/> by SSVID & TI**| F[Process Boundaries]
     D ==> |**Open Gaps  <br/> by SSVID**| F
     E ==> |**Gaps inside groups**| H[Join Outputs]
-    F ==> |**Gaps in boundaries <br/> New open gaps <br/> Closed open gaps**| H
+    F ==> |**Gaps between groups <br/> New open gaps <br/> Closed open gaps**| H
     end
 
-    subgraph .
-    H ==> K[Write Outputs]
-    K ==> L[(BigQuery)]
-    end
+    H ==> |**New closed gaps <br/> New open gaps <br/> Closed open gaps**| K[Write Outputs]
 ```
 
 ## References
