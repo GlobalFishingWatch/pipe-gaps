@@ -1,3 +1,5 @@
+"""Pacakge with sample JSON data."""
+
 from importlib_resources import files
 
 from pipe_gaps.utils import json_load

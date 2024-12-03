@@ -36,17 +36,23 @@ class GapDetector:
     """Detects time gaps between AIS position messages.
 
     Args:
-        threshold: Any gap whose (end-start) is less than this threshold is discarded.
-            Can be an int or float number indicating the amount of hours, or a timedelta object.
-        n_hours_before: count positions this amount of hours before each gap.
+        threshold: Minimum gap duration in hours. Any gap less than this threshold is discarded.
+            Can be an int, float number or a timedelta object.
+        n_hours_before: Count positions this amount of hours before each gap.
         show_progress: If True, renders a progress bar.
-        sort_method: the algorithm to use when sorting messages. One of ["timsort", "heapsort"].
-        normalize_output: If True, normalizes the output.
-
+        sort_method: The algorithm to use when sorting messages. One of ["timsort", "heapsort"].
+        normalize_output: If True, normalizes the output, i.e., the output is a flatten dictionary
+            with all the OFF/ON properties at the same level. If False, the output will contain
+            a key for the OFF message and another key for the ON message.
     """
     THRESHOLD = timedelta(hours=12, minutes=0, seconds=0)
     PROGRESS_BAR_DESCRIPTION = "Detecting gaps:"
 
+    KEY_GAP_ID = "gap_id"
+    KEY_VERSION = "version"
+    KEY_DISTANCE_M = "distance_m"
+    KEY_DURATION_H = "duration_h"
+    KEY_IMPLIED_SPEED_KNOTS = "implied_speed_knots"
     KEY_DISTANCE_FROM_SHORE = "distance_from_shore_m"
     KEY_LAT = "lat"
     KEY_LON = "lon"
@@ -57,6 +63,7 @@ class GapDetector:
     KEY_HOURS_BEFORE_SAT = "positions_hours_before_sat"
     KEY_HOURS_BEFORE_DYN = "positions_hours_before_dyn"
     KEY_RECEIVER_TYPE = "receiver_type"
+    KEY_IS_CLOSED = "is_closed"
 
     KEY_TERRESTRIAL = "terrestrial"
     KEY_SATELLITE = "satellite"
@@ -64,8 +71,8 @@ class GapDetector:
 
     KEY_TOTAL = "total"
 
-    FIELDS_PREFIX_OFF = "start"
-    FIELDS_PREFIX_ON = "end"
+    MESSAGE_PREFIX_OFF = "start_"
+    MESSAGE_PREFIX_ON = "end_"
 
     def __init__(
         self,
@@ -81,7 +88,7 @@ class GapDetector:
         if isinstance(n_hours_before, (int, float)):
             n_hours_before = timedelta(hours=n_hours_before)
 
-        self._threshold = threshold
+        self._threshold_h = threshold
         self._n_hours_before = n_hours_before
         self._show_progress = show_progress
         self._sort_method = sort_method
@@ -139,7 +146,7 @@ class GapDetector:
             GapDetectionError: When input messages are missing a mandatory key.
         """
 
-        logger.debug("Using threshold: {} hours.".format(self._threshold))
+        logger.debug("Using threshold: {} hours.".format(self._threshold_h))
         try:
             logger.debug(f"Sorting messages by timestamp ({self._sort_method} algorithm)...")
             self._sort_messages(messages)
@@ -173,7 +180,7 @@ class GapDetector:
         and end-of-day's timestamp surpasses the configured threshold.
 
         Args:
-            message: position message to evaluate.
+            message: Position message to evaluate.
 
         Returns:
             A boolean indicating if the condition for open gap is met.
@@ -201,22 +208,26 @@ class GapDetector:
                 will be generated from [ssvid, timestamp, lat, lon] of the OFF message.
             previous_positions: list of previous positions before the gap begins.
                 If provided, will be used when counting positions N hours before gap,
-                differentiating satellite and terrestrial receivers.
+                differentiating satellite, terrestrial and dynamic receivers.
 
         Returns:
             The resultant gap. A dictionary containing
                 * gap_id
-                * gap_ssvid
-                * gap_version
-                * gap_distance_m
-                * gap_duration_h
-                * gap_implied_speed_knots
-                * gap_start_* (all OFF message fields)
-                * gap_end_* (all ON message fields)
+                * ssvid
+                * version
+                * positions_hours_before
+                * positions_hours_before_ter
+                * positions_hours_before_sat
+                * positions_hours_before_dyn
+                * distance_m
+                * duration_h
+                * implied_speed_knots
+                * start_* (all OFF message fields)
+                * end_* (all ON message fields)
                 * is_closed
             if the output is normalized.
 
-            If not normalized, the ON/OFF messages will be on its own keys:
+            If not normalized, the ON/OFF messages properties will be on its own keys:
                 * "OFF": dict with AIS position message when the gap starts.
                 * "ON": dict AIS position message when the gap ends.
         """
@@ -238,15 +249,15 @@ class GapDetector:
         else:
             on_m = {k: None for k in off_m}
 
-        gap = dict(
-            gap_id=gap_id,
-            ssvid=ssvid,
-            version=int(datetime.now(tz=timezone.utc).timestamp()),
-            distance_m=distance_m,
-            duration_h=duration_h,
-            implied_speed_knots=implied_speed_knots,
-            is_closed=is_closed,
-        )
+        gap = {
+            self.KEY_GAP_ID: gap_id,
+            self.KEY_SSVID: ssvid,
+            self.KEY_VERSION: int(datetime.now(tz=timezone.utc).timestamp()),
+            self.KEY_DISTANCE_M: distance_m,
+            self.KEY_DURATION_H: duration_h,
+            self.KEY_IMPLIED_SPEED_KNOTS: implied_speed_knots,
+            self.KEY_IS_CLOSED: is_closed,
+        }
 
         count = self._count_messages_before_gap(previous_positions)
         gap[self.KEY_HOURS_BEFORE] = count[self.KEY_TOTAL]
@@ -265,6 +276,19 @@ class GapDetector:
         gap.update(off_on_messages)
 
         return gap
+
+    def off_message_from_gap(self, gap: dict):
+        """Extracts off message from gap object."""
+
+        off_message = {
+            key.replace(self.MESSAGE_PREFIX_OFF, ""): v
+            for key, v in gap.items()
+            if self.MESSAGE_PREFIX_OFF in key
+        }
+
+        off_message[self.KEY_SSVID] = gap[self.KEY_SSVID]
+
+        return off_message
 
     # @profile  # noqa  # Uncomment to run memory profiler
     def _sort_messages(self, messages: list) -> None:
@@ -340,12 +364,12 @@ class GapDetector:
         return count
 
     def _normalize_off_on_messages(self, off_m: dict, on_m: dict) -> dict:
-        def _normalized_off_on_messages(msg_type: str, m: dict):
-            return {f"{msg_type}_{k}": v for k, v in m.items()}
+        def _normalized_off_on_messages(msg_prefix: str, m: dict):
+            return {f"{msg_prefix}{k}": v for k, v in m.items()}
 
         off_on_messages = {
-            **_normalized_off_on_messages(self.FIELDS_PREFIX_OFF, off_m),
-            **_normalized_off_on_messages(self.FIELDS_PREFIX_ON, on_m)
+            **_normalized_off_on_messages(self.MESSAGE_PREFIX_OFF, off_m),
+            **_normalized_off_on_messages(self.MESSAGE_PREFIX_ON, on_m)
         }
 
         return off_on_messages

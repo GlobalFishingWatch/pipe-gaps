@@ -31,6 +31,8 @@ def input_file(tmp_path, messages):
 def create_message(
     time: datetime,
     ssvid: str = "446013750",
+    msgid: str = "295fa26f-cee9-1d86-8d28-d5ed96c32835",
+    seg_id: str = "123456",
     lat: float = 65.4,
     lon: Optional[float] = None,
     ais_class: str = "A",
@@ -39,7 +41,8 @@ def create_message(
 ):
     return {
         "ssvid": ssvid,
-        "msgid": "295fa26f-cee9-1d86-8d28-d5ed96c32835",
+        "msgid": msgid,
+        "seg_id": seg_id,
         "timestamp": time.replace(tzinfo=timezone.utc).timestamp(),
         "receiver_type": receiver_type,
         "lat": lat,
@@ -52,11 +55,7 @@ def create_message(
 def create_open_gap(time: datetime = datetime(2024, 1, 1), ssvid: str = "446013750"):
     gd = GapDetector(normalize_output=True)
 
-    gap = gd.create_gap(off_m=create_message(ssvid=ssvid, time=datetime(2024, 1, 1, 12)))
-
-    gap["gap_start"] = gap.pop("start_timestamp")  # Remove after input schema is fixed.
-
-    return gap
+    return gd.create_gap(off_m=create_message(ssvid=ssvid, time=datetime(2024, 1, 1, 12)))
 
 
 class TestCases:

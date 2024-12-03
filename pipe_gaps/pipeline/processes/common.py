@@ -4,12 +4,10 @@ import logging
 from datetime import date, datetime, timezone
 from dataclasses import dataclass
 
-from .base import Key
-
 logger = logging.getLogger(__name__)
 
 
-def ts_to_year(ts):
+def ts_to_year2(ts):
     """Extracts year from unix timestamp.
 
     This is ~2-times faster than datetime.fromtimestamp(ts, tz=timezone.utc).year,
@@ -18,82 +16,47 @@ def ts_to_year(ts):
     return int(ts / 60 / 60 / 24 / 365) + 1970
 
 
-def ssvid_and_year_key(item):
-    return (item["ssvid"], datetime.utcfromtimestamp(item["timestamp"]).year)
+def ts_to_year(ts):
+    """Extracts year from unix timestamp."""
+    return datetime.fromtimestamp(ts, tz=timezone.utc).year
 
 
-def ssvid_and_day_key(item):
-    return (
-        item["ssvid"],
-        datetime.utcfromtimestamp(item["timestamp"]).date().isoformat())
-
-
-def ssvid_key(item):
-    return item["ssvid"]
-
-
-def ssvid_and_year_key2(item):
-    return (item["ssvid"], ts_to_year(item["timestamp"]))
-
-
-def date_from_year(year):
-    return datetime(year=year, month=1, day=1, tzinfo=timezone.utc).date()
+def ts_to_day(ts):
+    return datetime.fromtimestamp(ts, tz=timezone.utc).date().isoformat()
 
 
 def date_from_day(day):
     return date.fromisoformat(day)
 
 
-class SsvidAndYear(Key):
-    @staticmethod
-    def keynames():
-        return ["SSVID", "YEAR"]
+class GroupByKey:
+    def __init__(self, keys):
+        self.keys = keys
+        self.func = self._define_func()
 
-    @staticmethod
-    def func():
-        return ssvid_and_year_key
+    def __repr__(self):
+        return str(self.keys)
 
-    @staticmethod
-    def parse_date_func():
-        return date_from_year
+    def name(self):
+        return "And".join(s.title() for s in self.keys)
 
+    def format(self, values):
+        if not isinstance(values, (tuple, list)):
+            values = [values]
 
-class SsvidAndDay(Key):
-    @staticmethod
-    def keynames():
-        return ["SSVID", "DAY"]
+        return "({})".format(
+            ', '.join([f'{k}={v}' for k, v in zip(self.keys, values)])
+        )
 
-    @staticmethod
-    def func():
-        return ssvid_and_day_key
+    def _define_func(self):
+        def group_by(item):
+            key = tuple(item[k] for k in self.keys)
+            if len(key) == 1:
+                return key[0]
 
-    @staticmethod
-    def parse_date_func():
-        return date_from_day
+            return key
 
-
-class Ssvid(Key):
-    @staticmethod
-    def keynames():
-        return ["SSVID"]
-
-    @staticmethod
-    def func():
-        return ssvid_key
-
-
-KEY_CLASSES_MAP = {
-    "ssvid_year": SsvidAndYear,
-    "ssvid_day": SsvidAndDay,
-    "ssvid": Ssvid
-}
-
-
-def key_factory(name, **kwargs):
-    if name not in KEY_CLASSES_MAP:
-        raise NotImplementedError(f"key with name {name} not implemented")
-
-    return KEY_CLASSES_MAP[name](**kwargs)
+        return group_by
 
 
 class Boundaries:

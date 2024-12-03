@@ -43,7 +43,9 @@ class WriteJson(beam.PTransform):
         output_dir: Output directory.
         output_prefix: Prefix to use in filename/s.
     """
-    def __init__(self, output_dir: str = "workdir", output_prefix: str = ""):
+    WORKDIR_DEFAULT = "workdir"
+
+    def __init__(self, output_dir: str = WORKDIR_DEFAULT, output_prefix: str = ""):
         self._output_dir = Path(output_dir)
 
         time = datetime.now().isoformat(timespec="seconds").replace("-", "").replace(":", "")
@@ -99,8 +101,11 @@ class WriteToBigQueryMock(beam.io.WriteToBigQuery):
 class WriteBigQueryTable(beam.PTransform):
     """Writes p-collection in BigQuery table.
 
+    This class wraps beam.io.WriteToBigQuery p-Transform.
+    TODO: review design.
+
     Args:
-        **kwargs: keyword arguments for beam.io.WriteToBigQuery constructor.
+        transform: the p-Transform to use.
     """
     def __init__(self, transform: beam.PTransform):
         self._transform = transform
