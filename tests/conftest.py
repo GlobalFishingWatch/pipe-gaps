@@ -52,11 +52,7 @@ def create_message(
 def create_open_gap(time: datetime = datetime(2024, 1, 1), ssvid: str = "446013750"):
     gd = GapDetector(normalize_output=True)
 
-    gap = gd.create_gap(off_m=create_message(ssvid=ssvid, time=datetime(2024, 1, 1, 12)))
-
-    gap["gap_start"] = gap.pop("start_timestamp")  # Remove after input schema is fixed.
-
-    return gap
+    return gd.create_gap(off_m=create_message(ssvid=ssvid, time=datetime(2024, 1, 1, 12)))
 
 
 class TestCases:

@@ -16,25 +16,6 @@ logger = logging.getLogger(__name__)
 MAX_WINDOW_PERIOD_D = 180  # Max. window period in days. Requires further testing. Could be higher.
 
 
-def off_message_from_gap(gap: dict):
-    """Extracts off message from gap object."""
-
-    to_remove = ["gap_start_", "start_"]
-    off_message = {
-        key.replace(j, ""): v
-        for key, v in gap.items()
-        for j in to_remove
-        if j in key
-    }
-
-    off_message["ssvid"] = gap["ssvid"]
-
-    if "gap_start" in gap:
-        off_message["timestamp"] = gap.pop("gap_start")
-
-    return off_message
-
-
 class DetectGapsError(Exception):
     pass
 
@@ -81,7 +62,6 @@ class DetectGaps(CoreProcess):
         window_offset_h: int = 12,
         **config
     ) -> "DetectGaps":
-
         if date_range is not None:
             date_range = [date.fromisoformat(x) for x in date_range]
 
@@ -278,7 +258,7 @@ class DetectGaps(CoreProcess):
         return None
 
     def _close_open_gap(self, open_gap, on_m):
-        off_m = off_message_from_gap(open_gap)
+        off_m = self._gd.off_message_from_gap(open_gap)
 
         # Re-order off-message using on-message keys.
         off_m = {k: off_m[k] for k in on_m.keys() if k in off_m}

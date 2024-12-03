@@ -65,8 +65,8 @@ class GapDetector:
 
     KEY_TOTAL = "total"
 
-    FIELDS_PREFIX_OFF = "start"
-    FIELDS_PREFIX_ON = "end"
+    MESSAGE_PREFIX_OFF = "start_"
+    MESSAGE_PREFIX_ON = "end_"
 
     def __init__(
         self,
@@ -271,6 +271,19 @@ class GapDetector:
 
         return gap
 
+    def off_message_from_gap(self, gap: dict):
+        """Extracts off message from gap object."""
+
+        off_message = {
+            key.replace(self.MESSAGE_PREFIX_OFF, ""): v
+            for key, v in gap.items()
+            if self.MESSAGE_PREFIX_OFF in key
+        }
+
+        off_message["ssvid"] = gap["ssvid"]
+
+        return off_message
+
     # @profile  # noqa  # Uncomment to run memory profiler
     def _sort_messages(self, messages: list) -> None:
         key = operator.itemgetter(self.KEY_TIMESTAMP)
@@ -345,12 +358,12 @@ class GapDetector:
         return count
 
     def _normalize_off_on_messages(self, off_m: dict, on_m: dict) -> dict:
-        def _normalized_off_on_messages(msg_type: str, m: dict):
-            return {f"{msg_type}_{k}": v for k, v in m.items()}
+        def _normalized_off_on_messages(msg_prefix: str, m: dict):
+            return {f"{msg_prefix}{k}": v for k, v in m.items()}
 
         off_on_messages = {
-            **_normalized_off_on_messages(self.FIELDS_PREFIX_OFF, off_m),
-            **_normalized_off_on_messages(self.FIELDS_PREFIX_ON, on_m)
+            **_normalized_off_on_messages(self.MESSAGE_PREFIX_OFF, off_m),
+            **_normalized_off_on_messages(self.MESSAGE_PREFIX_ON, on_m)
         }
 
         return off_on_messages
