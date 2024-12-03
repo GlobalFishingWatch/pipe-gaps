@@ -57,6 +57,10 @@ Time gap detector for **[AIS]** position messages.
 [gap_detector.py]: pipe_gaps/core/gap_detector.py
 [pTransform]: https://beam.apache.org/documentation/programming-guide/#applying-transforms
 
+[results for 2021-2023]: analysis/
+[profiling results]: benchmarks/measurement-size-10000000-reps-50.json
+
+
 **Table of contents**:
 - [Introduction](#introduction)
 - [Definition of gap](#definition-of-gap)
@@ -107,17 +111,17 @@ unauthorized transshipments [[1]](#1)[[2]](#2).
 <div align="justify">
 
 We create an **AIS** **gap** event when the period of time between
-consecutive **AIS** positions from a single vessel exceeds a configured `threshold`.
+consecutive **AIS** positions from a single vessel exceeds a configured threshold in hours.
 The `start/end` position messages of the gap are called `OFF/ON` messages,
 respectively.
 
 When the period of time between **last** known position
-and the last time of the current day exceeds the `threshold`,
+and the last time of the current day exceeds the threshold,
 we create an **open gap** event.
 In that case, the gap will not have an `ON` message,
 until it is **closed** in the future when new data arrives.
 
-Input position messages are filtered by `good_seg` field
+Input position messages are filtered by `good_seg2` field
 of the segments table in order to remove noise.
 This denoising process happens in the [segment pipeline].
 
@@ -125,11 +129,11 @@ This denoising process happens in the [segment pipeline].
 
 ## Some results
 
-These are some results for 2021-2023.
+These are some [results for 2021-2023].
 
 <div align="center">
 
-![alt text](analysis/gaps.svg)
+![alt text](analysis/2021-2023-gaps-good-seg2.svg)
 
 </div>
 
@@ -138,7 +142,7 @@ These are some results for 2021-2023.
 <div align="justify">
 
 The gap detection pipeline fetches **AIS** position messages,
-filtering them by `good_seg`, and groups them by `ssvid`.
+filtering them by `good_seg2`, and groups them by `ssvid`.
 Since **we know** different vessels can broadcast with the same `ssvid`,
 this can potentially lead to the situation in which we have a gap
 with an `OFF` message from one vessel
@@ -168,20 +172,28 @@ that broadcast under the same `ssvid`.
 We still don't have a package in PYPI.
 
 First, clone the repository.
-Then run inside a virtual environment
+
+Create virtual environment and activate it:
+```shell
+python -m venv .venv
+. ./.venv/bin/activate
+```
+Install dependencies
 ```shell
 make install
 ```
-Or, if you are going to use the dockerized process, build the docker image:
+Make sure you can run unit tests
+```shell
+make test
+```
+Make sure you can build the docker image:
 ```shell
 make build
 ```
 
 In order to be able to connect to BigQuery, authenticate and configure the project:
 ```shell
-docker compose run gcloud auth application-default login
-docker compose run gcloud config set project world-fishing-827
-docker compose run gcloud auth application-default set-quota-project world-fishing-827
+make gcp
 ```
 
 ### Gap detection low level process
@@ -202,7 +214,7 @@ Any other fields are not mandatory but can be passed to be included in the gap e
 
 > [!NOTE]
 > Currently, the algorithm takes about `(3.62 ± 0.03)` seconds to process 10M messages.  
-  Tested on a i7-1355U 5.0GHz processor.
+  Tested on a i7-1355U 5.0GHz processor. You can check the [profiling results].
 
 
 ```python
@@ -240,27 +252,78 @@ The gaps detection pipeline is described in the following diagram:
 
 ```mermaid
 flowchart LR;
-    subgraph **Main Inputs**
-    A[/**AIS** Messages/]
+    subgraph tables [**BigQuery Tables**]
+        A[(messages)]
+        B[(segments)]
+        C[(gaps)]
+    end
+
+    subgraph inputs [**Inputs**]
+        D[/**AIS** Messages/]
+        E[/Open gaps/]
+    end
+
+    F[Detect Gaps]
+
+
+    subgraph outputs [**Outputs**]
+        direction TB
+        G[/gaps/]
     end
     
-    subgraph **Side Inputs**
-    C[/Open Gaps/]
-    end
-
-    A ==> B[Detect Gaps]
-    C ==> B
-
-    B ==> E
+    A ==> D
     B ==> D
-    B ==> F
+    C ==> E
 
-    subgraph **Outputs**
-    E[\New Gaps\]
-    D[\New Open gaps\]
-    F[\Closed existing open gaps\]
-    end
+    D ==> F
+    E ==> F
+
+    F ==> outputs
+
+    outputs ==> C
 ```
+
+#### BigQuery output schema
+
+The schema for the output **gap events** table is defined in 
+[pipe_gaps/pipeline/schemas/ais-gaps.json](/pipe_gaps/pipeline/schemas/ais-gaps.json).
+
+#### BigQuery data persistence pattern
+
+<div align="justify">
+
+When an **open gap** is closed, a new **gap** event is created.
+This means that we are using a persistence pattern that matches
+the [slowly changing dimension] type 2 (always add new rows).
+In consequence, the output table can contain two gap events with the same `gap_id`:
+the old **open gap** and the current **closed _active_ gap**.
+The versioning of gaps is done with a timestamp field `version` with second precision.
+
+To query all _active_ gaps,
+you will just need to query the last versions for every `gap_id`.
+
+For example,
+```sql
+SELECT *
+    FROM (
+      SELECT
+          *,
+          MAX(version)
+              OVER (PARTITION BY gap_id)
+              AS last_version,
+      FROM `world-fishing-827.scratch_tomas_ttl30d.pipe_ais_gaps_filter_no_overlapping_and_short`
+    )
+    WHERE version = last_version
+```
+
+Another alternative:
+```sql
+SELECT *
+    FROM `world-fishing-827.scratch_tomas_ttl30d.pipe_ais_gaps_filter_no_overlapping_and_short`
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY gap_id ORDER BY version DESC) = 1
+```
+
+</div>
 
 #### Running from CLI
 
@@ -372,52 +435,6 @@ This is an example of a JSON config file:
 
 You can see more configuration examples [here](config/). 
 
-#### BigQuery output schema
-
-The schema for the output **gap events** table is defined in 
-[pipe_gaps/pipeline/schemas/ais-gaps.json](/pipe_gaps/pipeline/schemas/ais-gaps.json).
-
-#### BigQuery data persistence pattern
-
-<div align="justify">
-
-When an **open gap** is closed,
-a new **gap** event is created.
-
-In the case of BigQuery output,
-this means that we are using a persistence pattern
-that matches the [slowly changing dimension] type 2 
-(always add new rows).
-In consequence, the output table can contain two gap events with the same `gap_id`:
-the old **open gap** and the current **closed _active_ gap**.
-The versioning of gaps is done with a timestamp `gap_version` field with second precision.
-
-To query all _active_ gaps,
-you will just need to query the last versions for every `gap_id`.
-
-For example,
-```sql
-SELECT *
-    FROM (
-      SELECT
-          *,
-          MAX(gap_version)
-              OVER (PARTITION BY gap_id)
-              AS last_version,
-      FROM `world-fishing-827.scratch_tomas_ttl30d.pipe_ais_gaps_filter_no_overlapping_and_short`
-    )
-    WHERE gap_version = last_version
-```
-
-Another alternative:
-```sql
-SELECT *
-    FROM `world-fishing-827.scratch_tomas_ttl30d.pipe_ais_gaps_filter_no_overlapping_and_short`
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY gap_id ORDER BY gap_version DESC) = 1
-```
-
-</div>
-
 ## Implementation details
 
 The pipeline is implemented over a (mostly) generic structure that supports:
@@ -454,21 +471,18 @@ Below there is a [diagram](#flow-chart) that describes this work flow.
 
 ```mermaid
 flowchart TD;
-    A[Read Inputs] ==> |**AIS Messages**| B[Group Inputs]
+    A[Read Main Inputs] ==> |**AIS Messages**| B[Group Inputs]
     C[Read Side Inputs] ==> |**Open Gaps**| D[Group Side Inputs]
 
-    subgraph **Core Transform**
+    subgraph **Detect Gaps**
     B ==> |**AIS Messages <br/> by SSVID & TI**| E[Process Groups]
     B ==> |**AIS Messages <br/> by SSVID & TI**| F[Process Boundaries]
     D ==> |**Open Gaps  <br/> by SSVID**| F
     E ==> |**Gaps inside groups**| H[Join Outputs]
-    F ==> |**Gaps in boundaries <br/> New open gaps <br/> Closed open gaps**| H
+    F ==> |**Gaps between groups <br/> New open gaps <br/> Closed open gaps**| H
     end
 
-    subgraph .
-    H ==> K[Write Outputs]
-    K ==> L[(BigQuery)]
-    end
+    H ==> |**New closed gaps <br/> New open gaps <br/> Closed open gaps**| K[Write Outputs]
 ```
 
 ## References
