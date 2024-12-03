@@ -48,6 +48,11 @@ class GapDetector:
     THRESHOLD = timedelta(hours=12, minutes=0, seconds=0)
     PROGRESS_BAR_DESCRIPTION = "Detecting gaps:"
 
+    KEY_GAP_ID = "gap_id"
+    KEY_VERSION = "version"
+    KEY_DISTANCE_M = "distance_m"
+    KEY_DURATION_H = "duration_h"
+    KEY_IMPLIED_SPEED_KNOTS = "implied_speed_knots"
     KEY_DISTANCE_FROM_SHORE = "distance_from_shore_m"
     KEY_LAT = "lat"
     KEY_LON = "lon"
@@ -58,6 +63,7 @@ class GapDetector:
     KEY_HOURS_BEFORE_SAT = "positions_hours_before_sat"
     KEY_HOURS_BEFORE_DYN = "positions_hours_before_dyn"
     KEY_RECEIVER_TYPE = "receiver_type"
+    KEY_IS_CLOSED = "is_closed"
 
     KEY_TERRESTRIAL = "terrestrial"
     KEY_SATELLITE = "satellite"
@@ -243,15 +249,15 @@ class GapDetector:
         else:
             on_m = {k: None for k in off_m}
 
-        gap = dict(
-            gap_id=gap_id,
-            ssvid=ssvid,
-            version=int(datetime.now(tz=timezone.utc).timestamp()),
-            distance_m=distance_m,
-            duration_h=duration_h,
-            implied_speed_knots=implied_speed_knots,
-            is_closed=is_closed,
-        )
+        gap = {
+            self.KEY_GAP_ID: gap_id,
+            self.KEY_SSVID: ssvid,
+            self.KEY_VERSION: int(datetime.now(tz=timezone.utc).timestamp()),
+            self.KEY_DISTANCE_M: distance_m,
+            self.KEY_DURATION_H: duration_h,
+            self.KEY_IMPLIED_SPEED_KNOTS: implied_speed_knots,
+            self.KEY_IS_CLOSED: is_closed,
+        }
 
         count = self._count_messages_before_gap(previous_positions)
         gap[self.KEY_HOURS_BEFORE] = count[self.KEY_TOTAL]
@@ -280,7 +286,7 @@ class GapDetector:
             if self.MESSAGE_PREFIX_OFF in key
         }
 
-        off_message["ssvid"] = gap["ssvid"]
+        off_message[self.KEY_SSVID] = gap[self.KEY_SSVID]
 
         return off_message
 
