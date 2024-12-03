@@ -1,14 +1,14 @@
 import logging
 from datetime import timedelta, datetime, timezone, date
-from typing import Type, Iterable, Optional, Any
+from typing import Iterable, Optional, Any
 
 from apache_beam.transforms.window import IntervalWindow
 from apache_beam.transforms.core import DoFn
 
 from pipe_gaps.core import GapDetector
 
-from .base import CoreProcess, Key
-from .common import Boundary, Boundaries, key_factory
+from .base import CoreProcess
+from .common import Boundary, Boundaries, GroupByKey
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +25,7 @@ class DetectGaps(CoreProcess):
 
     Args:
         gd: core gap detector.
-        gk: groups Key object. Used to group input messages.
-        bk: boundaries Key object. Used to group boundaries.
+        group_by: Operation to use when grouping messages processed by this class.
         eval_last: If True, evaluates last message of each vessel to create an open gap.
         window_period_d: period for the time window in days.
         window_offset_h: offset for the time window in hours.
@@ -40,16 +39,14 @@ class DetectGaps(CoreProcess):
     def __init__(
         self,
         gd: GapDetector,
-        gk: Key,
-        bk: Key,
+        group_by_key: GroupByKey,
         eval_last: bool = False,
         window_period_d: int = MAX_WINDOW_PERIOD_D,
         window_offset_h: int = 12,
         date_range: tuple[date, date] = None,
     ):
         self._gd = gd
-        self._gk = gk
-        self._bk = bk
+        self._group_by_key = group_by_key
         self._eval_last = eval_last
         self._window_period_d = window_period_d
         self._window_offset_h = window_offset_h
@@ -58,8 +55,6 @@ class DetectGaps(CoreProcess):
     @classmethod
     def build(
         cls,
-        groups_key: str = KEY_SSVID,
-        boundaries_key: str = KEY_SSVID,
         date_range: tuple = None,
         eval_last: bool = False,
         window_period_d: int = None,
@@ -88,8 +83,7 @@ class DetectGaps(CoreProcess):
 
         return cls(
             gd=GapDetector(**config),
-            gk=key_factory(groups_key),
-            bk=key_factory(boundaries_key),
+            group_by_key=GroupByKey([cls.KEY_SSVID]),
             eval_last=eval_last,
             window_period_d=window_period_d,
             window_offset_h=window_offset_h,
@@ -137,7 +131,7 @@ class DetectGaps(CoreProcess):
             "Found {} gap(s) for {} in window [{}, {}]"
             .format(
                 len(gaps),
-                self.groups_key().format(key),
+                self._group_by_key.format(key),
                 start_time.date(),
                 end_time.date(),
             )
@@ -157,7 +151,7 @@ class DetectGaps(CoreProcess):
 
         boundaries = Boundaries(boundaries_it)
 
-        formatted_key = self.boundaries_key().format(key)
+        formatted_key = self._group_by_key.format(key)
 
         gaps = {}
 
@@ -223,11 +217,8 @@ class DetectGaps(CoreProcess):
         """Callable to use as sorting key."""
         return lambda x: (x[self.KEY_SSVID], x[self.KEY_TIMESTAMP])
 
-    def groups_key(self) -> Type[Key]:
-        return self._gk
-
-    def boundaries_key(self) -> Type[Key]:
-        return self._bk
+    def group_by_key(self) -> GroupByKey:
+        return self._group_by_key
 
     def time_window_period_and_offset(self):
         """Returns period and offset for sliding windows in seconds."""
@@ -235,17 +226,6 @@ class DetectGaps(CoreProcess):
         offset_s = self._window_offset_h * 60 * 60
 
         return period_s, offset_s
-
-    def _load_side_inputs(self, side_inputs, key):
-        side_inputs_list = []
-        if side_inputs is not None:
-            try:
-                side_inputs_list = list(side_inputs[key])
-            except KeyError:
-                # A key was not found for this group.
-                pass
-
-        return side_inputs_list
 
     def _load_open_gap(self, side_inputs, key):
         side_inputs_list = self._load_side_inputs(side_inputs, key)
@@ -260,6 +240,17 @@ class DetectGaps(CoreProcess):
             return open_gap
 
         return None
+
+    def _load_side_inputs(self, side_inputs, key):
+        side_inputs_list = []
+        if side_inputs is not None:
+            try:
+                side_inputs_list = list(side_inputs[key])
+            except KeyError:
+                # A key was not found for this group.
+                pass
+
+        return side_inputs_list
 
     def _close_open_gap(self, open_gap, on_m):
         off_m = self._gd.off_message_from_gap(open_gap)

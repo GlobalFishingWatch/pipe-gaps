@@ -235,8 +235,6 @@ def build_pipeline(
     def create_core_config():
         return {
             "kind": "detect_gaps",
-            "groups_key": "ssvid",
-            "boundaries_key": "ssvid",
             "eval_last": eval_last,
             "threshold": min_gap_length,
             "normalize_output": normalize_output,
