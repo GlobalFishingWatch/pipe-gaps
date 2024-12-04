@@ -1,4 +1,4 @@
-"""Module with beam transforms for writing output pcollections."""
+"""Module with reusable PTransforms for writing output PCollections."""
 import json
 from datetime import datetime
 from pathlib import Path
@@ -37,7 +37,7 @@ def get_bigquery_schema(name):
 
 
 class WriteJson(beam.PTransform):
-    """Writes p-collection as JSON.
+    """Writes PCollection as JSON.
 
     Args:
         output_dir: Output directory.
@@ -73,22 +73,23 @@ class WriteJson(beam.PTransform):
         )
 
         """
-        beam.io.WriteToJson pTransform is more direct but has issues writing locally.
+        Why not use beam.io.WriteToJson?
+        The thing is that beam.io.WriteToJson has issues writing locally.
         Raises an error because interprets the filepath as an invalid gcs_location...
         It works when you use ReadFromBigQuery and set the gcs_location there (very rare behavior).
-        It uses pandas under the hood.
+        Also, it uses pandas under the hood.
         https://beam.apache.org/releases/pydoc/current/apache_beam.io.textio.html#apache_beam.io.textio.WriteToJson.
-
-        beam.io.WriteToText pTransform is more predictable.
-        https://beam.apache.org/releases/pydoc/current/apache_beam.io.textio.html#apache_beam.io.textio.WriteToText.
 
         file_naming = default_file_naming(prefix=self._output_prefix, suffix=".json")
         return pcoll | beam.io.WriteToJson(
             self._output_dir.as_posix(),
             file_naming=default_file_naming(prefix=self._output_prefix, suffix=".json"),
-            lines=False,  # TODO: consider using JSON Lines format (lines=True).
+            lines=True,
             indent=4,
         )
+
+        On the other hand, beam.io.WriteToText PTransform is more predictable.
+        https://beam.apache.org/releases/pydoc/current/apache_beam.io.textio.html#apache_beam.io.textio.WriteToText.
         """
 
 
@@ -99,13 +100,12 @@ class WriteToBigQueryMock(beam.io.WriteToBigQuery):
 
 
 class WriteBigQueryTable(beam.PTransform):
-    """Writes p-collection in BigQuery table.
+    """Writes PCollection in BigQuery table.
 
-    This class wraps beam.io.WriteToBigQuery p-Transform.
-    TODO: review design.
+    This class wraps beam.io.WriteToBigQuery PTransform.
 
     Args:
-        transform: the p-Transform to use.
+        transform: the PTransform to use.
     """
     def __init__(self, transform: beam.PTransform):
         self._transform = transform
