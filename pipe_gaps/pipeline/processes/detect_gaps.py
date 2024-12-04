@@ -39,14 +39,14 @@ class DetectGaps(CoreProcess):
     def __init__(
         self,
         gd: GapDetector,
-        group_by_key: GroupByKey,
+        grouping_key: GroupByKey,
         eval_last: bool = False,
         window_period_d: int = MAX_WINDOW_PERIOD_D,
         window_offset_h: int = 12,
         date_range: tuple[date, date] = None,
     ):
         self._gd = gd
-        self._group_by_key = group_by_key
+        self._grouping_key = grouping_key
         self._eval_last = eval_last
         self._window_period_d = window_period_d
         self._window_offset_h = window_offset_h
@@ -83,7 +83,7 @@ class DetectGaps(CoreProcess):
 
         return cls(
             gd=GapDetector(**config),
-            group_by_key=GroupByKey([cls.KEY_SSVID]),
+            grouping_key=GroupByKey([cls.KEY_SSVID]),
             eval_last=eval_last,
             window_period_d=window_period_d,
             window_offset_h=window_offset_h,
@@ -131,7 +131,7 @@ class DetectGaps(CoreProcess):
             "Found {} gap(s) for {} in window [{}, {}]"
             .format(
                 len(gaps),
-                self._group_by_key.format(key),
+                self._grouping_key.format(key),
                 start_time.date(),
                 end_time.date(),
             )
@@ -145,13 +145,13 @@ class DetectGaps(CoreProcess):
         group: tuple[Any, Iterable[Boundary]],
         side_inputs: Optional[dict[Any, Iterable]] = None
     ) -> Iterable[dict]:
-        key, boundaries_it = group
+        key_value, boundaries_it = group
 
         # logger.info("Amount of windows: {}".format(len(boundaries_it)))
 
         boundaries = Boundaries(boundaries_it)
 
-        formatted_key = self._group_by_key.format(key)
+        formatted_key = self._grouping_key.format(key_value)
 
         gaps = {}
 
@@ -178,7 +178,7 @@ class DetectGaps(CoreProcess):
 
         # Step three:
         # If open gap exists, close it.
-        open_gap = self._load_open_gap(side_inputs, key)
+        open_gap = self._load_open_gap(side_inputs, key_value)
         if open_gap is not None:
             open_gap_id = open_gap[self.KEY_GAP_ID]
             logger.info(f"{self.KEY_GAP_ID}={open_gap_id}")
@@ -217,8 +217,8 @@ class DetectGaps(CoreProcess):
         """Callable to use as sorting key."""
         return lambda x: (x[self.KEY_SSVID], x[self.KEY_TIMESTAMP])
 
-    def group_by_key(self) -> GroupByKey:
-        return self._group_by_key
+    def grouping_key(self) -> GroupByKey:
+        return self._grouping_key
 
     def time_window_period_and_offset(self):
         """Returns period and offset for sliding windows in seconds."""
