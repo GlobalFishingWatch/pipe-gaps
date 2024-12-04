@@ -1,4 +1,4 @@
-"""Module with beam transforms for reading input pcollections."""
+"""Module with reusable PTransforms for reading input PCollections."""
 from pathlib import Path
 from typing import Union
 
@@ -22,23 +22,23 @@ def sources_factory(kind, **kwargs):
 
 
 class ReadFromJson(beam.PTransform):
-    """Beam transform to read pcollection from a JSON file.
+    """Beam transform to read Pcollection from a JSON file.
 
     Args:
-        transform: the p-Transform to use.
+        transform: the PTransform to use.
     """
     def __init__(self, transform: beam.PTransform):
         self._transform = transform
 
     @classmethod
     def build(
-        cls, input_file: Union[str, Path], schema: str = None, lines=False, **kwargs
+        cls, input_file: Union[str, Path], schema: str = None, lines: bool = False, **kwargs
     ) -> "ReadFromJson":
         """Builds a ReadFromJson instance.
 
         Args:
             input_file: The filepath to read.
-            schema: The schema for the p-collection type. If None, uses dict.
+            schema: The schema for the PCollection type. If None, uses dict.
             lines: If True, interprets JSON file as JSONLines format.
             **kwargs: Extra keyword arguments for beam.io.Create constructor.
 
@@ -46,7 +46,9 @@ class ReadFromJson(beam.PTransform):
             An instance of ReadFromJson.
         """
 
-        # beam.ReadFromJson returns BeamSchema objects, and then we need to convert to dict...
+        # Why not use beam.ReadFromJson instead of (beam.Create + json_load)?
+        # The thing is that beam.ReadFromJson returns BeamSchema objects,
+        # and then we need to convert those objects to dict...
         # inputs = (
         #     p
         #     | beam.io.ReadFromJson(str(input_file), lines=False, convert_dates=False)
@@ -70,7 +72,7 @@ class ReadFromBigQueryMock(beam.io.ReadFromBigQuery):
     """Mocks beam.io.ReadFromBigQuery.
 
     Args:
-        elements: Elements to use as output pcollection.
+        elements: Elements to use as output Pcollection.
     """
     def __init__(self, elements: list[dict] = None, **kwargs):
         self._elements = elements
@@ -83,10 +85,10 @@ class ReadFromBigQueryMock(beam.io.ReadFromBigQuery):
 
 
 class ReadFromQuery(beam.PTransform):
-    """Beam transform to read pcollection from BigQuery table.
+    """Beam transform to read Pcollection from BigQuery table.
 
     Args:
-        transform: the p-Transform to use.
+        transform: the PTransform to use.
     """
     def __init__(self, transform: beam.PTransform):
         self._transform = transform
@@ -96,9 +98,9 @@ class ReadFromQuery(beam.PTransform):
         cls,
         query_name: str,
         query_params: dict,
-        use_schema=False,
-        mock_db_client=False,
-        method=beam.io.ReadFromBigQuery.Method.DIRECT_READ,
+        use_schema: bool = False,
+        mock_db_client: bool = False,
+        method: str = beam.io.ReadFromBigQuery.Method.DIRECT_READ,
         **kwargs
     ) -> "ReadFromQuery":
         """Builds a ReadFromQuery instance.
@@ -106,7 +108,7 @@ class ReadFromQuery(beam.PTransform):
         Args:
             query_name: The name of the query.
             query_params: The parameters of the query.
-            use_schema: If true, uses query defined schema as p-collection type. If not, uses dict.
+            use_schema: If true, uses query defined schema as PCollection type. If not, uses dict.
             mock_db_client: If True, uses a mock for the database client.
             method: The method to use to read from BigQuery. It may be EXPORT or DIRECT_READ.
             **kwargs: Extra keyword arguments for beam.io.ReadFromBigQuery constructor.
