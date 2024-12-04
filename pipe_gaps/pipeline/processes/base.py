@@ -30,18 +30,19 @@ class CoreProcess(ABC):
         """
         logger.info("Total amount of input elements: {}".format(len(elements)))
 
+        grouping_key = self.grouping_key()
+
         logger.info("Sorting inputs...")
         sorted_messages = sorted(elements, key=self.sorting_key())
-
-        logger.info(f"Grouping inputs by {self.group_by_key()}...")
+        logger.info(f"Grouping inputs by {grouping_key}...")
         grouped_messages = [
             (k, list(v))
-            for k, v in itertools.groupby(sorted_messages, key=self.group_by_key().func)
+            for k, v in itertools.groupby(sorted_messages, key=grouping_key.func)
         ]
 
         side_inputs_dict = {}
         if side_inputs is not None:
-            grouped_side_inputs = itertools.groupby(side_inputs, key=self.group_by_key().func)
+            grouped_side_inputs = itertools.groupby(side_inputs, key=grouping_key.func)
             for k, group in grouped_side_inputs:
                 side_inputs_dict[k] = list(group)
 
@@ -54,7 +55,7 @@ class CoreProcess(ABC):
         logger.info("Processing boundaries...")
         boundaries = [self.get_group_boundary(g) for g in grouped_messages]
 
-        grouped_boundaries = itertools.groupby(boundaries, key=self.group_by_key().func)
+        grouped_boundaries = itertools.groupby(boundaries, key=grouping_key.func)
         for k, v in grouped_boundaries:
             outputs_in_boundaries = self.process_boundaries((k, v), side_inputs=side_inputs_dict)
             outputs.extend(outputs_in_boundaries)
@@ -83,8 +84,8 @@ class CoreProcess(ABC):
 
     @staticmethod
     @abstractmethod
-    def group_by_key() -> Type:
-        """Returns the key to group by input items."""
+    def grouping_key() -> Type:
+        """Returns the key to use when grouping input items."""
 
     @staticmethod
     @abstractmethod

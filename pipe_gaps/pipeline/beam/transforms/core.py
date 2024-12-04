@@ -33,13 +33,9 @@ class Core(beam.PTransform):
         self._side_inputs = side_inputs
 
     def expand(self, pcoll):
-        logger.info(f"Grouping inputs by keys: {self._process.group_by_key()}.")
+        logger.info(f"Grouping inputs by keys: {self._process.grouping_key()}.")
 
-        groups = (
-            pcoll
-            | self.assign_sliding_windows()
-            | self.group_by()
-        )
+        groups = pcoll | self.group_by_key_and_timestamp()
 
         out_boundaries = groups | self.process_boundaries()
         out_groups = groups | self.process_groups()
@@ -56,9 +52,18 @@ class Core(beam.PTransform):
             | beam.WindowInto(beam.window.SlidingWindows(size=size, period=period, offset=offset))
         )
 
-    def group_by(self):
+    def group_by_key_and_timestamp(self):
+        key = self._process.grouping_key()
+
+        return f"GroupBy{key.name()}AndTime" >> (
+            self.assign_sliding_windows()
+            | self.group_by_key()
+        )
+
+    def group_by_key(self):
         """Returns the GroupBy pTransform."""
-        key = self._process.group_by_key()
+        key = self._process.grouping_key()
+
         return f"GroupBy{key.name()}" >> beam.GroupBy(key.func)
 
     def process_groups(self):
@@ -80,13 +85,13 @@ class Core(beam.PTransform):
         side_inputs = None
         if self._side_inputs is not None:
             side_inputs = beam.pvalue.AsMultiMap(
-                self._side_inputs | beam.GroupBy(self._process.group_by_key().func)
+                self._side_inputs | self.group_by_key()
             )
 
         tr = (
             beam.Map(self._process.get_group_boundary)
             | beam.WindowInto(beam.window.GlobalWindows())
-            | self.group_by()
+            | self.group_by_key()
             | beam.FlatMap(self._process.process_boundaries, side_inputs=side_inputs)
         )
 
