@@ -20,6 +20,6 @@
     "pipeline_options": {
         "project": "world-fishing-827",
         "runner": "direct",
-        "job_name": "tom-test-gaps-1-day-2-ssvids-5"
+        "job_name": "tom-test-gaps-1-day-2-ssvids"
     }
 }
