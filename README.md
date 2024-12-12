@@ -11,6 +11,9 @@
     <img alt="Apache Beam version" src="https://img.shields.io/badge/ApacheBeam-2.60.0-orange">
   </a>
   <a>
+    <img alt="Docker Engine version" src="https://img.shields.io/badge/DockerEngine-v27-yellow">
+  </a>
+  <a>
     <img alt="Last release" src="https://img.shields.io/github/v/release/GlobalFishingWatch/pipe-gaps">
   </a>
 </p>
