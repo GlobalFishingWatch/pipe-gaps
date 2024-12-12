@@ -5,8 +5,6 @@ import math
 import logging
 import argparse
 
-from argparse import BooleanOptionalAction
-
 from pathlib import Path
 from datetime import date, timedelta
 
@@ -319,8 +317,6 @@ def cli(args):
     add("--no-rich-logging", action="store_true", default=False, help=HELP_NO_RICH_LOGGING)
     add("--only-render", action="store_true", help=HELP_ONLY_RENDER)
 
-    default_args = dict(default=None, metavar=" ")
-
     add = p.add_argument_group("general pipeline configuration").add_argument
     add("--pipe-type", type=str, metavar=" ", help=HELP_PIPE_TYPE)
     add("-i", "--json-input-messages", type=str, metavar=" ", help=HELP_JSON_INPUT_MESSAGES)
@@ -330,20 +326,19 @@ def cli(args):
     add("--bq-input-open-gaps", type=str, metavar=" ", help=HELP_BQ_INPUT_OPEN_GAPS)
     add("--bq-output-gaps", type=str, metavar=" ", help=HELP_BQ_OUTPUT_GAPS)
     add("--open-gaps-start-date", type=str, metavar=" ", help=HELP_OPEN_GAPS_START_DATE)
-    add("--filter-not-overlapping-and-short", type=bool, **default_args, help=HELP_OVERL)
-    add("--filter-good-seg", type=bool, **default_args, help=HELP_GOOD_SEG)
+    add("--filter-not-overlapping-and-short", action="store_true", default=None, help=HELP_OVERL)
+    add("--filter-good-seg", action="store_true", default=None, help=HELP_GOOD_SEG)
     add("--skip-open-gaps", action="store_true", default=None, help=HELP_SKIP_OPEN_GAPS)
-    add("--mock-db-client", default=None, action=BooleanOptionalAction, help=HELP_MOCK_DB_CLIENT)
-    add("--save-json", default=None, action=BooleanOptionalAction, help=HELP_SAVE_JSON)
+    add("--mock-db-client", action="store_true",  default=None, help=HELP_MOCK_DB_CLIENT)
+    add("--save-json", action="store_true", default=None, help=HELP_SAVE_JSON)
     add("--work-dir", type=str, metavar=" ", help=HELP_WORK_DIR)
     add("--ssvids", type=ssvids, metavar=" ", help=HELP_SSVIDS)
     add("--date-range", type=date_range, metavar=" ", help=HELP_DATE_RANGE)
 
-    boolean = BooleanOptionalAction
     add = p.add_argument_group("gap detection process").add_argument
     add("--min-gap-length", type=float, metavar=" ", help=HELP_MIN_GAP_LENGTH)
     add("--window-period-d", type=float, metavar=" ", help=HELP_WINDOW_PERIOD_D)
-    add("--eval-last", default=None, action=boolean, help=HELP_EVAL_LAST)
+    add("--eval-last", action="store_true", default=None, help=HELP_EVAL_LAST)
     add("--n-hours-before", type=float, metavar=" ", help=HELP_N_HOURS_BEFORE)
 
     ns, unknown = p.parse_known_args(args=args or ["--help"])
@@ -384,13 +379,15 @@ def cli(args):
         # Only render equivalent command-line args call and exit.
         logger.info("Equivalent command-line call: ")
         print(render_command_line_call(config, unknown))
-        return
+        return config
 
     logger.info(
         "Following unknown args will be parsed internally by the pipeline: {}".format(unknown))
 
     config.setdefault("pipeline_options", {})["unparsed"] = unknown
     run(config)
+
+    return config
 
 
 def main():
