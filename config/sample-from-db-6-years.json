@@ -5,7 +5,7 @@
     "skip_open_gaps": true,
     "open_gaps_start_date": "2012-01-01",
     "date_range": [
-        "2021-01-01",
+        "2018-01-01",
         "2024-01-01"
     ],
     "min_gap_length": 6,
@@ -19,6 +19,6 @@
         "max_num_workers": 300,
         "machine_type": "e2-standard-2",
         "sdk_container_image": "gcr.io/world-fishing-827/github.com/globalfishingwatch/pipe-gaps:develop",
-        "job_name": "tom-test-gaps-3-years"
+        "job_name": "tom-test-gaps-6-years"
     }
 }
