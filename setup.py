@@ -39,7 +39,7 @@ setuptools.setup(
         "rich~=13.0",
     ],
     extras_require={
-        "beam": ["apache-beam[gcp]~=2.60"],
+        "beam": ["apache-beam[gcp]~=2.61"],
     },
     entry_points={
         "console_scripts": [
