@@ -1,6 +1,5 @@
 {   
-    "bq_input_open_gaps": "pipe_ais_v3_published.product_events_ais_gaps",
-    "bq_output_gaps": "scratch_tomas_ttl30d.pipe_ais_gaps",
+    "bq_output_gaps": "scratch_tomas_ttl30d.raw_gaps",
     "json_input_messages":  "pipe_gaps/data/sample_messages_lines.json",
     "skip_open_gaps": false,
     "open_gaps_start_date": "2022-12-31",
@@ -15,6 +14,7 @@
     "min_gap_length": 1,
     "n_hours_before": 12,
     "window_period_d": 1,
+    "filter_good_seg": true,
     "pipeline_options": {
         "project": "world-fishing-827",
         "runner": "direct"

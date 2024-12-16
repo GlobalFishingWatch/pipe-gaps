@@ -1,9 +1,7 @@
 {   
-    "bq_input_messages": "pipe_ais_v3_published.messages",
+    "bq_input_messages": "pipe_ais_v3_internal.research_messages",
     "bq_input_segments": "pipe_ais_v3_published.segs_activity",
-    "bq_input_open_gaps": "pipe_ais_v3_published.product_events_ais_gaps",
-    "bq_output_gaps": "scratch_tomas_ttl30d.pipe_ais_gaps",
-    "skip_open_gaps": true,
+    "bq_output_gaps": "scratch_tomas_ttl30d.raw_gaps",
     "open_gaps_start_date": "2012-01-01",
     "ssvids": [
         "412331104",
@@ -114,6 +112,7 @@
     "min_gap_length": 6,
     "n_hours_before": 12,
     "window_period_d": 180,
+    "filter_good_seg": true,
     "pipeline_options": {
         "project": "world-fishing-827",
         "runner": "dataflow",
