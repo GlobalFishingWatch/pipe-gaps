@@ -1,8 +1,8 @@
 {   
-    "bq_input_messages": "pipe_ais_v3_published.messages",
+    "bq_input_messages": "pipe_ais_v3_internal.research_messages",
     "bq_input_segments": "pipe_ais_v3_published.segs_activity",
-    "bq_output_gaps": "scratch_tomas_ttl30d.pipe_ais_gaps",
-    "open_gaps_start_date": "2020-01-01",
+    "bq_output_gaps": "scratch_tomas_ttl30d.raw_gaps",
+    "open_gaps_start_date": "2024-01-01",
     "ssvids": [
         "412331104",
         "477334300"
@@ -14,12 +14,12 @@
     "min_gap_length": 0.1,
     "n_hours_before": 12,
     "window_period_d": 1,
-    "filter_not_overlapping_and_short": true,
     "filter_good_seg": true,
-    "save_json": true,
     "pipeline_options": {
         "project": "world-fishing-827",
-        "runner": "direct",
-        "job_name": "tom-test-gaps-1-day-2-ssvids"
+        "runner": "dataflow",
+        "max_num_workers": 200,
+        "sdk_container_image": "gcr.io/world-fishing-827/github.com/globalfishingwatch/pipe-gaps:develop",
+        "job_name": "tom-test-gaps-1-day-2-ssvids-2"
     }
 }

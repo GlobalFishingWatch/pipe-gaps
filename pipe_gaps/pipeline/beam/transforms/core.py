@@ -67,7 +67,7 @@ class Core(beam.PTransform):
         """Returns the GroupByKey PTransform."""
         key = self._process.grouping_key()
 
-        return f"GroupBy{key.name()}" >> beam.GroupBy(key.func)
+        return f"GroupBy{key.name()}" >> beam.GroupBy(**key.func)
 
     def process_groups(self):
         """Returns the ProcessGroups PTransform."""
