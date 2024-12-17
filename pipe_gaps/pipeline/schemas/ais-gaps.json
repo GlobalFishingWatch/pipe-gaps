@@ -21,25 +21,25 @@
         "mode": "REQUIRED",
         "name": "positions_hours_before",
         "type": "INTEGER",
-        "description": "Number of positions 12 hours before the gap start."
+        "description": "Number of positions N hours before the gap start (see table details)."
     },
     {
         "mode": "REQUIRED",
         "name": "positions_hours_before_ter",
         "type": "INTEGER",
-        "description": "Number of terrestrial positions 12 hours before the gap start."
+        "description": "Number of terrestrial positions N hours before the gap start (see table details)."
     },
     {
         "mode": "REQUIRED",
         "name": "positions_hours_before_sat",
         "type": "INTEGER",
-        "description": "Number of satellite positions 12 hours before the gap start."
+        "description": "Number of satellite positions N hours before the gap start (see table details)."
     },
     {
         "mode": "REQUIRED",
         "name": "positions_hours_before_dyn",
         "type": "INTEGER",
-        "description": "Number of dynamic positions 12 hours before the gap start."
+        "description": "Number of dynamic positions N hours before the gap start (see table details)."
     },
     {
         "mode": "NULLABLE",
