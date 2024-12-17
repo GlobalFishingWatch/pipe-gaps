@@ -10,6 +10,7 @@ from datetime import date, timedelta
 
 from pipe_gaps import utils
 from pipe_gaps import pipeline
+from pipe_gaps.version import __version__
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,15 @@ EPILOG = (
     "Example: \n"
     "    pipe-gaps -c config/sample-from-file.json --min-gap-length 1.3"
 )
+
+BQ_TABLE_DESCRIPTION = """
+Time gaps in AIS position messages.
+* Created by pipe-gaps: v{version}.
+* https://github.com/GlobalFishingWatch/pipe-gaps
+
+Relevant parameters:
+{params}
+"""
 
 LOGGER_LEVEL_WARNING = [
     "apache_beam.runners.portability",
@@ -142,6 +152,14 @@ def run(config: dict) -> None:
         logger.error(e)
 
 
+def build_table_description(**params):
+    """Builds table description with relevant parameters."""
+    return BQ_TABLE_DESCRIPTION.format(
+        version=__version__,
+        params=json.dumps(params, indent=4)
+    )
+
+
 def build_pipeline(
     date_range: tuple,
     pipe_type: str = "beam",
@@ -224,7 +242,15 @@ def build_pipeline(
             "kind": "bigquery",
             "table": bq_output_gaps,
             "schema": "gaps",
-            "write_disposition": bq_write_disposition
+            "write_disposition": bq_write_disposition,
+            "description": build_table_description(
+                bq_input_messages=bq_input_messages,
+                bq_input_segments=bq_input_segments,
+                filter_good_seg=filter_good_seg,
+                filter_not_overlapping_and_short=filter_not_overlapping_and_short,
+                min_gap_length=min_gap_length,
+                n_hours_before=n_hours_before,
+            )
         }
 
     def create_json_output_config():
