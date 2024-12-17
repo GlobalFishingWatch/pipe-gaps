@@ -52,6 +52,7 @@ HELP_NO_RICH_LOGGING = "Disable rich logging (useful prof production environment
 HELP_ONLY_RENDER = "Only render command-line call equivalent to provided config file."
 
 HELP_PIPE_TYPE = "Pipeline type: ['naive', 'beam']."
+HELP_BQ_READ_METHOD = "BigQuery read method. It may be 'DIRECT_RED' or 'EXPORT'."
 HELP_BQ_INPUT_MESSAGES = "BigQuery table with with input messages."
 HELP_BQ_INPUT_SEGMENTS = "BigQuery table with with input segments."
 HELP_BQ_INPUT_OPEN_GAPS = "BigQuery table with open gaps."
@@ -155,6 +156,7 @@ def build_pipeline(
     eval_last: bool = True,
     normalize_output: bool = True,
     json_input_messages: str = None,
+    bq_read_method: str = "EXPORT",
     bq_input_messages: str = None,
     bq_input_segments: str = "pipe_ais_v3_published.segs_activity",
     bq_input_open_gaps: str = None,
@@ -190,10 +192,11 @@ def build_pipeline(
                 "end_date": end_date,
                 "ssvids": ssvids,
                 "filter_not_overlapping_and_short": filter_not_overlapping_and_short,
-                "filter_good_seg": filter_good_seg
+                "filter_good_seg": filter_good_seg,
 
             },
             "mock_db_client": mock_db_client,
+            "method": bq_read_method
         }
 
     def create_bq_side_input():
@@ -205,7 +208,8 @@ def build_pipeline(
                 "start_date": open_gaps_start_date,
                 "end_date": start_date
             },
-            "mock_db_client": mock_db_client
+            "mock_db_client": mock_db_client,
+            "method": bq_read_method
         }
 
     def create_json_input_config():
@@ -321,6 +325,7 @@ def cli(args):
     add("--pipe-type", type=str, metavar=" ", help=HELP_PIPE_TYPE)
     add("-i", "--json-input-messages", type=str, metavar=" ", help=HELP_JSON_INPUT_MESSAGES)
     add("-s", "--json-input-open-gaps", type=str, metavar=" ", help=HELP_JSON_INPUT_OPEN_GAPS)
+    add("--bq-read-metohd", type=str, metavar=" ", help=HELP_BQ_READ_METHOD)
     add("--bq-input-messages", type=str, metavar=" ", help=HELP_BQ_INPUT_MESSAGES)
     add("--bq-input-segments", type=str, metavar=" ", help=HELP_BQ_INPUT_SEGMENTS)
     add("--bq-input-open-gaps", type=str, metavar=" ", help=HELP_BQ_INPUT_OPEN_GAPS)
