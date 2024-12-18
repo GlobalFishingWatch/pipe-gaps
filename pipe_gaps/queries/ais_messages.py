@@ -3,11 +3,13 @@ import logging
 import typing
 from datetime import date, datetime
 
+import sqlparse
+
 from .base import Query
 
 logger = logging.getLogger(__name__)
 
-DB_TABLE_MESSAGES = "pipe_ais_v3_published.messages"
+DB_TABLE_MESSAGES = "pipe_ais_v3_internal.research_messages"
 DB_TABLE_SEGMENTS = "pipe_ais_v3_published.segs_activity"
 
 
@@ -54,6 +56,10 @@ class AISMessagesQuery(Query):
 
     NAME = "messages"
 
+    COLUMN_MESSAGES_SSVID = "ssvid"
+    COLUMN_SEGMENTS_GOOD_SEG2 = "good_seg2"
+    COLUMN_SEGMENTS_OVERLAPPING_AND_SHORT = "overlapping_and_short"
+
     TEMPLATE = """
       SELECT
         {fields}
@@ -70,12 +76,13 @@ class AISMessagesQuery(Query):
         )
     """
 
-    AIS_CLASS = """
-      (CASE
+    AIS_CLASS_COLUMN = """
+      (
+        CASE
           WHEN type IN ('AIS.1', 'AIS.2', 'AIS.3') THEN 'A'
           WHEN type IN ('AIS.18','AIS.19') THEN 'B'
           ELSE NULL
-       END
+        END
       ) as ais_class
     """
 
@@ -109,41 +116,35 @@ class AISMessagesQuery(Query):
 
         if self._ssvids is not None and len(self._ssvids) > 0:
             ssvid_filter = ",".join(f'"{s}"' for s in self._ssvids)
-            query = f"{query} AND ssvid IN ({ssvid_filter})"
+            query = f"{query} AND {self.COLUMN_MESSAGES_SSVID} IN ({ssvid_filter})"
 
         logger.debug("Rendered Query for AIS messages: ")
-        logger.debug(query)
+        logger.debug(sqlparse.format(query, reindent=True, keyword_case='upper'))
 
         return query
 
     def select_clause(self):
-        fields = super().select_clause()
-        fields = f"""
-          {fields},
-          {self.AIS_CLASS}
-        """
-
-        return fields
+        return f"{super().select_clause()}, {self.AIS_CLASS_COLUMN}"
 
     def segment_filters(self):
-        segment_filters = []
+        filters = []
 
         if self._filter_good_seg:
-            segment_filters.append("good_seg2")
+            filters.append(self.COLUMN_SEGMENTS_GOOD_SEG2)
 
         if self._filter_not_overlapping_and_short:
-            segment_filters.append("not overlapping_and_short")
+            filters.append(f"not {self.COLUMN_SEGMENTS_OVERLAPPING_AND_SHORT}")
 
-        segment_filters_str = ""
-        if len(segment_filters) > 0:
-            it = iter(segment_filters)
+        filters_str = ""
+        if len(filters) > 0:
+            it = iter(filters)
 
-            segment_filters_str = f"WHERE {next(it)}"
+            filters_str = f"WHERE {next(it)}"
 
             for filter_ in it:
-                segment_filters_str += f" and {filter_}"
+                filters_str += f" and {filter_}"
 
-        return segment_filters_str
+        return filters_str
 
     def schema(self):
         return Message
