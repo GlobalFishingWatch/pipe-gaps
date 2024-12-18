@@ -1,11 +1,8 @@
 {   
-    "bq_input_messages": "pipe_ais_v3_published.messages",
+    "bq_input_messages": "pipe_ais_v3_internal.research_messages",
     "bq_input_segments": "pipe_ais_v3_published.segs_activity",
-    "bq_input_open_gaps": "pipe_ais_v3_published.product_events_ais_gaps",
-    "bq_output_gaps": "scratch_tomas_ttl30d.pipe_ais_gaps",
-    "skip_open_gaps": false,
-    "open_gaps_start_date": "2012-01-01",
-    "ssvids": [],
+    "bq_output_gaps": "scratch_tomas_ttl30d.raw_gaps",
+    "open_gaps_start_date": "2023-01-01",
     "date_range": [
         "2023-01-01",
         "2024-01-01"

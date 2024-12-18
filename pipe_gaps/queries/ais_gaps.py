@@ -1,14 +1,15 @@
 """This module encapsulates AIS GAPS query."""
 import logging
 import typing
-
 from datetime import date, datetime
+
+import sqlparse
 
 from .base import Query
 
 logger = logging.getLogger(__name__)
 
-DB_TABLE_GAPS = "pipe_ais_v3_published.product_events_ais_gaps"
+DB_TABLE_GAPS = "pipe_ais_v3_internal.raw_gaps"
 
 
 class AISGap(typing.NamedTuple):
@@ -63,23 +64,28 @@ class AISGapsQuery(Query):
     If end_date is not provied, open gaps will be returned.
 
     Args:
-        start_date: start date of query.
-        end_date: end date of query.
-        source_gaps: table with AIS gaps.
-        ssvids: list of ssvdis to filter.
+        start_date: Fetch gaps whose OFF message timestamp is >= start_date.
+        end_date: Fetch gaps whose OFF message timetsamp is < end_date.
+        source_gaps: Table with AIS gaps.
+        ssvids: List of ssvdis to filter.
+        is_closed: Whether to fetch
+            - only closed gaps (True),
+            - only open gaps (False)
+            - both (None).
     """
 
     NAME = "gaps"
 
-    # TODO change gap_start to gap_start_timestamp
-    # when we stop using research gaps table.
+    COLUMN_IS_CLOSED = "is_closed"
+    COLUMN_SSVID = "ssvid"
+    COLUMN_START_TIME = "start_timestamp"
 
     TEMPLATE = """
       SELECT
         {fields}
       FROM `{source_gaps}`
       WHERE
-          DATE(start_timestamp) >= "{start_date}"
+          DATE({start_time_column}) >= "{start_date}"
     """
 
     def __init__(
@@ -88,30 +94,37 @@ class AISGapsQuery(Query):
         end_date: date = None,
         source_gaps: str = DB_TABLE_GAPS,
         ssvids: list = None,
+        is_closed: bool = None
     ):
         self._start_date = start_date
         self._end_date = end_date
         self._source_gaps = source_gaps
         self._ssvids = ssvids
+        self._is_closed = is_closed
 
     def render(self):
         query = self.TEMPLATE.format(
             source_gaps=self._source_gaps,
             start_date=self._start_date,
+            start_time_column=self.COLUMN_START_TIME,
             fields=self.select_clause()
         )
 
         if self._ssvids is not None:
             ssvid_filter = ",".join(f'"{s}"' for s in self._ssvids)
-            query = f"{query} AND ssvid IN ({ssvid_filter})"
+            query = f"{query} AND {self.COLUMN_SSVID} IN ({ssvid_filter})"
 
         if self._end_date is not None:
-            query = f"{query} AND DATE(end_timestamp) < '{self._end_date}'"
-        else:
-            query = f"{query} AND is_closed = False"
+            query = f"{query} AND DATE({self.COLUMN_START_TIME}) < '{self._end_date}'"
+
+        if self._is_closed is not None:
+            if self._is_closed:
+                query = f"{query} AND {self.COLUMN_IS_CLOSED}"
+            else:
+                query = f"{query} AND not {self.COLUMN_IS_CLOSED}"
 
         logger.debug("Rendered Query for AIS gaps: ")
-        logger.debug(query)
+        logger.debug(sqlparse.format(query, reindent=True, keyword_case='upper'))
 
         return query
 

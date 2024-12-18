@@ -11,7 +11,7 @@ WORKDIR /opt/project
 VOLUME ["/root/.config"]
 
 # Copy files from official SDK image, including script/dependencies.
-COPY --from=apache/beam_python3.12_sdk:2.60.0 /opt/apache/beam /opt/apache/beam
+COPY --from=apache/beam_python3.12_sdk:2.61.0 /opt/apache/beam /opt/apache/beam
 
 # Install application dependencies
 COPY requirements.txt .

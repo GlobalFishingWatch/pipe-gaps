@@ -8,7 +8,7 @@
     <img alt="Python versions" src="https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue">
   </a>
   <a>
-    <img alt="Apache Beam version" src="https://img.shields.io/badge/ApacheBeam-2.60.0-orange">
+    <img alt="Apache Beam version" src="https://img.shields.io/badge/ApacheBeam-2.61.0-orange">
   </a>
   <a>
     <img alt="Docker Engine version" src="https://img.shields.io/badge/DockerEngine-v27-yellow">

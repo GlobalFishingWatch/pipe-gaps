@@ -2,7 +2,7 @@ VENV_NAME:=.venv
 REQS_PROD_IN:=requirements/prod.in
 REQS_PROD_TXT:=requirements.txt
 REQS_DEV:=requirements/dev.txt
-DOCKER_IMAGE_DEV:=dev
+DOCKER_COMPOSER_SERVICE_DEV:=dev
 
 GCP_PROJECT:=world-fishing-827
 GCP_DOCKER_VOLUME:=gcp
@@ -38,14 +38,14 @@ build:
 	docker compose build
 
 dockershell:
-	docker compose run --entrypoint /bin/bash -it ${DOCKER_IMAGE_DEV}
+	docker compose run --rm --entrypoint /bin/bash -it ${DOCKER_COMPOSER_SERVICE_DEV}
 
 reqs:
-	docker compose run --entrypoint /bin/bash -it ${DOCKER_IMAGE_DEV} -c \
+	docker compose run --rm --entrypoint /bin/bash -it ${DOCKER_COMPOSER_SERVICE_DEV} -c \
 		'pip-compile -o ${REQS_PROD_TXT} setup.py --extra beam -v'
 
 upgrade-reqs:
-	docker compose run --entrypoint /bin/bash -it ${DOCKER_IMAGE_DEV} -c \
+	docker compose run --rm --entrypoint /bin/bash -it ${DOCKER_COMPOSER_SERVICE_DEV} -c \
 	'pip-compile -o ${REQS_PROD_TXT} -U setup.py --extra beam -v'
 
 venv:
@@ -65,10 +65,10 @@ testintegration:
 	docker compose down bigquery
 
 testdocker: docker-volume
-	docker compose run test
+	docker compose run --rm test
 
 ci-test: docker-volume
-	docker compose run --entrypoint pytest test --cov-report=xml
+	docker compose run --rm --entrypoint pytest test --cov-report=xml
 
 profile:
 	python -m cProfile -o gaps.prof tests/benchmark.py 10e6

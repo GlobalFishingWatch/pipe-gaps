@@ -100,7 +100,7 @@ class ReadFromQuery(beam.PTransform):
         query_params: dict,
         use_schema: bool = False,
         mock_db_client: bool = False,
-        method: str = beam.io.ReadFromBigQuery.Method.DIRECT_READ,
+        method: str = beam.io.ReadFromBigQuery.Method.EXPORT,
         **kwargs
     ) -> "ReadFromQuery":
         """Builds a ReadFromQuery instance.

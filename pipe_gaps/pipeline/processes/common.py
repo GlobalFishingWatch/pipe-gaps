@@ -30,6 +30,7 @@ def date_from_day(day):
 
 
 class GroupByKey:
+    """Defines a single or composite key for grouping elements."""
     def __init__(self, keys):
         self.keys = keys
         self.func = self._define_func()
@@ -49,14 +50,11 @@ class GroupByKey:
         )
 
     def _define_func(self):
-        def group_by(item):
-            key = tuple(item[k] for k in self.keys)
-            if len(key) == 1:
-                return key[0]
-
-            return key
-
-        return group_by
+        return {
+            k: lambda x: x[k]
+            for k
+            in self.keys
+        }
 
 
 class Boundaries:

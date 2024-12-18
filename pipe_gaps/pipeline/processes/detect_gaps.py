@@ -204,11 +204,11 @@ class DetectGaps(CoreProcess):
         if isinstance(window, IntervalWindow):
             start_time = window.start.seconds() + offset
 
-        ssvid, messages = group
+        key, messages = group
         messages = list(messages)  # On dataflow, this is a _ConcatSequence object.
 
         return Boundary.from_group(
-            (ssvid, messages),
+            (key.ssvid, messages),
             offset=offset,
             start_time=start_time,
             timestamp_key=self.KEY_TIMESTAMP)
@@ -238,6 +238,8 @@ class DetectGaps(CoreProcess):
                 open_gap = [x for x in open_gap][0]
 
             return open_gap
+        else:
+            logger.debug("Open gap was not found for key {}.".format(key))
 
         return None
 
@@ -247,8 +249,7 @@ class DetectGaps(CoreProcess):
             try:
                 side_inputs_list = list(side_inputs[key])
             except KeyError:
-                # A key was not found for this group.
-                pass
+                logger.debug("Key {} was not found in side inputs.".format(key))
 
         return side_inputs_list
 
