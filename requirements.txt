@@ -367,7 +367,9 @@ six==1.17.0
 sortedcontainers==2.4.0
     # via apache-beam
 sqlparse==0.5.3
-    # via google-cloud-spanner
+    # via
+    #   google-cloud-spanner
+    #   pipe-gaps (setup.py)
 typing-extensions==4.12.2
     # via
     #   apache-beam

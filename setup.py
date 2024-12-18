@@ -37,6 +37,7 @@ setuptools.setup(
         "py-cpuinfo~=9.0",
         "pydantic~=2.0",
         "rich~=13.0",
+        "sqlparse~=0.5",
     ],
     extras_require={
         "beam": ["apache-beam[gcp]~=2.61"],

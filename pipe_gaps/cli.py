@@ -67,6 +67,7 @@ HELP_BQ_INPUT_MESSAGES = "BigQuery table with with input messages."
 HELP_BQ_INPUT_SEGMENTS = "BigQuery table with with input segments."
 HELP_BQ_INPUT_OPEN_GAPS = "BigQuery table with open gaps."
 HELP_BQ_OUTPUT_GAPS = "BigQuery table in which to store the gap events."
+HELP_BQ_OUTPUT_GAPS_DESCRIPTION = "If passed, creates a description for the output table."
 HELP_JSON_INPUT_MESSAGES = "JSON file with input messages [Useful for development]."
 HELP_JSON_INPUT_OPEN_GAPS = "JSON file with open gaps [Useful for development]."
 
@@ -179,6 +180,7 @@ def build_pipeline(
     bq_input_segments: str = "pipe_ais_v3_published.segs_activity",
     bq_input_open_gaps: str = None,
     bq_output_gaps: str = None,
+    bq_output_gaps_description: bool = False,
     bq_write_disposition: str = "WRITE_APPEND",
     mock_db_client: bool = False,
     save_json: bool = False,
@@ -224,7 +226,7 @@ def build_pipeline(
             "query_params": {
                 "source_gaps": bq_input_open_gaps,
                 "start_date": open_gaps_start_date,
-                "end_date": start_date
+                "is_closed": False,
             },
             "mock_db_client": mock_db_client,
             "method": bq_read_method
@@ -238,12 +240,9 @@ def build_pipeline(
         }
 
     def create_bq_output_config():
-        return {
-            "kind": "bigquery",
-            "table": bq_output_gaps,
-            "schema": "gaps",
-            "write_disposition": bq_write_disposition,
-            "description": build_table_description(
+        description = None
+        if bq_output_gaps_description:
+            description = build_table_description(
                 bq_input_messages=bq_input_messages,
                 bq_input_segments=bq_input_segments,
                 filter_good_seg=filter_good_seg,
@@ -251,6 +250,13 @@ def build_pipeline(
                 min_gap_length=min_gap_length,
                 n_hours_before=n_hours_before,
             )
+
+        return {
+            "kind": "bigquery",
+            "table": bq_output_gaps,
+            "schema": "gaps",
+            "write_disposition": bq_write_disposition,
+            "description": description
         }
 
     def create_json_output_config():
@@ -343,9 +349,11 @@ def cli(args):
 
     add = p.add_argument
     add("-c", "--config-file", type=Path, default=None, metavar=" ", help=HELP_CONFIG_FILE)
-    add("-v", "--verbose", action="store_true", default=False, help=HELP_VERBOSE)
-    add("--no-rich-logging", action="store_true", default=False, help=HELP_NO_RICH_LOGGING)
+    add("-v", "--verbose", action="store_true", help=HELP_VERBOSE)
+    add("--no-rich-logging", action="store_true", help=HELP_NO_RICH_LOGGING)
     add("--only-render", action="store_true", help=HELP_ONLY_RENDER)
+
+    bool_params = dict(action="store_true", default=None)
 
     add = p.add_argument_group("general pipeline configuration").add_argument
     add("--pipe-type", type=str, metavar=" ", help=HELP_PIPE_TYPE)
@@ -356,12 +364,13 @@ def cli(args):
     add("--bq-input-segments", type=str, metavar=" ", help=HELP_BQ_INPUT_SEGMENTS)
     add("--bq-input-open-gaps", type=str, metavar=" ", help=HELP_BQ_INPUT_OPEN_GAPS)
     add("--bq-output-gaps", type=str, metavar=" ", help=HELP_BQ_OUTPUT_GAPS)
+    add("--bq-output-gaps-description", **bool_params, help=HELP_BQ_OUTPUT_GAPS_DESCRIPTION)
     add("--open-gaps-start-date", type=str, metavar=" ", help=HELP_OPEN_GAPS_START_DATE)
-    add("--filter-not-overlapping-and-short", action="store_true", default=None, help=HELP_OVERL)
-    add("--filter-good-seg", action="store_true", default=None, help=HELP_GOOD_SEG)
-    add("--skip-open-gaps", action="store_true", default=None, help=HELP_SKIP_OPEN_GAPS)
-    add("--mock-db-client", action="store_true",  default=None, help=HELP_MOCK_DB_CLIENT)
-    add("--save-json", action="store_true", default=None, help=HELP_SAVE_JSON)
+    add("--filter-not-overlapping-and-short", **bool_params, help=HELP_OVERL)
+    add("--filter-good-seg", **bool_params, help=HELP_GOOD_SEG)
+    add("--skip-open-gaps", **bool_params, help=HELP_SKIP_OPEN_GAPS)
+    add("--mock-db-client", **bool_params, help=HELP_MOCK_DB_CLIENT)
+    add("--save-json", **bool_params, help=HELP_SAVE_JSON)
     add("--work-dir", type=str, metavar=" ", help=HELP_WORK_DIR)
     add("--ssvids", type=ssvids, metavar=" ", help=HELP_SSVIDS)
     add("--date-range", type=date_range, metavar=" ", help=HELP_DATE_RANGE)
@@ -369,7 +378,7 @@ def cli(args):
     add = p.add_argument_group("gap detection process").add_argument
     add("--min-gap-length", type=float, metavar=" ", help=HELP_MIN_GAP_LENGTH)
     add("--window-period-d", type=float, metavar=" ", help=HELP_WINDOW_PERIOD_D)
-    add("--eval-last", action="store_true", default=None, help=HELP_EVAL_LAST)
+    add("--eval-last", **bool_params, help=HELP_EVAL_LAST)
     add("--n-hours-before", type=float, metavar=" ", help=HELP_N_HOURS_BEFORE)
 
     ns, unknown = p.parse_known_args(args=args or ["--help"])
