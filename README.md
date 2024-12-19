@@ -405,7 +405,7 @@ general pipeline configuration:
   --mock-db-client, --no-mock-db-client  If passed, mocks the DB client [Useful for development].
   --save-json, --no-save-json            If passed, saves the results in JSON file [Useful for development].
   --work-dir                             Directory to use as working directory.
-  --ssvids                               Detect gaps for this list of ssvids, e.g., «412331104 477334300».
+  --ssvids                               Detect gaps for this list of ssvids, e.g., «412331104,477334300».
   --date-range                           Detect gaps within this date range, e.g., «2024-01-01,2024-01-02».
 
 gap detection process:

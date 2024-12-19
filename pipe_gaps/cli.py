@@ -102,7 +102,7 @@ HELP_GOOD_SEG = "Fetch messages that belong to 'good_seg2' segments."
 HELP_MOCK_DB_CLIENT = "If passed, mocks the DB client [Useful for development]."
 HELP_SAVE_JSON = "If passed, saves the results in JSON file [Useful for development]."
 HELP_WORK_DIR = "Directory to use as working directory."
-HELP_SSVIDS = "Detect gaps for this list of ssvids, e.g., «412331104 477334300»."
+HELP_SSVIDS = "Detect gaps for this list of ssvids, e.g., «412331104,477334300»."
 HELP_DATE_RANGE = "Detect gaps within this date range, e.g., «2024-01-01,2024-01-02»."
 
 HELP_MIN_GAP_LENGTH = "Minimum time difference (hours) to start considering gaps."
