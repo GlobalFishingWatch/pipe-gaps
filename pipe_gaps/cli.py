@@ -35,6 +35,12 @@ EPILOG = (
     "    pipe-gaps -c config/sample-from-file.json --min-gap-length 1.3"
 )
 
+
+BQ_TABLE_PARTITION_FIELD = "start_timestamp"
+BQ_TABLE_PARTITION_TYPE = "MONTH"
+BQ_TABLE_PARTITION_REQUIRE = False
+BQ_TABLE_CLUSTERING_FIELDS = ["is_closed", "version", "ssvid"]
+
 BQ_TABLE_DESCRIPTION = """
 Time gaps in AIS position messages.
 * Created by pipe-gaps: v{version}.
@@ -43,6 +49,7 @@ Time gaps in AIS position messages.
 Relevant parameters:
 {params}
 """
+
 
 LOGGER_LEVEL_WARNING = [
     "apache_beam.runners.portability",
@@ -256,7 +263,11 @@ def build_pipeline(
             "table": bq_output_gaps,
             "schema": "gaps",
             "write_disposition": bq_write_disposition,
-            "description": description
+            "description": description,
+            "partitioning_field": BQ_TABLE_PARTITION_FIELD,
+            "partitioning_type": BQ_TABLE_PARTITION_TYPE,
+            "partitioning_require": BQ_TABLE_PARTITION_REQUIRE,
+            "clustering_fields": BQ_TABLE_CLUSTERING_FIELDS,
         }
 
     def create_json_output_config():
