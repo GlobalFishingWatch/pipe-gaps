@@ -115,18 +115,26 @@ class WriteBigQueryTable(beam.PTransform):
         cls,
         schema: str = None,
         description: str = None,
-        mock_db_client=False,
-        write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+        mock_db_client: bool = False,
+        write_disposition: str = beam.io.BigQueryDisposition.WRITE_APPEND,
+        partitioning_field: str = None,
+        partitioning_type: str = "MONTH",
+        partitioning_require: bool = False,
+        clustering_fields: list = None,
         **kwargs
     ):
         """Builds a WriteBigQueryTable instance.
 
         Args:
-            schema: name of the schema for the output table.
-            description: description for the output table.
+            schema: Name of the schema for the output table.
+            description: Description for the output table.
             mock_db_client: If True, uses a mock for the database client.
-            write_disposition: whether to overwrite table or just append.
-            **kwargs: keyword arguments for beam.io.WriteToBigQuery constructor.
+            write_disposition: Whether to overwrite table or just append.
+            partitioning_field: Column to use for time partitioning.
+            partitioning_type: One of ['DAY', 'HOUR', 'MONTH', 'YEAR'].
+            partitioning_require: If True, forces partitioning filter.
+            clustering_fields: List of fields for clustering, ordered by priority.
+            **kwargs: Keyword arguments for beam.io.WriteToBigQuery constructor.
 
         Returns:
             An instance of WriteBigQueryTable.
@@ -139,9 +147,19 @@ class WriteBigQueryTable(beam.PTransform):
         if mock_db_client:
             class_ = WriteToBigQueryMock
 
+        partitioning = {
+            "type": partitioning_type,
+            "field": partitioning_field,
+            "requirePartitionFilter": partitioning_require
+        }
+
+        clustering = {
+            "fields": clustering_fields,
+        }
+
         transform = class_(
             schema=schema,
-            additional_bq_parameters=cls._build_bq_params(description),
+            additional_bq_parameters=cls._build_bq_params(partitioning, clustering, description),
             create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED,
             write_disposition=write_disposition,
             validate=True,
@@ -158,11 +176,15 @@ class WriteBigQueryTable(beam.PTransform):
         return schema
 
     @classmethod
-    def _build_bq_params(cls, description: str = None):
+    def _build_bq_params(
+        cls, partitioning: dict = None, clustering: dict = None, description: str = None
+    ):
         return {
             "destinationTableProperties": {
                 "description": description
-            }
+            },
+            "timePartitioning": partitioning,
+            "clustering": clustering,
         }
 
     def expand(self, pcoll):
