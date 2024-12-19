@@ -35,14 +35,38 @@ EPILOG = (
     "    pipe-gaps -c config/sample-from-file.json --min-gap-length 1.3"
 )
 
-BQ_TABLE_DESCRIPTION = """
-Time gaps in AIS position messages.
-* Created by pipe-gaps: v{version}.
-* https://github.com/GlobalFishingWatch/pipe-gaps
 
-Relevant parameters:
+BQ_TABLE_PARTITION_FIELD = "start_timestamp"
+BQ_TABLE_PARTITION_TYPE = "MONTH"
+BQ_TABLE_PARTITION_REQUIRE = False
+BQ_TABLE_CLUSTERING_FIELDS = ["is_closed", "version", "ssvid"]
+
+BQ_TABLE_DESCRIPTION = """\
+「 ✦ 𝚁𝙰𝚆 𝙶𝙰𝙿𝚂 ✦ 」 
+𝗧𝗶𝗺𝗲 𝗴𝗮𝗽𝘀 𝗯𝗲𝘁𝘄𝗲𝗲𝗻 𝗔𝗜𝗦 𝗽𝗼𝘀𝗶𝘁𝗶𝗼𝗻𝘀.
+⬖ Created by pipe-gaps: v{version}.
+⬖ https://github.com/GlobalFishingWatch/pipe-gaps
+
+𝗦𝘂𝗺𝗺𝗮𝗿𝘆
+Each row in this table is created when the period of time between two consecutive AIS positions from a single vessel exceeds {min_gap_length} hours.
+When the period of time between last known position and the last time of the current day exceeds {min_gap_length} hours, we create an open gap.
+In that case, the gap will not have a 𝗲𝗻𝗱_𝘁𝗶𝗺𝗲𝘀𝘁𝗮𝗺𝗽, until it is closed in the future when new data arrives.
+
+The gaps in this table are versioned. This means that open gaps are closed inserting a new row with different timestamp (𝘃𝗲𝗿𝘀𝗶𝗼𝗻 field).
+Thus, two rows with the same 𝗴𝗮𝗽_𝗶𝗱 can coexist: one for the previous open gap and one for the current closed gap.
+The 𝗴𝗮𝗽_𝗶𝗱 is MD5 hash of [𝘀𝘀𝘃𝗶𝗱, 𝘀𝘁𝗮𝗿𝘁_𝘁𝗶𝗺𝗲𝘀𝘁𝗮𝗺𝗽, 𝘀𝘁𝗮𝗿𝘁_𝗹𝗮𝘁, 𝘀𝘁𝗮𝗿𝘁_𝗹𝗼𝗻].
+
+𝗖𝗮𝘃𝗲𝗮𝘁𝘀
+⬖ Gaps are calculated based on 𝘀𝘀𝘃𝗶𝗱 so a single gap can refer to two different 𝘃𝗲𝘀𝘀𝗲𝗹_𝗶𝗱.
+⬖ Gaps are generated based on position messages are filtered by 𝗴𝗼𝗼𝗱_𝘀𝗲𝗴𝟮 field of the segments table in order to remove noise.
+⬖ Gaps are generated based on position messages that are not filtered by not 𝗼𝘃𝗲𝗿𝗹𝗮𝗽𝗽𝗶𝗻𝗴_𝗮𝗻𝗱_𝘀𝗵𝗼𝗿𝘁 field of the segments table.
+
+For more information, see https://github.com/GlobalFishingWatch/pipe-gaps/blob/develop/README.md.
+
+𝗥𝗲𝗹𝗲𝘃𝗮𝗻𝘁 𝗽𝗮𝗿𝗮𝗺𝗲𝘁𝗲𝗿𝘀
 {params}
-"""
+""" # noqa
+
 
 LOGGER_LEVEL_WARNING = [
     "apache_beam.runners.portability",
@@ -157,6 +181,7 @@ def build_table_description(**params):
     """Builds table description with relevant parameters."""
     return BQ_TABLE_DESCRIPTION.format(
         version=__version__,
+        min_gap_length=params['min_gap_length'],
         params=json.dumps(params, indent=4)
     )
 
@@ -256,7 +281,11 @@ def build_pipeline(
             "table": bq_output_gaps,
             "schema": "gaps",
             "write_disposition": bq_write_disposition,
-            "description": description
+            "description": description,
+            "partitioning_field": BQ_TABLE_PARTITION_FIELD,
+            "partitioning_type": BQ_TABLE_PARTITION_TYPE,
+            "partitioning_require": BQ_TABLE_PARTITION_REQUIRE,
+            "clustering_fields": BQ_TABLE_CLUSTERING_FIELDS,
         }
 
     def create_json_output_config():

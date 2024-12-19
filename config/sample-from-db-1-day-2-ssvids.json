@@ -1,8 +1,9 @@
 {   
     "bq_input_messages": "pipe_ais_v3_internal.research_messages",
     "bq_input_segments": "pipe_ais_v3_published.segs_activity",
-    "bq_output_gaps": "scratch_tomas_ttl30d.raw_gaps",
-    "bq_output_gaps_description": false,
+    "bq_output_gaps": "scratch_tomas_ttl30d.raw_gaps_partitioned",
+    "bq_output_gaps_description": true,
+    "skip_open_gaps": true,
     "open_gaps_start_date": "2023-12-31",
     "ssvids": [
         "412331104",

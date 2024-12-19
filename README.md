@@ -68,7 +68,8 @@ Time gap detector for **[AIS]** position messages.
 - [Introduction](#introduction)
 - [Definition of gap](#definition-of-gap)
 - [Some results](#some-results)
-- [:warning: Important note on grouping input AIS messages by `ssvid`](#warning-important-note-on-grouping-input-ais-messages-by-ssvid)
+- [:warning: Important note on grouping messages by `ssvid`](#warning-important-note-on-grouping-messages-by-ssvid)
+- [:warning: Important note on not filtering `overlapping_and_short`](#warning-important-note-on-not-filtering-overlapping_and_short)
 - [Usage](#usage)
   * [Installation](#installation)
   * [Gap detection low level process](#gap-detection-low-level-process)
@@ -140,7 +141,7 @@ These are some [results for 2021-2023].
 
 </div>
 
-## :warning: Important note on grouping input AIS messages by `ssvid` 
+## :warning: Important note on grouping messages by `ssvid` 
 
 <div align="justify">
 
@@ -159,12 +160,44 @@ it will just pick the last `OFF` (or the first `ON`)
 message in the chain when constructing a gap,
 and we could have have "inconsistent" gaps
 in the sense we described above.
+
 We believe those will be a very small
 amount of the total gaps,
 and we aim in the future to find a solution to this problem.
 One option could be to use e.g. `vessel_id`
 which has a much higher chance of separating messages from different vessels
 that broadcast under the same `ssvid`.
+
+For analyses,
+this requires taking care when using gaps for `ssvids` that have multiple `vessel_ids`. 
+
+For usage in products,
+a choice has to be made of which of the (potentially) two `vessel_ids` to use
+or whether to attribute a gap to both `vessel_ids`
+(in which case there would have to be a distinction between `OFF/ON` message),
+and also on how to highlight that the gap might refer to multiple vessels.
+
+</div>
+
+## :warning: Important note on not filtering `overlapping_and_short`
+
+<div align="justify">
+
+Gaps are generated including AIS position messages
+that are inside `overlapping_and_short` segments.
+This was a deliberate choice because removing
+`overlapping_and_short` segments can create gaps
+where there actually shouldn’t be any. 
+An analysis of gaps generated with messages from [2021, 2022, 2023]
+with and without the `overlapping_and_short` filter
+showed that the results are very similar on an aggregate.
+
+However, within products and many of our analyses we remove:
+* segments that are `overlapping_and_short`, and
+* `vessel_ids` if all their segments are `overlapping_and_short` (by using `product_vessel_info_summary`).
+
+This means that showing gaps on a map can lead to inconsistent results
+since the track or even the vessel might not exist where a gap starts and/or ends.
 
 </div>
 
