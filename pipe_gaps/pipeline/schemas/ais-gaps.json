@@ -3,7 +3,7 @@
         "mode": "REQUIRED",
         "name": "gap_id",
         "type": "STRING",
-        "description": "Gap ID (hash of ssvid, gap_start, gap_start_lat, and gap_start_lon)."
+        "description": "Gap ID (MD5 hash of [ssvid, start_timestamp, start_lat, start_lon])."
     },
     {
         "mode": "REQUIRED",

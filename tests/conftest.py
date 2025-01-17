@@ -264,6 +264,18 @@ class TestCases:
         },
         {
             "messages": [
+                create_message(time=datetime(2024, 1, 1, 0)),   # This shouldn´t be detected.
+            ],
+            "open_gaps": [],
+            "threshold": 6,
+            "date_range": ("2024-01-02", "2024-01-03"),
+            "window_period_d": 1,
+            "expected_gaps": 0,
+            "eval_last": True,
+            "id": "period_1_day_no_open_gap_with_yesterday_messages"
+        },
+        {
+            "messages": [
                 create_message(time=datetime(2024, 1, 31, 12)),  # This shouldn´t be detected.
                 create_message(time=datetime(2024, 1, 31, 23)),  # gap 1
                 create_message(time=datetime(2024, 2, 1, 20)),   # gap 2.

@@ -88,7 +88,6 @@ class DetectGaps(CoreProcess):
             window_period_d=window_period_d,
             window_offset_h=window_offset_h,
             date_range=date_range,
-
         )
 
     def process_group(
@@ -171,7 +170,7 @@ class DetectGaps(CoreProcess):
         if self._eval_last:
             last_message = boundaries.last_message()
 
-            if self._gd.eval_open_gap(last_message):
+            if self._is_message_in_range(last_message) and self._gd.eval_open_gap(last_message):
                 logger.info(f"Creating new open gap for {formatted_key}...")
                 new_open_gap = self._gd.create_gap(off_m=last_message)
                 gaps[new_open_gap[self.KEY_GAP_ID]] = new_open_gap
@@ -270,3 +269,13 @@ class DetectGaps(CoreProcess):
                 return i
 
         return -1
+
+    def _is_message_in_range(self, message):
+        message_ts = message[self.KEY_TIMESTAMP]
+        message_dt = datetime.fromtimestamp(message_ts, tz=timezone.utc)
+        message_date = message_dt.date()
+
+        if self._date_range is not None:
+            return message_date >= self._date_range[0]
+
+        return True
