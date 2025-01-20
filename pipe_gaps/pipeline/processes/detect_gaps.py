@@ -127,7 +127,7 @@ class DetectGaps(CoreProcess):
         gaps = self._gd.detect(messages=messages, start_time=start_time)
 
         logger.info(
-            "Found {} gap(s) for {} in window [{}, {}]"
+            "Found {} gap(s) for {} in range [{}, {}]"
             .format(
                 len(gaps),
                 self._grouping_key.format(key),
