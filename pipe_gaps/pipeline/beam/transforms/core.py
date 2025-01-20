@@ -1,12 +1,26 @@
 """Module with core PTransform, a unique processing step between sources and sinks."""
 
 import logging
+from datetime import date, timedelta
 
 import apache_beam as beam
+from apache_beam.transforms.window import IntervalWindow
+
 
 from pipe_gaps.pipeline.processes import CoreProcess
 
 logger = logging.getLogger(__name__)
+
+
+def window_intersects_with_range(
+    date_range: tuple[date, date], window: IntervalWindow, offset: int = 0
+):
+    """Checks whether a window is intersecting with a given range."""
+
+    # window_end = window.end.to_utc_datetime(has_tz=True).date() - timedelta(days=1)
+    window_start = (window.start.to_utc_datetime(has_tz=True) + timedelta(seconds=offset)).date()
+
+    return window_start < date_range[1]
 
 
 class Core(beam.PTransform):
@@ -58,10 +72,17 @@ class Core(beam.PTransform):
         """Returns the GroupByKeyAndTime PTransform."""
         key = self._process.grouping_key()
 
-        return f"GroupBy{key.name()}AndTime" >> (
+        date_range = self._process._date_range
+
+        tr = (
             self.assign_sliding_windows()
             | self.group_by_key()
         )
+
+        if date_range is not None:
+            tr = tr | self._filter_windows_out_of_range(date_range)
+
+        return f"GroupBy{key.name()}AndTime" >> tr
 
     def group_by_key(self):
         """Returns the GroupByKey PTransform."""
@@ -99,3 +120,12 @@ class Core(beam.PTransform):
         )
 
         return tr
+
+    def _filter_windows_out_of_range(self, date_range):
+        _, offset = self._process.time_window_period_and_offset()
+
+        return beam.Filter(
+            lambda _,
+            window=beam.DoFn.WindowParam: window_intersects_with_range(
+                date_range, window, offset=offset)
+        )

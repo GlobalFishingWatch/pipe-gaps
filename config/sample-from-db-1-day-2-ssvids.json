@@ -4,13 +4,13 @@
     "bq_output_gaps": "scratch_tomas_ttl30d.raw_gaps",
     "bq_output_gaps_description": true,
     "skip_open_gaps": false,
-    "open_gaps_start_date": "2024-12-25",
+    "open_gaps_start_date": "2020-12-20",
     "ssvids": [
-        "574061901"
+        "412588888"
     ],
     "date_range": [
-        "2024-12-31",
-        "2025-01-01"
+        "2020-12-23",
+        "2020-12-24"
     ],
     "min_gap_length": 6,
     "n_hours_before": 12,

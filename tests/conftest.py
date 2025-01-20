@@ -149,7 +149,7 @@ class TestCases:
             "threshold": 1,
             "expected_gaps": 1,
             "id": "input_message_with_same_ssvid_and_timestamp"
-        }
+        },
     ]
 
     GAP_BETWEEN_DAYS = [
@@ -272,7 +272,21 @@ class TestCases:
             "window_period_d": 1,
             "expected_gaps": 0,
             "eval_last": True,
-            "id": "period_1_day_no_open_gap_with_yesterday_messages"
+            "id": "period_1_day_no_duplicated_open_gap"
+        },
+        {
+            "messages": [
+                create_message(ssvid="446013750", time=datetime(2020, 12, 20, 11)),
+                create_message(ssvid="446013750", time=datetime(2020, 12, 20, 12, 10, 6)),  # Gap
+                create_message(ssvid="446013750", time=datetime(2020, 12, 20, 22)),
+            ],
+            "open_gaps": [],
+            "threshold": 6,
+            "date_range": ("2020-12-20", "2020-12-21"),
+            "window_period_d": 1,
+            "expected_gaps": 1,
+            "eval_last": True,
+            "id": "period_1_day_no_duplicated_closed_gap"
         },
         {
             "messages": [
@@ -285,7 +299,6 @@ class TestCases:
             "open_gaps": [],
             "threshold": 10,
             "date_range": ("2024-02-01", "2024-03-01"),  # We want to process february.
-            # "date_range": None,
             "window_period_d": 30,
             "eval_last": True,
             "expected_gaps": 4,
