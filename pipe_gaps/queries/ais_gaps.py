@@ -61,7 +61,7 @@ class AISGap(typing.NamedTuple):
 class AISGapsQuery(Query):
     """Encapsulates a gaps query.
 
-    If end_date is not provied, open gaps will be returned.
+    This query will return only the last version of each gap.
 
     Args:
         start_date: Fetch gaps whose OFF message timestamp is >= start_date.
@@ -76,16 +76,24 @@ class AISGapsQuery(Query):
 
     NAME = "gaps"
 
+    COLUMN_GAP_ID = "gap_id"
     COLUMN_IS_CLOSED = "is_closed"
     COLUMN_SSVID = "ssvid"
     COLUMN_START_TIME = "start_timestamp"
+    COLUMN_VERSION = "version"
 
     TEMPLATE = """
-      SELECT
-        {fields}
-      FROM `{source_gaps}`
-      WHERE
-          DATE({start_time_column}) >= "{start_date}"
+    SELECT
+      {fields}
+    FROM (
+        SELECT
+          *,
+          MAX(version)
+            OVER (PARTITION BY {gap_id}) AS last_version,
+        FROM `{source_gaps}`
+    )
+      WHERE {version} = last_version
+      AND DATE({start_time_column}) >= "{start_date}"
     """
 
     def __init__(
@@ -107,7 +115,9 @@ class AISGapsQuery(Query):
             source_gaps=self._source_gaps,
             start_date=self._start_date,
             start_time_column=self.COLUMN_START_TIME,
-            fields=self.select_clause()
+            fields=self.select_clause(),
+            gap_id=self.COLUMN_GAP_ID,
+            version=self.COLUMN_VERSION
         )
 
         if self._ssvids is not None:

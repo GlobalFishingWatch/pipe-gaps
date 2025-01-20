@@ -178,13 +178,14 @@ class DetectGaps(CoreProcess):
         # Step three:
         # If open gap exists, close it.
         open_gap = self._load_open_gap(side_inputs, key_value)
-        if open_gap is not None:
+        open_gap_on_m = boundaries.last_boundary().first_message()
+
+        if open_gap is not None and self._is_message_in_range(open_gap_on_m):
             open_gap_id = open_gap[self.KEY_GAP_ID]
             logger.info(f"{self.KEY_GAP_ID}={open_gap_id}")
             logger.info(f"Closing existing open gap for {formatted_key}")
 
             if open_gap_id not in gaps:  # We avoid re-calculation if already detected in step one.
-                open_gap_on_m = boundaries.last_boundary().first_message()
                 closed_gap = self._close_open_gap(open_gap, open_gap_on_m)
                 gaps[closed_gap[self.KEY_GAP_ID]] = closed_gap
 
