@@ -157,9 +157,9 @@ class DetectGaps(CoreProcess):
         # Step one:
         # detect potential gap between last message of a group and first message of next group.
         for left, right in boundaries.consecutive_boundaries():
-            start_ts = left.last_message()[self.KEY_TIMESTAMP]
             messages = left.end + right.start
 
+            start_ts = left.last_message()[self.KEY_TIMESTAMP]
             start_dt = datetime.fromtimestamp(start_ts, tz=timezone.utc)
 
             for g in self._gd.detect(messages, start_time=start_dt):

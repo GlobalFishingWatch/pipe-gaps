@@ -6,11 +6,11 @@
     "skip_open_gaps": false,
     "open_gaps_start_date": "2020-12-20",
     "ssvids": [
-        "412588888"
+        "525800416"
     ],
     "date_range": [
-        "2020-12-23",
-        "2020-12-24"
+        "2020-12-21",
+        "2020-12-22"
     ],
     "min_gap_length": 6,
     "n_hours_before": 12,
