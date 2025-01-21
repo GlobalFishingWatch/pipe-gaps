@@ -290,6 +290,21 @@ class TestCases:
         },
         {
             "messages": [
+                create_message(ssvid="446013750", time=datetime(2020, 12, 20, 10)),
+                create_message(ssvid="446013750", time=datetime(2020, 12, 20, 14)),
+                # This gap shouldn´t be detected (it is from previous day).
+                create_message(ssvid="446013750", time=datetime(2020, 12, 20, 20)),
+            ],
+            "open_gaps": [],
+            "threshold": 6,
+            "date_range": ("2020-12-21", "2020-12-22"),
+            "window_period_d": 1,
+            "expected_gaps": 0,
+            "eval_last": True,
+            "id": "period_1_day_no_duplicated_closed_gap_2"
+        },
+        {
+            "messages": [
                 create_message(time=datetime(2024, 1, 31, 12)),  # This shouldn´t be detected.
                 create_message(time=datetime(2024, 1, 31, 23)),  # gap 1
                 create_message(time=datetime(2024, 2, 1, 20)),   # gap 2.

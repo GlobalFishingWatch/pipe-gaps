@@ -152,10 +152,14 @@ class GapDetector:
             self._sort_messages(messages)
 
             start_idx = 0
+            end_idx = None
+
             if start_time is not None:
                 start_idx = self._get_index_for_start_time(messages, start_time)
+                if start_idx is None:
+                    end_idx = 0
 
-            gaps = pairwise(islice(messages, start_idx, None))
+            gaps = pairwise(islice(messages, start_idx, end_idx))
 
             if self._show_progress:
                 gaps = self._build_progress_bar(gaps, total=len(messages) - 1 - start_idx)
