@@ -264,6 +264,27 @@ class TestCases:
         },
         {
             "messages": [
+                create_message(time=datetime(2024, 2, 1, 4)),
+                create_message(time=datetime(2024, 2, 1, 10)),
+                create_message(time=datetime(2024, 2, 1, 15)),  # gap 1
+                create_message(time=datetime(2024, 2, 2, 5)),
+                create_message(time=datetime(2024, 2, 2, 11)),  # gap 2
+                create_message(time=datetime(2024, 2, 2, 20)),
+                create_message(time=datetime(2024, 2, 3, 2)),
+                create_message(time=datetime(2024, 2, 3, 8)),
+                create_message(time=datetime(2024, 2, 3, 14)),  # gap 3
+
+            ],
+            "open_gaps": [],
+            "threshold": 6,
+            "date_range": ("2024-02-01", "2024-02-04"),
+            "window_period_d": 1,
+            "expected_gaps": 3,
+            "eval_last": True,
+            "id": "period_1_day_for_3_days"
+        },
+        {
+            "messages": [
                 create_message(time=datetime(2024, 1, 1, 0)),   # This shouldn´t be detected.
             ],
             "open_gaps": [],
