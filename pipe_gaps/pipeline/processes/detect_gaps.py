@@ -100,10 +100,13 @@ class DetectGaps(CoreProcess):
         messages.sort(key=lambda x: x[self.KEY_TIMESTAMP])
 
         if isinstance(window, IntervalWindow):
-            start_time = window.start.to_utc_datetime(has_tz=True) + timedelta(
-                hours=self._window_offset_h)
-
+            start_time = window.start.to_utc_datetime(has_tz=True)
             end_time = window.end.to_utc_datetime(has_tz=True)
+
+            logger.info("Processing window [{}, {}]".format(start_time, end_time))
+
+            start_time = start_time + timedelta(hours=self._window_offset_h)
+
         else:  # Not using pipe beam pipeline.
             first = min(messages, key=lambda x: x[self.KEY_TIMESTAMP])
             last = max(messages, key=lambda x: x[self.KEY_TIMESTAMP])
@@ -137,6 +140,7 @@ class DetectGaps(CoreProcess):
         )
 
         for gap in gaps:
+            self._debug_gap(gap)
             yield gap
 
     def process_boundaries(
@@ -146,15 +150,26 @@ class DetectGaps(CoreProcess):
     ) -> Iterable[dict]:
         key_value, boundaries_it = group
 
-        # logger.info("Amount of windows: {}".format(len(boundaries_it)))
-
         boundaries = Boundaries(boundaries_it)
-
         formatted_key = self._grouping_key.format(key_value)
 
         gaps = {}
 
-        # Step one:
+        # Step one.
+        # If open gap exists, close it.
+        open_gap = self._load_open_gap(side_inputs, key_value)
+        open_gap_on_m = boundaries.last_boundary().first_message()
+
+        if open_gap is not None and self._is_message_in_range(open_gap_on_m):
+            open_gap_id = open_gap[self.KEY_GAP_ID]
+            logger.info(f"Closing existing open gap for {formatted_key}")
+            logger.info(f"{self.KEY_GAP_ID}={open_gap_id}")
+
+            closed_gap = self._close_open_gap(open_gap, open_gap_on_m)
+            gaps[closed_gap[self.KEY_GAP_ID]] = closed_gap
+            self._debug_gap(closed_gap)
+
+        # Step two:
         # detect potential gap between last message of a group and first message of next group.
         for left, right in boundaries.consecutive_boundaries():
             messages = left.end + right.start
@@ -163,31 +178,24 @@ class DetectGaps(CoreProcess):
             start_dt = datetime.fromtimestamp(start_ts, tz=timezone.utc)
 
             for g in self._gd.detect(messages, start_time=start_dt):
-                gaps[g[self.KEY_GAP_ID]] = g
+                if g[self.KEY_GAP_ID] not in gaps:  # Sometimes we pick up an open gap.
+                    gaps[g[self.KEY_GAP_ID]] = g
+                    self._debug_gap(g)
 
-        # Step two:
+        # Step three:
         # Create open gap if last message of last group met condition.
         if self._eval_last:
-            last_message = boundaries.last_message()
+            last_boundary = boundaries.last_boundary()
+            last_message = last_boundary.last_message()
 
             if self._is_message_in_range(last_message) and self._gd.eval_open_gap(last_message):
                 logger.info(f"Creating new open gap for {formatted_key}...")
-                new_open_gap = self._gd.create_gap(off_m=last_message)
+                new_open_gap = self._gd.create_gap(
+                    off_m=last_message,
+                    previous_positions=last_boundary.end[:-1]
+                )
                 gaps[new_open_gap[self.KEY_GAP_ID]] = new_open_gap
-
-        # Step three:
-        # If open gap exists, close it.
-        open_gap = self._load_open_gap(side_inputs, key_value)
-        open_gap_on_m = boundaries.last_boundary().first_message()
-
-        if open_gap is not None and self._is_message_in_range(open_gap_on_m):
-            open_gap_id = open_gap[self.KEY_GAP_ID]
-            logger.info(f"{self.KEY_GAP_ID}={open_gap_id}")
-            logger.info(f"Closing existing open gap for {formatted_key}")
-
-            if open_gap_id not in gaps:  # We avoid re-calculation if already detected in step one.
-                closed_gap = self._close_open_gap(open_gap, open_gap_on_m)
-                gaps[closed_gap[self.KEY_GAP_ID]] = closed_gap
+                self._debug_gap(new_open_gap)
 
         logger.info(f"Found {len(gaps)} gap(s) for boundaries {formatted_key}...")
 
@@ -259,7 +267,12 @@ class DetectGaps(CoreProcess):
         # Re-order off-message using on-message keys.
         off_m = {k: off_m[k] for k in on_m.keys() if k in off_m}
 
-        return self._gd.create_gap(off_m=off_m, on_m=on_m, gap_id=open_gap[self.KEY_GAP_ID])
+        return self._gd.create_gap(
+            off_m=off_m,
+            on_m=on_m,
+            gap_id=open_gap[self.KEY_GAP_ID],
+            base_gap=open_gap
+        )
 
     def _get_index_for_time(self, messages: list, time: datetime) -> int:
         timestamp = time.timestamp()
@@ -280,3 +293,22 @@ class DetectGaps(CoreProcess):
             return message_date >= self._date_range[0]
 
         return True
+
+    def _debug_gap(self, g: dict):
+        end_dt = None
+
+        try:
+            start_ts = g["OFF"][self.KEY_TIMESTAMP]
+            end_ts = g["ON"][self.KEY_TIMESTAMP]
+        except KeyError:
+            start_ts = g[f"start_{self.KEY_TIMESTAMP}"]
+            end_ts = g[f"end_{self.KEY_TIMESTAMP}"]
+
+        start_dt = datetime.fromtimestamp(start_ts, tz=timezone.utc)
+        if end_ts is not None:
+            end_dt = datetime.fromtimestamp(end_ts, tz=timezone.utc)
+
+        logger.debug("----------------------------------")
+        logger.debug("Gap OFF: {}".format(start_dt))
+        logger.debug("Gap  ON: {}".format(end_dt))
+        logger.debug("----------------------------------")
