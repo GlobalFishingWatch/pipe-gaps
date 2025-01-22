@@ -52,10 +52,17 @@ def create_message(
     }
 
 
-def create_open_gap(time: datetime = datetime(2024, 1, 1), ssvid: str = "446013750"):
+def create_open_gap(
+    time: datetime = datetime(2024, 1, 1),
+    ssvid: str = "446013750",
+    previous_positions: list = None
+):
     gd = GapDetector(normalize_output=True)
 
-    return gd.create_gap(off_m=create_message(ssvid=ssvid, time=datetime(2024, 1, 1, 12)))
+    return gd.create_gap(
+        off_m=create_message(ssvid=ssvid, time=time),
+        previous_positions=previous_positions
+    )
 
 
 class TestCases:
@@ -201,25 +208,33 @@ class TestCases:
             "id": "one_ssvid_without_open_gap"
         },
         {
-            # In this case we have an open gap created on 2024-01-01T15:00:00.
-            # The existing open gap should be closed,
-            # taking care of the fact that may have already being closed by the
-            # comparison by the last message of previous day.
+            # In this case we have an open gap created on 2024-01-02T00:00:00.
+            # The existing open gap should be closed.
             "messages": [
-                create_message(time=datetime(2024, 1, 1, 12)),   # Same as gap 3.
-                create_message(time=datetime(2024, 1, 2, 0)),    # gap 1
-                create_message(time=datetime(2024, 1, 2, 10)),   # gap 2
-                create_message(time=datetime(2024, 1, 2, 20)),
+                create_message(time=datetime(2024, 1, 2, 0)),    # (the open gap)
+                create_message(time=datetime(2024, 1, 2, 20)),    # gap 1
+                create_message(time=datetime(2024, 1, 3, 0)),    # gap 1
+                create_message(time=datetime(2024, 1, 3, 10)),   # gap 2
+                create_message(time=datetime(2024, 1, 3, 17, 1)),
+                create_message(time=datetime(2024, 1, 3, 17, 2)),
+                create_message(time=datetime(2024, 1, 3, 17, 3)),   # gap 3 (create open gap)
             ],
             "open_gaps": [
-                create_open_gap(time=datetime(2024, 1, 1, 12))   # gap 3
+                create_open_gap(  # gap 4 (close open gap)
+                    time=datetime(2024, 1, 2, 0),
+                    previous_positions=[
+                        create_message(time=datetime(2024, 1, 1, 21)),
+                        create_message(time=datetime(2024, 1, 1, 22)),
+                        create_message(time=datetime(2024, 1, 1, 23))
+                    ]
+                )
             ],
             "threshold": 6,
-            "date_range": ("2024-01-02", "2024-01-03"),
+            "date_range": ("2024-01-03", "2024-01-04"),
             "expected_gaps": [
                 {
-                    "positions_hours_before": 0,
-                    "positions_hours_before_ter": 0,
+                    "positions_hours_before": 3,
+                    "positions_hours_before_ter": 3,
                     "positions_hours_before_sat": 0,
                     "positions_hours_before_dyn": 0
                 },
@@ -233,12 +248,19 @@ class TestCases:
                 {
                     "positions_hours_before": 1,
                     "positions_hours_before_ter": 1,
+                    "positions_hours_before_sat": 0,
+                    "positions_hours_before_dyn": 0
+
+                },
+                {
+                    "positions_hours_before": 3,
+                    "positions_hours_before_ter": 3,
                     "positions_hours_before_sat": 0,
                     "positions_hours_before_dyn": 0
 
                 },
             ],
-            "id": "one_ssvid_with_open_gap"
+            "id": "one_ssvid_with_open_gaps"
         },
     ]
 

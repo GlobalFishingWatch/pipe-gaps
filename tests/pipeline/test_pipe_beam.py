@@ -163,6 +163,7 @@ def test_gap_between_days(tmp_path, messages, open_gaps, threshold, date_range, 
     core_config["threshold"] = threshold
     core_config["window_period_d"] = 1
     core_config["date_range"] = date_range
+    core_config["eval_last"] = True
 
     inputs = [get_input_file_config(input_file, schema="messages")]
 
@@ -191,8 +192,11 @@ def test_gap_between_days(tmp_path, messages, open_gaps, threshold, date_range, 
         print(
             "GAP",
             "\n OFF", datetime.fromtimestamp(g["OFF"]["timestamp"], tz=timezone.utc),
-            "\n ON", datetime.fromtimestamp(g["ON"]["timestamp"], tz=timezone.utc)
         )
+        if g["is_closed"]:
+            print(" ON", datetime.fromtimestamp(g["ON"]["timestamp"], tz=timezone.utc))
+        else:
+            print(" ON", None)
 
     assert len(gaps) == len(expected_gaps)
 
