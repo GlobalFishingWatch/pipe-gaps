@@ -1,32 +1,9 @@
 """Module with re-usable subclass implementations."""
 import logging
 
-from datetime import date, datetime, timezone
 from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
-
-
-def ts_to_year2(ts):
-    """Extracts year from unix timestamp.
-
-    This is ~2-times faster than datetime.fromtimestamp(ts, tz=timezone.utc).year,
-    but needs further testing/validation.
-    """
-    return int(ts / 60 / 60 / 24 / 365) + 1970
-
-
-def ts_to_year(ts):
-    """Extracts year from unix timestamp."""
-    return datetime.fromtimestamp(ts, tz=timezone.utc).year
-
-
-def ts_to_day(ts):
-    return datetime.fromtimestamp(ts, tz=timezone.utc).date().isoformat()
-
-
-def date_from_day(day):
-    return date.fromisoformat(day)
 
 
 class GroupByKey:

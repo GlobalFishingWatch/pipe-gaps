@@ -2,15 +2,15 @@
     "bq_input_messages": "pipe_ais_v3_internal.research_messages",
     "bq_input_segments": "pipe_ais_v3_published.segs_activity",
     "bq_output_gaps": "scratch_tomas_ttl30d.raw_gaps",
-    "bq_output_gaps_description": false,
+    "bq_output_gaps_description": true,
     "skip_open_gaps": false,
-    "open_gaps_start_date": "2024-12-24",
+    "open_gaps_start_date": "2020-12-19",
     "ssvids": [
-        "574061901"
+        "525800416"
     ],
     "date_range": [
-        "2024-12-28",
-        "2024-12-29"
+        "2020-12-19",
+        "2020-12-22"
     ],
     "min_gap_length": 6,
     "n_hours_before": 12,
