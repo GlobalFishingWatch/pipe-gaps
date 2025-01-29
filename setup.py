@@ -40,7 +40,7 @@ setuptools.setup(
         "sqlparse~=0.5",
     ],
     extras_require={
-        "beam": ["apache-beam[gcp]~=2.61"],
+        "beam": ["apache-beam[gcp]~=2.62"],
     },
     entry_points={
         "console_scripts": [

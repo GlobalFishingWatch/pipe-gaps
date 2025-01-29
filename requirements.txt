@@ -6,7 +6,7 @@
 #
 annotated-types==0.7.0
     # via pydantic
-apache-beam[gcp]==2.61.0
+apache-beam[gcp]==2.62.0
     # via pipe-gaps (setup.py)
 attrs==24.2.0
     # via
