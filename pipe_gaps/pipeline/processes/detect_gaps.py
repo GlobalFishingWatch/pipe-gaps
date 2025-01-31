@@ -67,7 +67,7 @@ class DetectGaps(CoreProcess):
         if window_period_d is None:
             window_period_d = MAX_WINDOW_PERIOD_D
             if date_range is not None:
-                logger.info("Window period not provided. Will be adjusted to provided date range.")
+                logger.debug("Window period not provided. Will be adjusted to date range.")
                 date_range_size = (date_range[1] - date_range[0]).days
                 window_period_d = min(date_range_size, MAX_WINDOW_PERIOD_D)
         else:
@@ -79,7 +79,7 @@ class DetectGaps(CoreProcess):
                 logger.warning("Max value will be used.")
                 window_period_d = MAX_WINDOW_PERIOD_D
 
-        logger.info("Using window period of {} day(s)".format(window_period_d))
+        logger.debug("Using window period of {} day(s)".format(window_period_d))
 
         return cls(
             gd=GapDetector(**config),
@@ -103,7 +103,7 @@ class DetectGaps(CoreProcess):
             start_time = window.start.to_utc_datetime(has_tz=True)
             end_time = window.end.to_utc_datetime(has_tz=True)
 
-            logger.info("Processing window [{}, {}]".format(start_time, end_time))
+            logger.debug("Processing window [{}, {}]".format(start_time, end_time))
 
             start_time = start_time + timedelta(hours=self._window_offset_h)
 
@@ -129,7 +129,7 @@ class DetectGaps(CoreProcess):
 
         gaps = self._gd.detect(messages=messages, start_time=start_time)
 
-        logger.info(
+        logger.debug(
             "Found {} gap(s) for {} in range [{}, {}]"
             .format(
                 len(gaps),
@@ -162,8 +162,8 @@ class DetectGaps(CoreProcess):
 
         if open_gap is not None and self._is_message_in_range(open_gap_on_m):
             open_gap_id = open_gap[self.KEY_GAP_ID]
-            logger.info(f"Closing existing open gap for {formatted_key}")
-            logger.info(f"{self.KEY_GAP_ID}={open_gap_id}")
+            logger.debug(f"Closing existing open gap for {formatted_key}")
+            logger.debug(f"{self.KEY_GAP_ID}={open_gap_id}")
 
             closed_gap = self._close_open_gap(open_gap, open_gap_on_m)
             gaps[closed_gap[self.KEY_GAP_ID]] = closed_gap
@@ -189,7 +189,7 @@ class DetectGaps(CoreProcess):
             last_message = last_boundary.last_message()
 
             if self._is_message_in_range(last_message) and self._gd.eval_open_gap(last_message):
-                logger.info(f"Creating new open gap for {formatted_key}...")
+                logger.debug(f"Creating new open gap for {formatted_key}...")
                 new_open_gap = self._gd.create_gap(
                     off_m=last_message,
                     previous_positions=last_boundary.end[:-1]
@@ -197,7 +197,7 @@ class DetectGaps(CoreProcess):
                 gaps[new_open_gap[self.KEY_GAP_ID]] = new_open_gap
                 self._debug_gap(new_open_gap)
 
-        logger.info(f"Found {len(gaps)} gap(s) for boundaries {formatted_key}...")
+        logger.debug(f"Found {len(gaps)} gap(s) for boundaries {formatted_key}...")
 
         for g in gaps.values():
             yield g
