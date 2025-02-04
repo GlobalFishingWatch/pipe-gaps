@@ -2,6 +2,7 @@ import logging
 from datetime import timedelta, datetime, timezone, date
 from typing import Iterable, Optional, Any
 
+import apache_beam as beam
 from apache_beam.transforms.window import IntervalWindow
 from apache_beam.transforms.core import DoFn
 
@@ -141,7 +142,16 @@ class DetectGaps(CoreProcess):
 
         for gap in gaps:
             self._debug_gap(gap)
-            yield gap
+            yield beam.pvalue.TaggedOutput('gaps', gap)
+
+        _, offset = self.time_window_period_and_offset()
+        boundary = Boundary.from_group(
+            (key.ssvid, messages),
+            offset=offset,
+            start_time=start_time.timestamp(),
+            timestamp_key=self.KEY_TIMESTAMP)
+
+        yield beam.pvalue.TaggedOutput('boundaries', boundary)
 
     def process_boundaries(
         self,
@@ -174,6 +184,9 @@ class DetectGaps(CoreProcess):
         for left, right in boundaries.consecutive_boundaries():
             messages = left.end + right.start
 
+            self._debug_boundary(left)
+            self._debug_boundary(right)
+
             start_ts = left.last_message()[self.KEY_TIMESTAMP]
             start_dt = datetime.fromtimestamp(start_ts, tz=timezone.utc)
 
@@ -200,7 +213,7 @@ class DetectGaps(CoreProcess):
         logger.debug(f"Found {len(gaps)} gap(s) for boundaries {formatted_key}...")
 
         for g in gaps.values():
-            yield g
+            yield beam.pvalue.TaggedOutput('gaps', g)
 
     def get_group_boundary(
         self, group: tuple[Any, Iterable[dict]],
@@ -213,7 +226,6 @@ class DetectGaps(CoreProcess):
             start_time = window.start.seconds() + offset
 
         key, messages = group
-        messages = list(messages)  # On dataflow, this is a _ConcatSequence object.
 
         return Boundary.from_group(
             (key.ssvid, messages),
@@ -312,3 +324,13 @@ class DetectGaps(CoreProcess):
         logger.debug("Gap OFF: {}".format(start_dt))
         logger.debug("Gap  ON: {}".format(end_dt))
         logger.debug("----------------------------------")
+
+    def _debug_boundary(self, boundary: Boundary):
+        logger.debug("Boundary")
+        for m in boundary.start:
+            logger.debug("start")
+            logger.debug(datetime.fromtimestamp(m["timestamp"], tz=timezone.utc))
+
+        for m in boundary.end:
+            logger.debug("end")
+            logger.debug(datetime.fromtimestamp(m["timestamp"], tz=timezone.utc))

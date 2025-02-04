@@ -133,8 +133,12 @@ def test_gap_between_years(tmp_path, messages, threshold, expected_gaps):
 
     gaps = json_load(pipe.output_path, lines=True)
 
-    # for g in gaps:
-    #   print("GAP", datetime.fromtimestamp(g["OFF"]["timestamp"], tz=timezone.utc))
+    for g in gaps:
+        print("GAP", datetime.fromtimestamp(g["OFF"]["timestamp"], tz=timezone.utc))
+        if g["is_closed"]:
+            print(" ON", datetime.fromtimestamp(g["ON"]["timestamp"], tz=timezone.utc))
+        else:
+            print(" ON", None)
 
     assert len(gaps) == expected_gaps
 

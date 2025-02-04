@@ -53,10 +53,12 @@ class Core(beam.PTransform):
 
         groups = pcoll | self.group_by_key_and_timestamp()
 
-        out_boundaries = groups | self.process_boundaries()
         out_groups = groups | self.process_groups()
+        out_boundaries = out_groups.boundaries | self.process_boundaries()
 
-        return (out_groups, out_boundaries) | self.join_outputs()
+        return (
+            out_groups.gaps | beam.WindowInto(beam.window.GlobalWindows()),
+            out_boundaries.gaps) | self.join_outputs()
 
     def assign_sliding_windows(self):
         """Returns the SlidingWindows PTransform."""
@@ -93,8 +95,7 @@ class Core(beam.PTransform):
     def process_groups(self):
         """Returns the ProcessGroups PTransform."""
         return "ProcessGroups" >> (
-            beam.FlatMap(self._process.process_group)
-            | beam.WindowInto(beam.window.GlobalWindows())
+            beam.FlatMap(self._process.process_group).with_outputs()
         )
 
     def process_boundaries(self):
@@ -113,10 +114,10 @@ class Core(beam.PTransform):
             )
 
         tr = (
-            beam.Map(self._process.get_group_boundary)
-            | beam.WindowInto(beam.window.GlobalWindows())
+            beam.WindowInto(beam.window.GlobalWindows())
             | self.group_by_key()
-            | beam.FlatMap(self._process.process_boundaries, side_inputs=side_inputs)
+            | beam.FlatMap(
+                self._process.process_boundaries, side_inputs=side_inputs).with_outputs()
         )
 
         return tr
