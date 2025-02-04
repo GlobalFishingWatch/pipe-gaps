@@ -57,7 +57,7 @@ class CoreProcess(ABC):
         outputs = []
         for key, messages in grouped_messages:
             outputs_in_groups = self.process_group((key, messages))
-            outputs.extend(outputs_in_groups)
+            outputs.extend(o.value for o in outputs_in_groups if o.tag == "gaps")
 
         logger.info("Processing boundaries...")
         boundaries = [self.get_group_boundary(g) for g in grouped_messages]
@@ -65,7 +65,7 @@ class CoreProcess(ABC):
         grouped_boundaries = itertools.groupby(boundaries, key=grouping_func)
         for k, v in grouped_boundaries:
             outputs_in_boundaries = self.process_boundaries((k, v), side_inputs=side_inputs_dict)
-            outputs.extend(outputs_in_boundaries)
+            outputs.extend(o.value for o in outputs_in_boundaries)
 
         return outputs
 
