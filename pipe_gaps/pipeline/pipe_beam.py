@@ -2,6 +2,8 @@
 import json
 import logging
 
+import googlecloudprofiler
+
 import apache_beam as beam
 from apache_beam import PTransform
 from apache_beam.options.pipeline_options import PipelineOptions
@@ -9,8 +11,13 @@ from apache_beam.options.pipeline_options import PipelineOptions
 from pipe_gaps.pipeline import base
 from pipe_gaps.pipeline.processes import processes_factory
 from pipe_gaps.pipeline.beam.transforms import sources_factory, sinks_factory, Core
+from pipe_gaps.version import __version__
 
 logger = logging.getLogger(__name__)
+
+DATAFLOW_SDK_CONTAINER_IMAGE = "sdk_container_image"
+DATAFLOW_SERVICE_OPTIONS = "dataflow_service_options"
+DATAFLOW_ENABLE_PROFILER = "enable_google_cloud_profiler"
 
 
 class BeamPipeline(base.Pipeline):
@@ -49,6 +56,10 @@ class BeamPipeline(base.Pipeline):
         self._options = PipelineOptions.from_dictionary(self._resolve_beam_options(options))
 
     def run(self):
+        if self._is_profiler_enabled():
+            logger.info("Stating Google Cloud Profiler...")
+            self._start_profiler()
+
         with beam.Pipeline(options=self._options) as p:
             if self._side_inputs is not None and len(self._side_inputs) > 0:
                 side_inputs = p | "ReadSideInputs" >> self._side_inputs[0]
@@ -123,10 +134,30 @@ class BeamPipeline(base.Pipeline):
         beam_options = self.default_options()
         beam_options.update(**options)
 
-        if "sdk_container_image" not in beam_options:
+        if DATAFLOW_SDK_CONTAINER_IMAGE not in beam_options:
             beam_options["setup_file"] = "./setup.py"
 
         return beam_options
+
+    def _is_profiler_enabled(self):
+        if DATAFLOW_ENABLE_PROFILER in self._options.display_data().get(
+            DATAFLOW_SERVICE_OPTIONS, []
+        ):
+            return True
+
+        return False
+
+    def _start_profiler(self):
+        try:
+            googlecloudprofiler.start(
+                service="pipe-gaps",
+                service_version=__version__,
+                # verbose is the logging level. 0-error, 1-warning, 2-info,
+                # 3-debug. It defaults to 0 (error) if not set.
+                verbose=3,
+            )
+        except (ValueError, NotImplementedError) as e:
+            logger.warning(f"Profiler couldn't start: {e}")
 
     @staticmethod
     def default_options():
