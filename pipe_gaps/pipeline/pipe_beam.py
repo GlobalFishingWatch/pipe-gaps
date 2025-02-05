@@ -2,6 +2,8 @@
 import json
 import logging
 
+import googlecloudprofiler
+
 import apache_beam as beam
 from apache_beam import PTransform
 from apache_beam.options.pipeline_options import PipelineOptions
@@ -9,6 +11,7 @@ from apache_beam.options.pipeline_options import PipelineOptions
 from pipe_gaps.pipeline import base
 from pipe_gaps.pipeline.processes import processes_factory
 from pipe_gaps.pipeline.beam.transforms import sources_factory, sinks_factory, Core
+from pipe_gaps.version import __version__
 
 logger = logging.getLogger(__name__)
 
@@ -126,7 +129,22 @@ class BeamPipeline(base.Pipeline):
         if "sdk_container_image" not in beam_options:
             beam_options["setup_file"] = "./setup.py"
 
+        if "enable_google_cloud_profiler" in beam_options.get("dataflow_service_options", {}):
+            self._start_profiler()
+
         return beam_options
+
+    def _start_profiler(self):
+        try:
+            googlecloudprofiler.start(
+                service="pipe-gaps",
+                service_version=__version__,
+                # verbose is the logging level. 0-error, 1-warning, 2-info,
+                # 3-debug. It defaults to 0 (error) if not set.
+                verbose=3,
+            )
+        except (ValueError, NotImplementedError) as e:
+            logger.warning(f"Profiler couldn't start: {e}")
 
     @staticmethod
     def default_options():
