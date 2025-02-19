@@ -295,7 +295,6 @@ class TestCases:
                 create_message(time=datetime(2024, 2, 3, 2)),
                 create_message(time=datetime(2024, 2, 3, 8)),
                 create_message(time=datetime(2024, 2, 3, 14)),  # gap 3
-
             ],
             "open_gaps": [],
             "threshold": 6,
@@ -336,13 +335,13 @@ class TestCases:
                 create_message(ssvid="446013750", time=datetime(2020, 12, 20, 10)),
                 create_message(ssvid="446013750", time=datetime(2020, 12, 20, 14)),
                 # This gap shouldn´t be detected (it is from previous day).
-                create_message(ssvid="446013750", time=datetime(2020, 12, 20, 20)),
+                create_message(ssvid="446013750", time=datetime(2020, 12, 20, 20)),  # Gap 1
             ],
             "open_gaps": [],
             "threshold": 6,
             "date_range": ("2020-12-21", "2020-12-22"),
             "window_period_d": 1,
-            "expected_gaps": 0,
+            "expected_gaps": 1,
             "eval_last": True,
             "id": "period_1_day_no_duplicated_closed_gap_2"
         },
@@ -403,5 +402,31 @@ class TestCases:
                 }
             ],
             "id": "one_ssvid"
+        },
+    ]
+
+    DAILY_MODE = [
+        {
+            # In this case we have an gap that starts after 6 PM,
+            # but there are no messages the next day.
+            # The gap ends a day after tomorrow.
+            "messages": {
+                "2023-12-31": [],
+                "2024-01-01": [
+                    create_message(time=datetime(2024, 1, 1, 20)),
+                    create_message(time=datetime(2024, 1, 1, 22)),  # gap 1.
+                ],
+                "2024-01-02": [],
+                "2024-01-03": [
+                    create_message(time=datetime(2024, 1, 3, 10)),
+                    create_message(time=datetime(2024, 1, 3, 16)),
+                    create_message(time=datetime(2024, 1, 3, 22)),
+                ]
+            },
+            "open_gaps": [],
+            "threshold": 6,
+            "dates": ["2024-01-01", "2024-01-02", "2024-01-03"],
+            "expected_gaps": 1,
+            "id": "gap_after_6_pm_with_end_after_tomorrow"
         },
     ]

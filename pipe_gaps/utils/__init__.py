@@ -1,7 +1,7 @@
 """Utilities package."""
 import json
 from pathlib import Path
-from datetime import datetime, timezone as tz
+from datetime import datetime, date, timezone
 
 from .logger import setup_logger
 from .timing import timing
@@ -49,6 +49,11 @@ def json_save(data: list, path: Path, indent: int = 4, lines: bool = False) -> d
             f.write(json.dumps(item) + "\n")
 
 
-def datetime_from_date(date_):
+def datetime_from_date(date_: date, tz=timezone.utc):
     """Creates datetime from date, using 00:00:00 hs."""
-    return datetime.combine(date_, datetime.min.time(), tzinfo=tz.utc)
+    return datetime.combine(date_, datetime.min.time(), tzinfo=tz)
+
+
+def datetime_from_ts(ts: float, tz=timezone.utc):
+    """Creates datetime from timestamp."""
+    return datetime.fromtimestamp(ts, tz=tz)

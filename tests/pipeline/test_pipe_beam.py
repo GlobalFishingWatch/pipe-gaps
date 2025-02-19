@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime, timezone
+from datetime import datetime, date, timedelta, timezone
 
 from pipe_gaps.pipeline.processes import DetectGaps
 from pipe_gaps.pipeline.beam.transforms import Core, ReadFromJson
@@ -440,6 +440,64 @@ def test_positions_hours_before(tmp_path, messages, threshold, date_range, expec
         assert gap["positions_hours_before_ter"] == expected_gap["positions_hours_before_ter"]
         assert gap["positions_hours_before_sat"] == expected_gap["positions_hours_before_sat"]
         assert gap["positions_hours_before_dyn"] == expected_gap["positions_hours_before_dyn"]
+
+
+@pytest.mark.parametrize(
+    "messages, open_gaps, threshold, dates, expected_gaps",
+    [
+        pytest.param(
+            case["messages"],
+            case["open_gaps"],
+            case["threshold"],
+            case["dates"],
+            case["expected_gaps"],
+            id=case["id"]
+        )
+        for case in TestCases.DAILY_MODE
+    ],
+)
+def test_daily_mode(tmp_path, messages, open_gaps, threshold, dates, expected_gaps):
+    core_config = get_core_config()
+    core_config["threshold"] = threshold
+    core_config["window_period_d"] = 1
+    core_config["eval_last"] = True
+
+    side_input_file = tmp_path.joinpath("open-gaps-test.json")
+    json_save(open_gaps, side_input_file, lines=True)
+    side_inputs_config = dict(
+        kind="json", input_file=side_input_file, schema="ais_gaps", lines=True)
+
+    side_inputs = [side_inputs_config]
+    outputs_config = [get_outputs_config(output_dir=tmp_path)]
+
+    all_gaps = []
+    for start_date in dates:
+        end_date = date.fromisoformat(start_date) + timedelta(days=1)
+        yesterday_date = date.fromisoformat(start_date) - timedelta(days=1)
+
+        input_file = tmp_path.joinpath(f"test-{start_date}.json")
+        current_messages = []
+        current_messages.extend(messages[yesterday_date.isoformat()])
+        current_messages.extend(messages[start_date])
+        json_save(current_messages, input_file)
+
+        core_config["date_range"] = [start_date, end_date.isoformat()]
+        inputs = [get_input_file_config(input_file, schema="messages")]
+
+        pipe = BeamPipeline.build(
+            inputs=inputs,
+            side_inputs=side_inputs,
+            work_dir=tmp_path,
+            core=core_config,
+            outputs=outputs_config
+        )
+        pipe.run()
+
+        gaps = json_load(pipe.output_path, lines=True)
+        all_gaps.extend(gaps)
+
+    all_gaps = sorted(all_gaps, key=lambda x: x["OFF"]["timestamp"])
+    assert len(all_gaps) == expected_gaps
 
 
 def test_verbose(tmp_path, input_file):
