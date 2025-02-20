@@ -5,7 +5,7 @@ from pipe_gaps.pipeline.processes import DetectGaps
 from pipe_gaps.pipeline.beam.transforms import Core, ReadFromJson
 from pipe_gaps.pipeline import BeamPipeline, PipelineError
 from pipe_gaps.pipeline import pipe_beam
-from pipe_gaps.utils import json_save, json_load
+from pipe_gaps.utils import json_save, json_load, datetime_from_ts
 
 from tests.conftest import TestCases
 
@@ -315,19 +315,27 @@ def test_open_gaps(tmp_path, messages, threshold, expected_gaps):
 
 
 @pytest.mark.parametrize(
-    "messages, open_gaps, threshold, expected_gaps",
+    "messages,open_gaps,expected_gaps,expected_dt,threshold,date_range,window_period_d,eval_last",
     [
         pytest.param(
             case["messages"],
             case["open_gaps"],
-            case["threshold"],
             case["expected_gaps"],
+            case["expected_dt"],
+            case["threshold"],
+            case["date_range"],
+            case["window_period_d"],
+            case["eval_last"],
             id=case["id"]
         )
         for case in TestCases.CLOSING_GAPS
     ],
 )
-def test_closing_gaps(tmp_path, messages, open_gaps, threshold, expected_gaps):
+def test_closing_gaps(
+    tmp_path,
+    messages, open_gaps, expected_gaps, expected_dt,
+    threshold, date_range, window_period_d, eval_last,
+):
     # Checks that an existing open gap is properly closed.
 
     input_file = tmp_path.joinpath("messages-test.json")
@@ -343,6 +351,9 @@ def test_closing_gaps(tmp_path, messages, open_gaps, threshold, expected_gaps):
 
     core_config = get_core_config()
     core_config["threshold"] = threshold
+    core_config["window_period_d"] = window_period_d
+    core_config["date_range"] = date_range
+    core_config["eval_last"] = eval_last
 
     pipe = BeamPipeline.build(
         inputs=inputs,
@@ -356,9 +367,15 @@ def test_closing_gaps(tmp_path, messages, open_gaps, threshold, expected_gaps):
     gaps = json_load(pipe.output_path, lines=True)
     assert len(gaps) == expected_gaps
 
-    if len(gaps) > 0:
-        for gap in gaps:
-            assert gap["ON"]["msgid"] is not None
+    for g in gaps:
+        g_start_dt = datetime_from_ts(g["OFF"]["timestamp"])
+
+        g_end_ts = g["ON"]["timestamp"]
+        if g_end_ts is not None:
+            g_end_ts = datetime_from_ts(g["ON"]["timestamp"])
+
+        g_expected_end_dt = expected_dt[g_start_dt]
+        assert g_expected_end_dt == g_end_ts
 
 
 @pytest.mark.parametrize(

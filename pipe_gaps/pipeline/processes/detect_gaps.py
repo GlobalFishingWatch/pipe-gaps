@@ -157,9 +157,9 @@ class DetectGaps(CoreProcess):
         # Step one.
         # If open gap exists, close it.
         open_gap = self._load_open_gap(side_inputs, key_value)
-        open_gap_on_m = boundaries.last_boundary().first_message()
+        open_gap_on_m = boundaries.get_first_message_inside_range(self._date_range)
 
-        if open_gap is not None and self._is_message_in_range(open_gap_on_m):
+        if open_gap is not None and open_gap_on_m is not None:
             open_gap_id = open_gap[self.KEY_GAP_ID]
             logger.debug(f"Closing existing open gap for {formatted_key}")
             logger.debug(f"{self.KEY_GAP_ID}={open_gap_id}")
@@ -175,10 +175,13 @@ class DetectGaps(CoreProcess):
 
             start_dt = datetime_from_ts(left.last_message()[self.KEY_TIMESTAMP])
 
+            if not self._is_message_in_range(left.last_message()):
+                # Otherwise should be an open gap and we handle those in step one.
+                continue
+
             for g in self._gd.detect(messages, start_time=start_dt):
-                if g[self.KEY_GAP_ID] not in gaps:  # Sometimes we pick up an open gap.
-                    gaps[g[self.KEY_GAP_ID]] = g
-                    self._debug_gap(g)
+                gaps[g[self.KEY_GAP_ID]] = g
+                self._debug_gap(g)
 
         # Step three:
         # Create open gap if last message of last group met condition.
@@ -299,12 +302,16 @@ class DetectGaps(CoreProcess):
 
         return -1
 
-    def _is_message_in_range(self, message):
+    def _is_message_in_range(self, message: dict, buffer: bool = True):
         message_ts = message[self.KEY_TIMESTAMP]
         message_dt = datetime_from_ts(message_ts)
 
         if self._date_range is not None:
-            return message_dt > datetime_from_date(self._date_range[0]) - self._gd.min_gap_length
+            start_dt = datetime_from_date(self._date_range[0])
+            if buffer:
+                start_dt -= self._gd.min_gap_length
+
+            return message_dt > start_dt
 
         return True
 
