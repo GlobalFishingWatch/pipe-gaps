@@ -146,7 +146,7 @@ class TestCases:
             ],
             "open_gaps": [
                 create_open_gap(  # Gap 1. Open.
-                    time=datetime(2002, 12, 19, 14),
+                    time=datetime(2020, 12, 19, 14),
                 )
             ],
             "threshold": 6,
@@ -154,7 +154,7 @@ class TestCases:
             "window_period_d": 1,
             "expected_gaps": 2,
             "expected_dt": {
-                utc_datetime(2002, 12, 19, 14): utc_datetime(2020, 12, 20, 20),
+                utc_datetime(2020, 12, 19, 14): utc_datetime(2020, 12, 20, 20),
                 utc_datetime(2020, 12, 22, 1): None
             },
             "eval_last": True,
@@ -422,14 +422,16 @@ class TestCases:
 
     DAILY_MODE = [
         {
-            # In this case we have an gap that starts after 6 PM,
+            # In this case we have a gap (2) that starts after 6 PM,
             # but there are no messages the next day.
             # The gap ends a day after tomorrow.
             "messages": {
-                "2023-12-31": [],
+                "2023-12-31": [
+                    create_message(time=datetime(2023, 12, 31, 20)),  # gap 1.
+                ],
                 "2024-01-01": [
                     create_message(time=datetime(2024, 1, 1, 20)),
-                    create_message(time=datetime(2024, 1, 1, 22)),  # gap 1.
+                    create_message(time=datetime(2024, 1, 1, 22)),    # gap 2.
                 ],
                 "2024-01-02": [],
                 "2024-01-03": [
@@ -441,7 +443,12 @@ class TestCases:
             "open_gaps": [],
             "threshold": 6,
             "dates": ["2024-01-01", "2024-01-02", "2024-01-03"],
-            "expected_gaps": 1,
+            "expected_gaps": 3,
+            "expected_dt": {
+                utc_datetime(2023, 12, 31, 20): utc_datetime(2024, 1, 1, 20),
+                utc_datetime(2024, 1, 1, 22): None,
+                utc_datetime(2024, 1, 1, 22): utc_datetime(2024, 1, 3, 10)
+            },
             "id": "gap_after_6_pm_with_end_after_tomorrow"
         },
     ]
