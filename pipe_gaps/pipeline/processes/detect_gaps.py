@@ -1,11 +1,12 @@
 import logging
-from datetime import timedelta, datetime, timezone, date
+from datetime import timedelta, datetime, date
 from typing import Iterable, Optional, Any
 
 from apache_beam.transforms.window import IntervalWindow
 from apache_beam.transforms.core import DoFn
 
 from pipe_gaps.core import GapDetector
+from pipe_gaps.utils import datetime_from_date, datetime_from_ts
 
 from .base import CoreProcess
 from .common import Boundary, Boundaries, GroupByKey
@@ -110,20 +111,18 @@ class DetectGaps(CoreProcess):
         else:  # Not using pipe beam pipeline.
             first = min(messages, key=lambda x: x[self.KEY_TIMESTAMP])
             last = max(messages, key=lambda x: x[self.KEY_TIMESTAMP])
-            start_time = datetime.fromtimestamp(first[self.KEY_TIMESTAMP], tz=timezone.utc)
-            end_time = datetime.fromtimestamp(last[self.KEY_TIMESTAMP], tz=timezone.utc)
+            start_time = datetime_from_ts(first[self.KEY_TIMESTAMP])
+            end_time = datetime_from_ts(last[self.KEY_TIMESTAMP])
 
         if self._date_range is not None:
-            range_start_time = datetime.combine(
-                self._date_range[0], datetime.min.time(), tzinfo=timezone.utc)
+            range_start_time = datetime_from_date(self._date_range[0])
 
             start_index = self._get_index_for_time(messages, range_start_time)
             if start_index > 0:
                 # To handle border between start date and previous message
                 start_index = start_index - 1
 
-            range_start_time = datetime.fromtimestamp(
-                messages[start_index][self.KEY_TIMESTAMP], tz=timezone.utc)
+            range_start_time = datetime_from_ts(messages[start_index][self.KEY_TIMESTAMP])
 
             start_time = max(start_time, range_start_time)
 
@@ -158,9 +157,9 @@ class DetectGaps(CoreProcess):
         # Step one.
         # If open gap exists, close it.
         open_gap = self._load_open_gap(side_inputs, key_value)
-        open_gap_on_m = boundaries.last_boundary().first_message()
+        open_gap_on_m = boundaries.get_first_message_inside_range(self._date_range)
 
-        if open_gap is not None and self._is_message_in_range(open_gap_on_m):
+        if open_gap is not None and open_gap_on_m is not None:
             open_gap_id = open_gap[self.KEY_GAP_ID]
             logger.debug(f"Closing existing open gap for {formatted_key}")
             logger.debug(f"{self.KEY_GAP_ID}={open_gap_id}")
@@ -174,13 +173,15 @@ class DetectGaps(CoreProcess):
         for left, right in boundaries.consecutive_boundaries():
             messages = left.end + right.start
 
-            start_ts = left.last_message()[self.KEY_TIMESTAMP]
-            start_dt = datetime.fromtimestamp(start_ts, tz=timezone.utc)
+            start_dt = datetime_from_ts(left.last_message()[self.KEY_TIMESTAMP])
+
+            if not self._is_message_in_range(left.last_message()):
+                # Otherwise should be an open gap and we handle those in step one.
+                continue
 
             for g in self._gd.detect(messages, start_time=start_dt):
-                if g[self.KEY_GAP_ID] not in gaps:  # Sometimes we pick up an open gap.
-                    gaps[g[self.KEY_GAP_ID]] = g
-                    self._debug_gap(g)
+                gaps[g[self.KEY_GAP_ID]] = g
+                self._debug_gap(g)
 
         # Step three:
         # Create open gap if last message of last group met condition.
@@ -188,7 +189,24 @@ class DetectGaps(CoreProcess):
             last_boundary = boundaries.last_boundary()
             last_message = last_boundary.last_message()
 
-            if self._is_message_in_range(last_message) and self._gd.eval_open_gap(last_message):
+            last_message_dt = datetime_from_ts(last_message["timestamp"])
+
+            comparison_date = last_message_dt.date()
+
+            range_start_date = None
+            if self._date_range is not None:
+                range_start_date = self._date_range[0]
+                comparison_date = max(range_start_date, comparison_date)
+
+            last_message_in_range = self._is_message_in_range(last_message)
+            open_gap_condition_is_met = self._gd.eval_open_gap(last_message, comparison_date)
+
+            logger.debug("Range start dt: {}".format(range_start_date))
+            logger.debug("Last message dt: {}".format(datetime_from_ts(last_message["timestamp"])))
+            logger.debug("Is in range: {}".format(last_message_in_range))
+            logger.debug("Open gap condition: {}".format(open_gap_condition_is_met))
+
+            if last_message_in_range and open_gap_condition_is_met:
                 logger.debug(f"Creating new open gap for {formatted_key}...")
                 new_open_gap = self._gd.create_gap(
                     off_m=last_message,
@@ -284,13 +302,16 @@ class DetectGaps(CoreProcess):
 
         return -1
 
-    def _is_message_in_range(self, message):
+    def _is_message_in_range(self, message: dict, buffer: bool = True):
         message_ts = message[self.KEY_TIMESTAMP]
-        message_dt = datetime.fromtimestamp(message_ts, tz=timezone.utc)
-        message_date = message_dt.date()
+        message_dt = datetime_from_ts(message_ts)
 
         if self._date_range is not None:
-            return message_date >= self._date_range[0]
+            start_dt = datetime_from_date(self._date_range[0])
+            if buffer:
+                start_dt -= self._gd.min_gap_length
+
+            return message_dt > start_dt
 
         return True
 
@@ -304,9 +325,9 @@ class DetectGaps(CoreProcess):
             start_ts = g[f"start_{self.KEY_TIMESTAMP}"]
             end_ts = g[f"end_{self.KEY_TIMESTAMP}"]
 
-        start_dt = datetime.fromtimestamp(start_ts, tz=timezone.utc)
+        start_dt = datetime_from_ts(start_ts)
         if end_ts is not None:
-            end_dt = datetime.fromtimestamp(end_ts, tz=timezone.utc)
+            end_dt = datetime_from_ts(end_ts)
 
         logger.debug("----------------------------------")
         logger.debug("Gap OFF: {}".format(start_dt))

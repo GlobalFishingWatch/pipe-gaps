@@ -2,6 +2,7 @@
 import logging
 
 from dataclasses import dataclass
+from pipe_gaps.utils import datetime_from_date
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,16 @@ class Boundaries:
     """Container for Boundary objects."""
     def __init__(self, boundaries):
         self._boundaries = sorted(boundaries, key=lambda x: x.first_message()["timestamp"])
+
+    def get_first_message_inside_range(self, date_range):
+        if date_range is not None:
+            start_ds = datetime_from_date(date_range[0]).timestamp()
+            for b in self._boundaries:
+                fm = b.first_message()
+                if fm["timestamp"] >= start_ds:
+                    return fm
+
+        return None
 
     def consecutive_boundaries(self):
         return list(zip(self._boundaries[:-1], self._boundaries[1:]))

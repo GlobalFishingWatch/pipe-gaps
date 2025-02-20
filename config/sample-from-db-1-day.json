@@ -1,7 +1,7 @@
 {   
     "bq_input_messages": "pipe_ais_v3_internal.research_messages",
     "bq_input_segments": "pipe_ais_v3_published.segs_activity",
-    "bq_output_gaps": "scratch_tomas_ttl30d.raw_gaps_no_logs",
+    "bq_output_gaps": "scratch_tomas_ttl30d.raw_gaps",
     "open_gaps_start_date": "2012-01-01",
     "skip_open_gaps": true,
     "date_range": [
@@ -17,6 +17,6 @@
         "runner": "dataflow",
         "max_num_workers": 50,
         "machine_type": "e2-custom-2-3072",
-        "job_name": "tom-test-gaps-1-day-no-info-logs"
+        "job_name": "tom-test-gaps-1-day-fix-6-pm-missing-gaps"
     }
 }

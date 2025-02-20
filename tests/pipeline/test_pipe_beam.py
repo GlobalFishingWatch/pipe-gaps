@@ -1,11 +1,11 @@
 import pytest
-from datetime import datetime, timezone
+from datetime import datetime, date, timedelta, timezone
 
 from pipe_gaps.pipeline.processes import DetectGaps
 from pipe_gaps.pipeline.beam.transforms import Core, ReadFromJson
 from pipe_gaps.pipeline import BeamPipeline, PipelineError
 from pipe_gaps.pipeline import pipe_beam
-from pipe_gaps.utils import json_save, json_load
+from pipe_gaps.utils import json_save, json_load, datetime_from_ts
 
 from tests.conftest import TestCases
 
@@ -315,19 +315,27 @@ def test_open_gaps(tmp_path, messages, threshold, expected_gaps):
 
 
 @pytest.mark.parametrize(
-    "messages, open_gaps, threshold, expected_gaps",
+    "messages,open_gaps,expected_gaps,expected_dt,threshold,date_range,window_period_d,eval_last",
     [
         pytest.param(
             case["messages"],
             case["open_gaps"],
-            case["threshold"],
             case["expected_gaps"],
+            case["expected_dt"],
+            case["threshold"],
+            case["date_range"],
+            case["window_period_d"],
+            case["eval_last"],
             id=case["id"]
         )
         for case in TestCases.CLOSING_GAPS
     ],
 )
-def test_closing_gaps(tmp_path, messages, open_gaps, threshold, expected_gaps):
+def test_closing_gaps(
+    tmp_path,
+    messages, open_gaps, expected_gaps, expected_dt,
+    threshold, date_range, window_period_d, eval_last,
+):
     # Checks that an existing open gap is properly closed.
 
     input_file = tmp_path.joinpath("messages-test.json")
@@ -343,6 +351,9 @@ def test_closing_gaps(tmp_path, messages, open_gaps, threshold, expected_gaps):
 
     core_config = get_core_config()
     core_config["threshold"] = threshold
+    core_config["window_period_d"] = window_period_d
+    core_config["date_range"] = date_range
+    core_config["eval_last"] = eval_last
 
     pipe = BeamPipeline.build(
         inputs=inputs,
@@ -356,9 +367,15 @@ def test_closing_gaps(tmp_path, messages, open_gaps, threshold, expected_gaps):
     gaps = json_load(pipe.output_path, lines=True)
     assert len(gaps) == expected_gaps
 
-    if len(gaps) > 0:
-        for gap in gaps:
-            assert gap["ON"]["msgid"] is not None
+    for g in gaps:
+        g_start_dt = datetime_from_ts(g["OFF"]["timestamp"])
+
+        g_end_ts = g["ON"]["timestamp"]
+        if g_end_ts is not None:
+            g_end_ts = datetime_from_ts(g["ON"]["timestamp"])
+
+        g_expected_end_dt = expected_dt[g_start_dt]
+        assert g_expected_end_dt == g_end_ts
 
 
 @pytest.mark.parametrize(
@@ -440,6 +457,88 @@ def test_positions_hours_before(tmp_path, messages, threshold, date_range, expec
         assert gap["positions_hours_before_ter"] == expected_gap["positions_hours_before_ter"]
         assert gap["positions_hours_before_sat"] == expected_gap["positions_hours_before_sat"]
         assert gap["positions_hours_before_dyn"] == expected_gap["positions_hours_before_dyn"]
+
+
+@pytest.mark.parametrize(
+    "messages, open_gaps, threshold, dates, expected_gaps, expected_dt",
+    [
+        pytest.param(
+            case["messages"],
+            case["open_gaps"],
+            case["threshold"],
+            case["dates"],
+            case["expected_gaps"],
+            case["expected_dt"],
+            id=case["id"]
+        )
+        for case in TestCases.DAILY_MODE
+    ],
+)
+def test_daily_mode(tmp_path, messages, open_gaps, threshold, dates, expected_gaps, expected_dt):
+    core_config = get_core_config()
+    core_config["threshold"] = threshold
+    core_config["window_period_d"] = 1
+    core_config["eval_last"] = True
+    core_config["normalize_output"] = True
+
+    outputs_config = [get_outputs_config(output_dir=tmp_path)]
+
+    open_gaps_bag = {g["gap_id"]: g for g in open_gaps}
+
+    all_gaps = []
+    for start_date in dates:
+        end_date = date.fromisoformat(start_date) + timedelta(days=1)
+        yesterday_date = date.fromisoformat(start_date) - timedelta(days=1)
+
+        current_messages = []
+        current_messages.extend(messages[yesterday_date.isoformat()])
+        current_messages.extend(messages[start_date])
+
+        input_file = tmp_path.joinpath(f"test-{start_date}.json")
+        json_save(current_messages, input_file)
+
+        side_input_file = tmp_path.joinpath("open-gaps-test.json")
+        json_save(open_gaps_bag.values(), side_input_file, lines=True)
+        side_inputs_config = dict(
+            kind="json", input_file=side_input_file, schema="ais_gaps", lines=True)
+
+        side_inputs = [side_inputs_config]
+
+        core_config["date_range"] = [start_date, end_date.isoformat()]
+        inputs = [get_input_file_config(input_file, schema="messages")]
+
+        pipe = BeamPipeline.build(
+            inputs=inputs,
+            side_inputs=side_inputs,
+            work_dir=tmp_path,
+            core=core_config,
+            outputs=outputs_config
+        )
+        pipe.run()
+
+        gaps = json_load(pipe.output_path, lines=True)
+
+        for g in gaps:
+            # Remove closed gaps from open gaps list.
+            open_gaps_bag.pop(g["gap_id"], None)
+            # Add new open gaps to gaps list
+            if not g["is_closed"]:
+                open_gaps_bag[g["gap_id"]] = g
+
+        all_gaps.extend(gaps)
+
+    all_gaps = sorted(all_gaps, key=lambda x: x["start_timestamp"])
+    assert len(all_gaps) == expected_gaps
+
+    for g in gaps:
+        g_start_dt = datetime_from_ts(g["start_timestamp"])
+
+        g_end_ts = g["end_timestamp"]
+        if g_end_ts is not None:
+            g_end_ts = datetime_from_ts(g["end_timestamp"])
+
+        g_expected_end_dt = expected_dt[g_start_dt]
+        assert g_expected_end_dt == g_end_ts
 
 
 def test_verbose(tmp_path, input_file):

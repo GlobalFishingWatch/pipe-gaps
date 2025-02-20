@@ -104,6 +104,10 @@ class AISMessagesQuery(Query):
         self._filter_good_seg = filter_good_seg
         self._filter_not_overlapping_and_short = filter_not_overlapping_and_short
 
+    @classmethod
+    def schema(cls):
+        return Message
+
     def render(self):
         query = self.TEMPLATE.format(
             source_messages=self._source_messages,
@@ -135,16 +139,4 @@ class AISMessagesQuery(Query):
         if self._filter_not_overlapping_and_short:
             filters.append(f"not {self.COLUMN_SEGMENTS_OVERLAPPING_AND_SHORT}")
 
-        filters_str = ""
-        if len(filters) > 0:
-            it = iter(filters)
-
-            filters_str = f"WHERE {next(it)}"
-
-            for filter_ in it:
-                filters_str += f" and {filter_}"
-
-        return filters_str
-
-    def schema(self):
-        return Message
+        return self.where_clause(filters)
