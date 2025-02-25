@@ -94,7 +94,7 @@ spatial and temporal variability of satellite reception,
 and dropped signals as vessels move from terrestrial coverage
 to areas of poor satellite reception.
 So, as a result,
-it’s not uncommon to see gaps in **AIS** data,
+it's not uncommon to see gaps in **AIS** data,
 for hours or perhaps even days [[1]](#1). 
 
 Other causes of **AIS** gaps are:
@@ -127,7 +127,7 @@ until it is **closed** in the future when new data arrives.
 
 Input position messages are filtered by `good_seg2` field
 of the segments table in order to remove noise.
-This denoising process happens in the [segment pipeline].
+This de-noising process happens in the [segment pipeline].
 
 </div>
 
@@ -150,11 +150,11 @@ filtering them by `good_seg2`, and groups them by `ssvid`.
 Since **we know** different vessels can broadcast with the same `ssvid`,
 this can potentially lead to the situation in which we have a gap
 with an `OFF` message from one vessel
-and a `ON` message from another vessel (or viceversa).
+and a `ON` message from another vessel (or vice versa).
 This can happen because currently,
 the gap detection process just orders
 all the messages from the same `ssvid` by `timestamp`
-and then evaluates each pair of consecuive messages.
+and then evaluates each pair of consecutive messages.
 In consequence,
 it will just pick the last `OFF` (or the first `ON`)
 message in the chain when constructing a gap,
