@@ -203,20 +203,20 @@ class TestCases:
             "date_range": ("2024-01-02", "2024-01-03"),
             "expected_gaps": [
                 {
-                    "positions_hours_before": 6,
-                    "positions_hours_before_ter": 6,
+                    "positions_hours_before": 7,
+                    "positions_hours_before_ter": 7,
+                    "positions_hours_before_sat": 0,
+                    "positions_hours_before_dyn": 0
+                },
+                {
+                    "positions_hours_before": 5,
+                    "positions_hours_before_ter": 5,
                     "positions_hours_before_sat": 0,
                     "positions_hours_before_dyn": 0
                 },
                 {
                     "positions_hours_before": 4,
-                    "positions_hours_before_ter": 4,
-                    "positions_hours_before_sat": 0,
-                    "positions_hours_before_dyn": 0
-                },
-                {
-                    "positions_hours_before": 3,
-                    "positions_hours_before_ter": 2,
+                    "positions_hours_before_ter": 3,
                     "positions_hours_before_sat": 0,
                     "positions_hours_before_dyn": 1
                 }
@@ -248,17 +248,10 @@ class TestCases:
             "date_range": ("2024-01-03", "2024-01-04"),
             "expected_gaps": [
                 {
-                    "positions_hours_before": 3,
-                    "positions_hours_before_ter": 3,
+                    "positions_hours_before": 4,
+                    "positions_hours_before_ter": 4,
                     "positions_hours_before_sat": 0,
                     "positions_hours_before_dyn": 0
-                },
-                {
-                    "positions_hours_before": 0,
-                    "positions_hours_before_ter": 0,
-                    "positions_hours_before_sat": 0,
-                    "positions_hours_before_dyn": 0
-
                 },
                 {
                     "positions_hours_before": 1,
@@ -268,8 +261,15 @@ class TestCases:
 
                 },
                 {
-                    "positions_hours_before": 3,
-                    "positions_hours_before_ter": 3,
+                    "positions_hours_before": 2,
+                    "positions_hours_before_ter": 2,
+                    "positions_hours_before_sat": 0,
+                    "positions_hours_before_dyn": 0
+
+                },
+                {
+                    "positions_hours_before": 4,
+                    "positions_hours_before_ter": 4,
                     "positions_hours_before_sat": 0,
                     "positions_hours_before_dyn": 0
 
@@ -422,12 +422,6 @@ class TestCases:
             "date_range": None,
             "expected_gaps": [
                 {
-                    "positions_hours_before": 3,
-                    "positions_hours_before_ter": 2,
-                    "positions_hours_before_sat": 0,
-                    "positions_hours_before_dyn": 1
-                },
-                {
                     "positions_hours_before": 4,
                     "positions_hours_before_ter": 2,
                     "positions_hours_before_sat": 1,
@@ -436,6 +430,12 @@ class TestCases:
                 {
                     "positions_hours_before": 5,
                     "positions_hours_before_ter": 2,
+                    "positions_hours_before_sat": 2,
+                    "positions_hours_before_dyn": 1
+                },
+                {
+                    "positions_hours_before": 6,
+                    "positions_hours_before_ter": 3,
                     "positions_hours_before_sat": 2,
                     "positions_hours_before_dyn": 0
                 }
