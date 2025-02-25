@@ -192,17 +192,14 @@ class DetectGaps(CoreProcess):
             last_message_dt = datetime_from_ts(last_message["timestamp"])
 
             comparison_date = last_message_dt.date()
-
-            range_start_date = None
             if self._date_range is not None:
-                range_start_date = self._date_range[0]
-                comparison_date = max(range_start_date, comparison_date)
+                comparison_date = self._date_range[1] - timedelta(days=1)
 
             last_message_in_range = self._is_message_in_range(last_message)
             open_gap_condition_is_met = self._gd.eval_open_gap(last_message, comparison_date)
 
-            logger.debug("Range start dt: {}".format(range_start_date))
-            logger.debug("Last message dt: {}".format(datetime_from_ts(last_message["timestamp"])))
+            logger.debug("Comparison dt: {}".format(comparison_date))
+            logger.debug("Last message dt: {}".format(last_message_dt))
             logger.debug("Is in range: {}".format(last_message_in_range))
             logger.debug("Open gap condition: {}".format(open_gap_condition_is_met))
 

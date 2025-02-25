@@ -289,13 +289,13 @@ class TestCases:
                 create_message(time=datetime(2024, 1, 31, 16)),  # gap 1
                 create_message(time=datetime(2024, 2, 1, 20)),   # gap 2.
                 create_message(time=datetime(2024, 2, 10, 1)),   # gap 3.
-                create_message(time=datetime(2024, 2, 28, 23)),
+                create_message(time=datetime(2024, 2, 28, 23)),  # gap 4 (2024 is leap year).
             ],
             "open_gaps": [],
             "threshold": 10,
             "date_range": ("2024-02-01", "2024-03-01"),  # We want to process february.
             "window_period_d": 1,
-            "expected_gaps": 3,
+            "expected_gaps": 4,
             "eval_last": True,
             "id": "period_1_day"
         },
@@ -375,7 +375,31 @@ class TestCases:
             "eval_last": True,
             "expected_gaps": 4,
             "id": "period_30_days"
-        }
+        },
+        {
+            "messages": [
+                create_message(time=datetime(2020, 12, 5, 20, 11)),  # Gap 1.
+            ],
+            "open_gaps": [],
+            "threshold": 6,
+            "date_range": ("2020-01-01", "2020-12-20"),
+            "window_period_d": 180,
+            "eval_last": True,
+            "expected_gaps": 1,
+            "id": "period_180_days_gap_after_6_pm_in_last_window",
+        },
+        {
+            "messages": [
+                create_message(time=datetime(2020, 4, 24, 23, 31)),  # Gap 1.
+            ],
+            "open_gaps": [],
+            "threshold": 6,
+            "date_range": ("2020-01-01", "2020-12-20"),
+            "window_period_d": 180,
+            "eval_last": True,
+            "expected_gaps": 1,
+            "id": "period_180_days_gap_after_6_pm_in_middle_window",
+        },
     ]
 
     POSITIONS_HOURS_BEFORE = [
