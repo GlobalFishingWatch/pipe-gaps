@@ -2,7 +2,7 @@
 import logging
 import hashlib
 import operator
-from itertools import islice
+from itertools import islice, chain
 from collections import defaultdict
 
 from typing import Union, Generator
@@ -267,6 +267,8 @@ class GapDetector:
             gap = base_gap
 
         if self.KEY_HOURS_BEFORE not in gap and previous_positions is not None:
+            previous_positions = chain(previous_positions, [off_m])
+
             count = self._count_messages_before_gap(previous_positions)
             gap[self.KEY_HOURS_BEFORE] = count[self.KEY_TOTAL]
             gap[self.KEY_HOURS_BEFORE_TER] = count[self.KEY_TERRESTRIAL]

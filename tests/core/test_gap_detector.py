@@ -28,7 +28,7 @@ def test_missing_keys():
     gd = GapDetector(threshold=2, n_hours_before=12)
     gaps = gd.detect(messages)
     assert len(gaps) == 1
-    assert gaps[0]["positions_hours_before"] == 2
+    assert gaps[0]["positions_hours_before"] == 3
 
     for key in gd.mandatory_keys():
         wrong_messages = [{k: v for k, v in m.items() if k != key} for m in messages]
@@ -51,8 +51,8 @@ def test_messages_n_hours_before():
     assert len(gaps) == 1
 
     gap = gaps[0]
-    assert gap[GapDetector.KEY_HOURS_BEFORE] == 4
-    assert gap[GapDetector.KEY_HOURS_BEFORE_SAT] == 1
+    assert gap[GapDetector.KEY_HOURS_BEFORE] == 5
+    assert gap[GapDetector.KEY_HOURS_BEFORE_SAT] == 2
     assert gap[GapDetector.KEY_HOURS_BEFORE_TER] == 3
 
 
