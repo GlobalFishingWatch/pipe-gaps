@@ -10,8 +10,11 @@ WORKDIR /opt/project
 # Setup a volume for configuration and auth data
 VOLUME ["/root/.config"]
 
+# Update system and install build tools.
+RUN apt-get update && apt-get install -y build-essential
+
 # Copy files from official SDK image, including script/dependencies.
-COPY --from=apache/beam_python3.12_sdk:2.61.0 /opt/apache/beam /opt/apache/beam
+COPY --from=apache/beam_python3.12_sdk:2.63.0 /opt/apache/beam /opt/apache/beam
 
 # Install application dependencies
 COPY requirements.txt .

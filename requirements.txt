@@ -6,7 +6,7 @@
 #
 annotated-types==0.7.0
     # via pydantic
-apache-beam[gcp]==2.61.0
+apache-beam[gcp]==2.63.0
     # via pipe-gaps (setup.py)
 attrs==24.2.0
     # via
@@ -53,6 +53,7 @@ geopy==2.4.1
 google-api-core[grpc]==2.24.0
     # via
     #   apache-beam
+    #   google-api-python-client
     #   google-cloud-aiplatform
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
@@ -69,12 +70,15 @@ google-api-core[grpc]==2.24.0
     #   google-cloud-storage
     #   google-cloud-videointelligence
     #   google-cloud-vision
+google-api-python-client==2.160.0
+    # via google-cloud-profiler
 google-apitools==0.5.31
     # via apache-beam
 google-auth==2.37.0
     # via
     #   apache-beam
     #   google-api-core
+    #   google-api-python-client
     #   google-auth-httplib2
     #   google-cloud-aiplatform
     #   google-cloud-bigquery
@@ -84,6 +88,7 @@ google-auth==2.37.0
     #   google-cloud-datastore
     #   google-cloud-dlp
     #   google-cloud-language
+    #   google-cloud-profiler
     #   google-cloud-pubsub
     #   google-cloud-recommendations-ai
     #   google-cloud-resource-manager
@@ -92,7 +97,10 @@ google-auth==2.37.0
     #   google-cloud-vision
     #   keyrings-google-artifactregistry-auth
 google-auth-httplib2==0.2.0
-    # via apache-beam
+    # via
+    #   apache-beam
+    #   google-api-python-client
+    #   google-cloud-profiler
 google-cloud-aiplatform==1.74.0
     # via apache-beam
 google-cloud-bigquery==3.27.0
@@ -118,6 +126,8 @@ google-cloud-dlp==3.26.0
     # via apache-beam
 google-cloud-language==2.16.0
     # via apache-beam
+google-cloud-profiler==4.1.0
+    # via pipe-gaps (setup.py)
 google-cloud-pubsub==2.27.1
     # via
     #   apache-beam
@@ -179,6 +189,7 @@ hdfs==2.7.3
 httplib2==0.22.0
     # via
     #   apache-beam
+    #   google-api-python-client
     #   google-apitools
     #   google-auth-httplib2
     #   oauth2client
@@ -274,6 +285,7 @@ protobuf==5.29.1
     #   google-cloud-datastore
     #   google-cloud-dlp
     #   google-cloud-language
+    #   google-cloud-profiler
     #   google-cloud-pubsub
     #   google-cloud-recommendations-ai
     #   google-cloud-resource-manager
@@ -341,6 +353,7 @@ requests==2.32.3
     #   apache-beam
     #   google-api-core
     #   google-cloud-bigquery
+    #   google-cloud-profiler
     #   google-cloud-storage
     #   hdfs
     #   keyrings-google-artifactregistry-auth
@@ -378,6 +391,8 @@ typing-extensions==4.12.2
     #   pydantic-core
 tzdata==2024.2
     # via pandas
+uritemplate==4.1.1
+    # via google-api-python-client
 urllib3==2.2.3
     # via requests
 wrapt==1.17.0

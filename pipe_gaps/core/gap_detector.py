@@ -2,11 +2,11 @@
 import logging
 import hashlib
 import operator
-from itertools import islice
+from itertools import islice, chain
 from collections import defaultdict
 
 from typing import Union, Generator
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, date, timedelta, timezone
 
 from rich.progress import track
 from geopy.distance import geodesic
@@ -128,6 +128,10 @@ class GapDetector:
 
         return hashlib.md5(s.encode('utf-8')).hexdigest()
 
+    @property
+    def min_gap_length(self):
+        return self._threshold_h
+
     def detect(self, messages: list[dict], start_time: datetime = None) -> list[dict]:
         """Detects time gaps between AIS position messages from a single vessel.
 
@@ -174,7 +178,7 @@ class GapDetector:
 
         return gaps
 
-    def eval_open_gap(self, message: dict) -> bool:
+    def eval_open_gap(self, message: dict, today: date = None) -> bool:
         """Evaluates if a message constitutes an open gap.
 
         The condition to create an open gap is that the time between the message's timestamp
@@ -182,16 +186,20 @@ class GapDetector:
 
         Args:
             message: Position message to evaluate.
+            today: the date representing the current day. Useful when the current day of processing
+                is not anymore the date of the message being evaluated.
 
         Returns:
             A boolean indicating if the condition for open gap is met.
         """
-        last_m_datetime = datetime.fromtimestamp(message[self.KEY_TIMESTAMP],  tz=timezone.utc)
-        next_m_date = last_m_datetime.date() + timedelta(days=1)
-        next_m_datetime = datetime.combine(next_m_date, datetime.min.time(), tzinfo=timezone.utc)
+        if today is None:
+            today = datetime.fromtimestamp(message[self.KEY_TIMESTAMP],  tz=timezone.utc).date()
+
+        tomorrow = today + timedelta(days=1)
+        tomorrow_dt = datetime.combine(tomorrow, datetime.min.time(), tzinfo=timezone.utc)
 
         next_test_message = {
-            self.KEY_TIMESTAMP: next_m_datetime.timestamp(),
+            self.KEY_TIMESTAMP: tomorrow_dt.timestamp(),
         }
 
         return self._gap_condition(message, next_test_message)
@@ -259,6 +267,8 @@ class GapDetector:
             gap = base_gap
 
         if self.KEY_HOURS_BEFORE not in gap and previous_positions is not None:
+            previous_positions = chain(previous_positions, [off_m])
+
             count = self._count_messages_before_gap(previous_positions)
             gap[self.KEY_HOURS_BEFORE] = count[self.KEY_TOTAL]
             gap[self.KEY_HOURS_BEFORE_TER] = count[self.KEY_TERRESTRIAL]

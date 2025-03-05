@@ -52,3 +52,6 @@ class BigQueryClientMock:
             return _QueryJobMock(fail=True)
 
         return _QueryJobMock(client=self)
+
+    def create_table(self, table, *args, **kwargs):
+        return table

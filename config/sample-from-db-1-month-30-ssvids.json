@@ -48,6 +48,8 @@
         "runner": "dataflow",
         "max_num_workers": 200,
         "machine_type": "e2-standard-2",
-        "job_name": "tom-test-gaps-1-month-30-ssvids"
+        "job_name": "tom-test-gaps-1-month-30-ssvids-profiling",
+        "dataflow_service_options": "enable_google_cloud_profiler"
+
     }
 }

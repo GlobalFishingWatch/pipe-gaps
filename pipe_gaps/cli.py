@@ -10,6 +10,8 @@ from datetime import date, timedelta
 
 from pipe_gaps import utils
 from pipe_gaps import pipeline
+from pipe_gaps.bq_client import BigQueryClient
+from pipe_gaps.queries import AISGapsQuery
 from pipe_gaps.version import __version__
 
 logger = logging.getLogger(__name__)
@@ -40,6 +42,7 @@ BQ_TABLE_PARTITION_FIELD = "start_timestamp"
 BQ_TABLE_PARTITION_TYPE = "MONTH"
 BQ_TABLE_PARTITION_REQUIRE = False
 BQ_TABLE_CLUSTERING_FIELDS = ["is_closed", "version", "ssvid"]
+BQ_TABLE_VIEW_PREFIX = "last_versions"
 
 BQ_TABLE_DESCRIPTION = """\
 「 ✦ 𝚁𝙰𝚆 𝙶𝙰𝙿𝚂 ✦ 」 
@@ -86,7 +89,7 @@ HELP_NO_RICH_LOGGING = "Disable rich logging (useful prof production environment
 HELP_ONLY_RENDER = "Only render command-line call equivalent to provided config file."
 
 HELP_PIPE_TYPE = "Pipeline type: ['naive', 'beam']."
-HELP_BQ_READ_METHOD = "BigQuery read method. It may be 'DIRECT_RED' or 'EXPORT'."
+HELP_BQ_READ_METHOD = "BigQuery read method. It may be 'DIRECT_READ' or 'EXPORT'."
 HELP_BQ_INPUT_MESSAGES = "BigQuery table with with input messages."
 HELP_BQ_INPUT_SEGMENTS = "BigQuery table with with input segments."
 HELP_BQ_INPUT_OPEN_GAPS = "BigQuery table with open gaps."
@@ -165,14 +168,24 @@ def render_command_line_call(config: dict, unparsed: list) -> str:
     return command
 
 
+def create_view(source_id, **kwargs):
+    view_id = f"{source_id}_{BQ_TABLE_VIEW_PREFIX}"
+    logger.info(f"Creating view: {view_id}")
+
+    query = AISGapsQuery.last_versions_query(source_id=source_id)
+    bq_client = BigQueryClient.build(**kwargs)  # This uses project=world-fishing-827 by default.
+    return bq_client.create_view(view_id=view_id, view_query=query, exists_ok=True)
+
+
 def run(config: dict) -> None:
     """Builds and runs pipeline."""
     logger.info("Using following GAPS pipeline configuration: ")
     logger.info(json.dumps(config, indent=4))
 
-    pipe = build_pipeline(**config)
+    pipe, output_id = build_pipeline(**config)
     try:
         pipe.run()
+        create_view(output_id, mock_client=config.get("mock_db_client") is True)
     except pipeline.PipelineError as e:
         logger.error(e)
 
@@ -204,7 +217,7 @@ def build_pipeline(
     bq_input_messages: str = None,
     bq_input_segments: str = "pipe_ais_v3_published.segs_activity",
     bq_input_open_gaps: str = None,
-    bq_output_gaps: str = None,
+    bq_output_gaps: str = "scratch_tomas_ttl30d.raw_gaps",
     bq_output_gaps_description: bool = False,
     bq_write_disposition: str = "WRITE_APPEND",
     mock_db_client: bool = False,
@@ -341,7 +354,7 @@ def build_pipeline(
         }
     }
 
-    return pipeline.factory.from_config(config)
+    return pipeline.factory.from_config(config), bq_output_gaps
 
 
 def validate_date(date_str):
@@ -388,7 +401,7 @@ def cli(args):
     add("--pipe-type", type=str, metavar=" ", help=HELP_PIPE_TYPE)
     add("-i", "--json-input-messages", type=str, metavar=" ", help=HELP_JSON_INPUT_MESSAGES)
     add("-s", "--json-input-open-gaps", type=str, metavar=" ", help=HELP_JSON_INPUT_OPEN_GAPS)
-    add("--bq-read-metohd", type=str, metavar=" ", help=HELP_BQ_READ_METHOD)
+    add("--bq-read-method", type=str, metavar=" ", help=HELP_BQ_READ_METHOD)
     add("--bq-input-messages", type=str, metavar=" ", help=HELP_BQ_INPUT_MESSAGES)
     add("--bq-input-segments", type=str, metavar=" ", help=HELP_BQ_INPUT_SEGMENTS)
     add("--bq-input-open-gaps", type=str, metavar=" ", help=HELP_BQ_INPUT_OPEN_GAPS)

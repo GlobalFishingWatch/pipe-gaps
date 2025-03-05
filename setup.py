@@ -33,6 +33,7 @@ setuptools.setup(
         "importlib-resources~=6.0",
         "geopy~=2.4",
         "google-cloud-bigquery~=3.0",
+        "google-cloud-profiler~=4.1",
         "pandas~=2.1",
         "py-cpuinfo~=9.0",
         "pydantic~=2.0",
@@ -40,7 +41,7 @@ setuptools.setup(
         "sqlparse~=0.5",
     ],
     extras_require={
-        "beam": ["apache-beam[gcp]~=2.61"],
+        "beam": ["apache-beam[gcp]~=2.63"],
     },
     entry_points={
         "console_scripts": [

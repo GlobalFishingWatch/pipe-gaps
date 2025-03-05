@@ -1,9 +1,9 @@
 {   
     "bq_input_messages": "pipe_ais_v3_internal.research_messages",
     "bq_input_segments": "pipe_ais_v3_published.segs_activity",
-    "bq_input_open_gaps": "pipe_ais_v3_internal.raw_gaps",
     "bq_output_gaps": "scratch_tomas_ttl30d.raw_gaps",
     "open_gaps_start_date": "2012-01-01",
+    "skip_open_gaps": true,
     "date_range": [
         "2024-12-15",
         "2024-12-16"
@@ -16,7 +16,7 @@
         "project": "world-fishing-827",
         "runner": "dataflow",
         "max_num_workers": 50,
-        "machine_type": "e2-custom-2-2048",
-        "job_name": "tom-test-gaps-1-day-custom-machine"
+        "machine_type": "e2-custom-2-3072",
+        "job_name": "tom-test-gaps-1-day-fix-6-pm-missing-gaps"
     }
 }

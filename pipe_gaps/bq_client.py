@@ -52,7 +52,7 @@ class BigQueryClient:
     """
 
     def __init__(self, client: Any):
-        self._client = client
+        self.client = client
 
     @classmethod
     def build(cls, project: str = DB_PROJECT, mock_client=False, use_cache=False):
@@ -89,9 +89,31 @@ class BigQueryClient:
         """
         query_string = query.render()
         try:
-            query_job = self._client.query(query_string)
+            query_job = self.client.query(query_string)
             row_iterator = query_job.result()
         except BadRequest as e:
             raise QueryError(f"Failed to fetch messages: {e}")
 
         return QueryResult(row_iterator)
+
+    def create_view(
+        self, view_id: str, view_query: str, **kwargs
+    ) -> bigquery.Table:
+        """Creates a view on a table.
+
+        Args:
+            view_id: the destination view: "dataset.view_id".
+            view_query: the query to perform to create the view.
+
+        Returns:
+            A table object representing the view.
+        """
+        view_id = f"{self.client.project}.{view_id}"
+
+        view = bigquery.Table(view_id)
+        view.view_query = view_query
+
+        view = self.client.create_table(view, **kwargs)
+        logger.debug(f"Created: {view.table_type}: {str(view.reference)}")
+
+        return view

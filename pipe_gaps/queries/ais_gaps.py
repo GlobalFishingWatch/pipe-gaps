@@ -85,20 +85,12 @@ class AISGapsQuery(Query):
     TEMPLATE = """
     SELECT
       {fields}
-    FROM (
-        SELECT
-          *,
-          MAX(version)
-            OVER (PARTITION BY {gap_id}) AS last_version,
-        FROM `{source_gaps}`
-    )
-      WHERE {version} = last_version
-      AND DATE({start_time_column}) >= "{start_date}"
+    FROM ({last_versions_query})
     """
 
     def __init__(
         self,
-        start_date: date,
+        start_date: date = None,
         end_date: date = None,
         source_gaps: str = DB_TABLE_GAPS,
         ssvids: list = None,
@@ -110,33 +102,54 @@ class AISGapsQuery(Query):
         self._ssvids = ssvids
         self._is_closed = is_closed
 
+    @classmethod
+    def schema(self):
+        return AISGap
+
+    @classmethod
+    def last_versions_query(cls, source_id: str = DB_TABLE_GAPS) -> str:
+        """Returns a query to get the latest versions of gaps."""
+        query = f"""
+            SELECT *
+            FROM `{source_id}`
+            QUALIFY ROW_NUMBER() OVER (
+                PARTITION BY
+                    {cls.COLUMN_GAP_ID},
+                    {cls.COLUMN_START_TIME}
+                ORDER BY {cls.COLUMN_VERSION} DESC
+            ) = 1
+        """
+
+        return query
+
     def render(self):
         query = self.TEMPLATE.format(
-            source_gaps=self._source_gaps,
-            start_date=self._start_date,
-            start_time_column=self.COLUMN_START_TIME,
             fields=self.select_clause(),
-            gap_id=self.COLUMN_GAP_ID,
-            version=self.COLUMN_VERSION
+            last_versions_query=self.last_versions_query(source_id=self._source_gaps)
         )
 
+        filters = []
         if self._ssvids is not None:
             ssvid_filter = ",".join(f'"{s}"' for s in self._ssvids)
-            query = f"{query} AND {self.COLUMN_SSVID} IN ({ssvid_filter})"
+            filters.append(f"{self.COLUMN_SSVID} IN ({ssvid_filter})")
+
+        if self._start_date is not None:
+            filters.append(f"DATE({self.COLUMN_START_TIME}) >= '{self._start_date}'")
 
         if self._end_date is not None:
-            query = f"{query} AND DATE({self.COLUMN_START_TIME}) < '{self._end_date}'"
+            filters.append(f"DATE({self.COLUMN_START_TIME}) < '{self._end_date}'")
 
         if self._is_closed is not None:
             if self._is_closed:
-                query = f"{query} AND {self.COLUMN_IS_CLOSED}"
+                filters.append(f"{self.COLUMN_IS_CLOSED}")
             else:
-                query = f"{query} AND not {self.COLUMN_IS_CLOSED}"
+                filters.append(f"not {self.COLUMN_IS_CLOSED}")
+
+        where_clause = self.where_clause(filters)
+
+        query = f"{query} \n {where_clause}"
 
         logger.debug("Rendered Query for AIS gaps: ")
         logger.debug(sqlparse.format(query, reindent=True, keyword_case='upper'))
 
         return query
-
-    def schema(self):
-        return AISGap
