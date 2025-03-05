@@ -14,7 +14,7 @@ VOLUME ["/root/.config"]
 RUN apt-get update && apt-get install -y build-essential
 
 # Copy files from official SDK image, including script/dependencies.
-COPY --from=apache/beam_python3.12_sdk:2.62.0 /opt/apache/beam /opt/apache/beam
+COPY --from=apache/beam_python3.12_sdk:2.63.0 /opt/apache/beam /opt/apache/beam
 
 # Install application dependencies
 COPY requirements.txt .
