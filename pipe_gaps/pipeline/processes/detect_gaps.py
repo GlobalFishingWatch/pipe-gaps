@@ -308,7 +308,7 @@ class DetectGaps(CoreProcess):
             if buffer:
                 start_dt -= self._gd.min_gap_length
 
-            return message_dt > start_dt
+            return message_dt >= start_dt
 
         return True
 

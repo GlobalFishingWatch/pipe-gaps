@@ -459,19 +459,21 @@ class TestCases:
                 ],
                 "2024-01-02": [],
                 "2024-01-03": [
-                    create_message(time=datetime(2024, 1, 3, 10)),
-                    create_message(time=datetime(2024, 1, 3, 16)),
-                    create_message(time=datetime(2024, 1, 3, 22)),
+                    create_message(time=datetime(2024, 1, 3, 18)),    # gap 3
+                ],
+                "2024-01-04": [
+                    create_message(time=datetime(2024, 1, 4, 19)),
                 ]
             },
             "open_gaps": [],
             "threshold": 6,
-            "dates": ["2024-01-01", "2024-01-02", "2024-01-03"],
-            "expected_gaps": 3,
+            "dates": ["2024-01-01", "2024-01-02", "2024-01-03", "2024-01-04"],
+            "expected_gaps": 4,
             "expected_dt": {
                 utc_datetime(2023, 12, 31, 20): utc_datetime(2024, 1, 1, 20),
                 utc_datetime(2024, 1, 1, 22): None,
-                utc_datetime(2024, 1, 1, 22): utc_datetime(2024, 1, 3, 10)
+                utc_datetime(2024, 1, 1, 22): utc_datetime(2024, 1, 3, 10),
+                utc_datetime(2024, 1, 3, 18): utc_datetime(2024, 1, 4, 19),
             },
             "id": "gap_after_6_pm_with_end_after_tomorrow"
         },
