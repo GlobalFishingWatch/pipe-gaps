@@ -17,6 +17,9 @@ def test_cli(tmp_path):
         "window_period_d": 1,
         "filter_good_seg": False,
         "filter_not_overlapping_and_short": False,
+        "pipeline_options": {
+            "project": "test-project"
+        }
     }
 
     config_file_path = tmp_path.joinpath("test.json")

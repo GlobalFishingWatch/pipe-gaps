@@ -13,9 +13,6 @@ from pipe_gaps.queries import Query
 logger = logging.getLogger(__name__)
 
 
-DB_PROJECT = "world-fishing-827"
-
-
 @dataclass
 class QueryResult:
     """Encapsulates the result of a BigQuery query.
@@ -55,7 +52,7 @@ class BigQueryClient:
         self.client = client
 
     @classmethod
-    def build(cls, project: str = DB_PROJECT, mock_client=False, use_cache=False):
+    def build(cls, project: str = None, mock_client=False, use_cache=False):
         """Builds a BigQueryClient object.
 
         Args:
@@ -108,9 +105,12 @@ class BigQueryClient:
         Returns:
             A table object representing the view.
         """
-        view_id = f"{self.client.project}.{view_id}"
+        table_ref = bigquery.table.TableReference.from_string(
+            view_id,
+            default_project=self.client.project
+        )
 
-        view = bigquery.Table(view_id)
+        view = bigquery.Table(table_ref)
         view.view_query = view_query
 
         view = self.client.create_table(view, **kwargs)

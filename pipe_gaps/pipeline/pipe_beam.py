@@ -167,7 +167,6 @@ class BeamPipeline(base.Pipeline):
             machine_type="e2-standard-2",  # 2 cores - 8GB RAM.
             disk_size_gb=25,
             use_public_ips=False,
-            project="world-fishing-827",
             temp_location="gs://pipe-temp-us-east-ttl7/dataflow_temp",
             staging_location="gs://pipe-temp-us-east-ttl7/dataflow_staging",
             region="us-east1",

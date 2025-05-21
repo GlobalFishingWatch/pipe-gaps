@@ -25,5 +25,5 @@ def test_build(monkeypatch):
     assert isinstance(next(res), dict)
 
     with pytest.raises(bq_client.QueryError):
-        client = bq_client.BigQueryClient.build(project=None, mock_client=True)
+        client = bq_client.BigQueryClient(client=mocks.BigQueryClientMock(project="", fail=True))
         client.run_query(query=AISMessagesQuery(start_date=start_date, end_date=end_date))

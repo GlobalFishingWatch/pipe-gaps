@@ -7,6 +7,7 @@ import argparse
 
 from pathlib import Path
 from datetime import date, timedelta
+from typing import Any
 
 from pipe_gaps import utils
 from pipe_gaps import pipeline
@@ -168,12 +169,12 @@ def render_command_line_call(config: dict, unparsed: list) -> str:
     return command
 
 
-def create_view(source_id, **kwargs):
+def _create_view(source_id: str, **kwargs: Any):
     view_id = f"{source_id}_{BQ_TABLE_VIEW_PREFIX}"
     logger.info(f"Creating view: {view_id}")
 
     query = AISGapsQuery.last_versions_query(source_id=source_id)
-    bq_client = BigQueryClient.build(**kwargs)  # This uses project=world-fishing-827 by default.
+    bq_client = BigQueryClient.build(**kwargs)
     return bq_client.create_view(view_id=view_id, view_query=query, exists_ok=True)
 
 
@@ -185,7 +186,11 @@ def run(config: dict) -> None:
     pipe, output_id = build_pipeline(**config)
     try:
         pipe.run()
-        create_view(output_id, mock_client=config.get("mock_db_client") is True)
+        _create_view(
+            output_id,
+            mock_client=config.get("mock_db_client") is True,
+            project=config.get("pipeline_options", {}).get("project", None)
+        )
     except pipeline.PipelineError as e:
         logger.error(e)
 
