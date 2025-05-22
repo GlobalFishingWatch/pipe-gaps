@@ -46,12 +46,10 @@ class _QueryJobMock:
 class BigQueryClientMock:
     project: str
     default_query_job_config: bigquery.QueryJobConfig = None
+    fail: bool = False
 
     def query(self, query):
-        if self.project is None:
-            return _QueryJobMock(fail=True)
-
-        return _QueryJobMock(client=self)
+        return _QueryJobMock(client=self, fail=self.fail)
 
     def create_table(self, table, *args, **kwargs):
         return table
