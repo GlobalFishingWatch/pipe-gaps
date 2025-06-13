@@ -1,11 +1,17 @@
 """Module with core PTransform, a unique processing step between sources and sinks."""
 
 import logging
+
 import apache_beam as beam
 
-
 from pipe_gaps.pipeline.processes import CoreProcess
-from pipe_gaps.common.beam.transforms import ApplySlidingWindows, GroupBy, FilterWindowsByDateRange
+
+from pipe_gaps.common.beam.transforms import (
+    ApplySlidingWindows,
+    GroupBy,
+    FilterWindowsByDateRange,
+    Conditional
+)
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +35,7 @@ class Core(beam.PTransform):
             side_inputs: A PCollection with side inputs that will be used
                 to process the unoin of the boundaries.
         """
+        super().__init__()
         self._process = core_process
         self._side_inputs = side_inputs
 
@@ -40,49 +47,43 @@ class Core(beam.PTransform):
         period, offset = self._process.time_window_period_and_offset()
         date_range = self._process._date_range
 
+        # Group pcollection by a configured key and time window.
         groups = (
             pcoll
             | ApplySlidingWindows(period=period, offset=offset, assign_timestamps=True)
             | GroupBy(key, label="Messages")
+            | Conditional(
+                FilterWindowsByDateRange(date_range, offset=offset),
+                condition=date_range is not None
+            )
         )
 
-        if date_range is not None:
-            groups = groups | FilterWindowsByDateRange(date_range, offset=offset)
-
-        out_boundaries = groups | self.process_boundaries()
-        out_groups = groups | self.process_groups()
-
-        return (out_groups, out_boundaries) | self.join_outputs()
-
-    def process_groups(self):
-        """Returns the ProcessGroups PTransform."""
-        return "ProcessGroups" >> (
-            beam.FlatMap(self._process.process_group)
-            | beam.WindowInto(beam.window.GlobalWindows())
-        )
-
-    def process_boundaries(self):
-        """Returns the ProcessBoundaries PTransform."""
-        return "ProcessBoundaries" >> self._process_boundaries()
-
-    def join_outputs(self):
-        """Returns the JoinOutputs PTransform."""
-        return "JoinOutputs" >> beam.Flatten().with_output_types(self._process.output_type())
-
-    def _process_boundaries(self):
-        key = self._process.grouping_key()
-
+        # Open side inputs if they exist, and grouped them by the same key.
         side_inputs = None
         if self._side_inputs is not None:
             side_inputs = beam.pvalue.AsMultiMap(
-                self._side_inputs | GroupBy(key, label="OpenGaps")
+                self._side_inputs
+                | GroupBy(key, label="SideInputs")
             )
 
-        tr = (
-            beam.Map(self._process.get_group_boundary)
-            | beam.WindowInto(beam.window.GlobalWindows())
+        # Process the boundaries of the groups
+        output_in_boundaries = (
+            groups
+            | beam.Map(self._process.get_group_boundary)
+            | "GlobalWindow1" >> beam.WindowInto(beam.window.GlobalWindows())
             | GroupBy(key, label="Boundaries")
             | beam.FlatMap(self._process.process_boundaries, side_inputs=side_inputs)
         )
 
-        return tr
+        # Process the interior the groups
+        output_in_groups = (
+            groups
+            | beam.FlatMap(self._process.process_group)
+            | "GlobalWindow2" >> beam.WindowInto(beam.window.GlobalWindows())
+        )
+
+        # Join the results from interior and boundaries
+        return (
+            (output_in_groups, output_in_boundaries)
+            | beam.Flatten().with_output_types(self._process.output_type())
+        )
