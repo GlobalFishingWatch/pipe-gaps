@@ -10,5 +10,5 @@ __all__ = [
     ReadFromJson,
     ReadFromQuery,
     WriteJson,
-    WriteBigQueryTable
+    WriteBigQueryTable,
 ]

@@ -8,6 +8,7 @@ from apache_beam.transforms.window import IntervalWindow
 
 
 from pipe_gaps.pipeline.processes import CoreProcess
+from pipe_gaps.common.beam.transforms import ApplySlidingWindows
 
 logger = logging.getLogger(__name__)
 
@@ -58,24 +59,14 @@ class Core(beam.PTransform):
 
         return (out_groups, out_boundaries) | self.join_outputs()
 
-    def assign_sliding_windows(self):
-        """Returns the SlidingWindows PTransform."""
-        period, offset = self._process.time_window_period_and_offset()
-        size = period + offset
-
-        return "SlidingWindows" >> (
-            beam.Map(lambda e: beam.window.TimestampedValue(e, e["timestamp"]))
-            | beam.WindowInto(beam.window.SlidingWindows(size=size, period=period, offset=offset))
-        )
-
     def group_by_key_and_timestamp(self):
         """Returns the GroupByKeyAndTime PTransform."""
         key = self._process.grouping_key()
-
+        period, offset = self._process.time_window_period_and_offset()
         date_range = self._process._date_range
 
         tr = (
-            self.assign_sliding_windows()
+            ApplySlidingWindows(period=period, offset=offset)
             | self.group_by_key()
         )
 
