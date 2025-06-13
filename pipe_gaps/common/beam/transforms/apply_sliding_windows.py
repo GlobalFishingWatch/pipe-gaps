@@ -30,10 +30,9 @@ class ApplySlidingWindows(beam.PTransform):
         self,
         period: float,
         offset: float,
-        assign_timestamps: bool = True,
+        assign_timestamps: bool = False,
         timestamp_field: str = "timestamp",
     ):
-        super().__init__()
         self.period = period
         self.offset = offset
         self.assign_timestamps = assign_timestamps
