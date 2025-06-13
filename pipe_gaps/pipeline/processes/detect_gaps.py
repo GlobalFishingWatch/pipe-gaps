@@ -100,19 +100,12 @@ class DetectGaps(CoreProcess):
 
         messages.sort(key=lambda x: x[self.KEY_TIMESTAMP])
 
-        if isinstance(window, IntervalWindow):
-            start_time = window.start.to_utc_datetime(has_tz=True)
-            end_time = window.end.to_utc_datetime(has_tz=True)
+        start_time = window.start.to_utc_datetime(has_tz=True)
+        end_time = window.end.to_utc_datetime(has_tz=True)
 
-            logger.debug("Processing window [{}, {}]".format(start_time, end_time))
+        logger.debug("Processing window [{}, {}]".format(start_time, end_time))
 
-            start_time = start_time + timedelta(hours=self._window_offset_h)
-
-        else:  # Not using pipe beam pipeline.
-            first = min(messages, key=lambda x: x[self.KEY_TIMESTAMP])
-            last = max(messages, key=lambda x: x[self.KEY_TIMESTAMP])
-            start_time = datetime_from_ts(first[self.KEY_TIMESTAMP])
-            end_time = datetime_from_ts(last[self.KEY_TIMESTAMP])
+        start_time = start_time + timedelta(hours=self._window_offset_h)
 
         if self._date_range is not None:
             range_start_time = datetime_from_date(self._date_range[0])
