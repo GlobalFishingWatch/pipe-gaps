@@ -14,7 +14,7 @@ from pipe_gaps.common.beam.transforms import (
 )
 
 from pipe_gaps.pipeline.beam.fns.process_group import ProcessGroup
-
+from pipe_gaps.pipeline.beam.fns.process_boundaries import ProcessBoundaries
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +49,7 @@ class Core(beam.PTransform):
 
         self._window_period_d = self._process._window_period_d
         self._window_offset_h = self._process._window_offset_h
+        self._eval_last = self._process._eval_last
 
     def set_side_inputs(self, side_inputs):
         self._side_inputs = side_inputs
@@ -58,6 +59,13 @@ class Core(beam.PTransform):
             gap_detector=self._gd,
             key=self._key,
             window_offset_h=self._window_offset_h,
+            date_range=self._date_range
+        )
+
+        process_boundaries = ProcessBoundaries(
+            gap_detector=self._gd,
+            key=self._key,
+            eval_last=self._eval_last,
             date_range=self._date_range
         )
 
@@ -86,7 +94,7 @@ class Core(beam.PTransform):
             | beam.Map(self._process.get_group_boundary)
             | "GlobalWindow1" >> beam.WindowInto(beam.window.GlobalWindows())
             | GroupBy(self._key, label="Boundaries")
-            | beam.FlatMap(self._process.process_boundaries, side_inputs=side_inputs)
+            | beam.ParDo(process_boundaries, side_inputs=side_inputs)
         )
 
         # Process the interior the groups
