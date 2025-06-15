@@ -1,40 +1,12 @@
 import logging
-from functools import cached_property
 from typing import List, Union
 
 import apache_beam as beam
 from apache_beam import PCollection
 
+from pipe_gaps.common.key import Key
+
 logger = logging.getLogger(__name__)
-
-
-class Key:
-    """Defines a single or composite key for grouping elements."""
-    def __init__(self, keys: List[str]):
-        self.keys = keys
-
-    def __repr__(self):
-        return str(self.keys)
-
-    @cached_property
-    def func(self):
-        return {
-            k: lambda x: x[k]
-            for k in self.keys
-        }
-
-    def label(self) -> str:
-        """Returns a formatted label for the key fields."""
-        return "And".join(s.title() for s in self.keys)
-
-    def format(self, values):
-        """Formats key-value pairs as a string."""
-        if not isinstance(values, (tuple, list)):
-            values = [values]
-
-        return "({})".format(
-            ', '.join([f'{k}={v}' for k, v in zip(self.keys, values)])
-        )
 
 
 class GroupBy(beam.PTransform):
@@ -64,7 +36,7 @@ class GroupBy(beam.PTransform):
         if isinstance(self.key, (list, tuple)):
             self.key = Key(self.key)
 
-        label = f"Group{self.label}By{self.key.name()}"
+        label = f"Group{self.label}By{self.key.label()}"
         super().__init__(label=label)
 
     def expand(self, pcoll: PCollection) -> PCollection:
@@ -78,6 +50,6 @@ class GroupBy(beam.PTransform):
             PCollection where elements are grouped by the specified keys,
             wrapped in a step with a human-readable label.
         """
-        logger.info(f"Grouping inputs by keys: {self.key.keys}.")
+        logger.info(f"Grouping inputs by keys: {self.key.list()}.")
 
         return pcoll | beam.GroupBy(**self.key.func)

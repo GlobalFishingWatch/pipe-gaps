@@ -1,5 +1,5 @@
 import logging
-from datetime import timedelta, datetime, date
+from datetime import timedelta, date
 from typing import Iterable, Optional, Any
 
 from apache_beam.transforms.window import IntervalWindow
@@ -7,9 +7,12 @@ from apache_beam.transforms.core import DoFn
 
 from pipe_gaps.core import GapDetector
 from pipe_gaps.utils import datetime_from_date, datetime_from_ts
+from pipe_gaps.common.key import Key
+
 
 from .base import CoreProcess
-from .common import Boundary, Boundaries, GroupByKey
+from .common import Boundary, Boundaries
+
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +43,7 @@ class DetectGaps(CoreProcess):
     def __init__(
         self,
         gd: GapDetector,
-        grouping_key: GroupByKey,
+        grouping_key: Key,
         eval_last: bool = False,
         window_period_d: int = MAX_WINDOW_PERIOD_D,
         window_offset_h: int = 12,
@@ -84,56 +87,12 @@ class DetectGaps(CoreProcess):
 
         return cls(
             gd=GapDetector(**config),
-            grouping_key=GroupByKey([cls.KEY_SSVID]),
+            grouping_key=Key([cls.KEY_SSVID]),
             eval_last=eval_last,
             window_period_d=window_period_d,
             window_offset_h=window_offset_h,
             date_range=date_range,
         )
-
-    def process_group(
-        self, group: tuple[Any, Iterable[dict]], window: IntervalWindow = DoFn.WindowParam
-    ) -> Iterable[dict]:
-        key, messages = group
-
-        messages = list(messages)  # On dataflow, this is a _ConcatSequence object.
-
-        messages.sort(key=lambda x: x[self.KEY_TIMESTAMP])
-
-        start_time = window.start.to_utc_datetime(has_tz=True)
-        end_time = window.end.to_utc_datetime(has_tz=True)
-
-        logger.debug("Processing window [{}, {}]".format(start_time, end_time))
-
-        start_time = start_time + timedelta(hours=self._window_offset_h)
-
-        if self._date_range is not None:
-            range_start_time = datetime_from_date(self._date_range[0])
-
-            start_index = self._get_index_for_time(messages, range_start_time)
-            if start_index > 0:
-                # To handle border between start date and previous message
-                start_index = start_index - 1
-
-            range_start_time = datetime_from_ts(messages[start_index][self.KEY_TIMESTAMP])
-
-            start_time = max(start_time, range_start_time)
-
-        gaps = self._gd.detect(messages=messages, start_time=start_time)
-
-        logger.debug(
-            "Found {} gap(s) for {} in range [{}, {}]"
-            .format(
-                len(gaps),
-                self._grouping_key.format(key),
-                start_time.date(),
-                end_time.date(),
-            )
-        )
-
-        for gap in gaps:
-            self._debug_gap(gap)
-            yield gap
 
     def process_boundaries(
         self,
@@ -233,7 +192,7 @@ class DetectGaps(CoreProcess):
         """Callable to use as sorting key."""
         return lambda x: (x[self.KEY_SSVID], x[self.KEY_TIMESTAMP])
 
-    def grouping_key(self) -> GroupByKey:
+    def grouping_key(self) -> Key:
         return self._grouping_key
 
     def time_window_period_and_offset(self):
@@ -281,16 +240,6 @@ class DetectGaps(CoreProcess):
             gap_id=open_gap[self.KEY_GAP_ID],
             base_gap=open_gap
         )
-
-    def _get_index_for_time(self, messages: list, time: datetime) -> int:
-        timestamp = time.timestamp()
-
-        for i, m in enumerate(messages):
-            ts = m[self.KEY_TIMESTAMP]
-            if ts >= timestamp:
-                return i
-
-        return -1
 
     def _is_message_in_range(self, message: dict, buffer: bool = True):
         message_ts = message[self.KEY_TIMESTAMP]

@@ -70,10 +70,6 @@ class CoreProcess(ABC):
         return outputs
 
     @abstractmethod
-    def process_group(self, group: tuple[Any, Iterable]) -> Iterable:
-        """Receives elements inside a group (grouped by group_by_key) and process them."""
-
-    @abstractmethod
     def get_group_boundary(self, group: tuple[Any, Iterable]) -> Any:
         """Receives elements inside a group (grouped by group_by_key)
             and returns the group's boundary elements."""

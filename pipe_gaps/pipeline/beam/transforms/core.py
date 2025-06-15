@@ -13,6 +13,9 @@ from pipe_gaps.common.beam.transforms import (
     Conditional
 )
 
+from pipe_gaps.pipeline.beam.fns.process_group import ProcessGroup
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -33,28 +36,39 @@ class Core(beam.PTransform):
         Args:
             core_process: The instance that defines the core process.
             side_inputs: A PCollection with side inputs that will be used
-                to process the unoin of the boundaries.
+                to process the union of the boundaries.
         """
         super().__init__()
         self._process = core_process
         self._side_inputs = side_inputs
 
+        self._key = self._process.grouping_key()
+        self._period, self._offset = self._process.time_window_period_and_offset()
+        self._date_range = self._process._date_range
+        self._gd = self._process._gd
+
+        self._window_period_d = self._process._window_period_d
+        self._window_offset_h = self._process._window_offset_h
+
     def set_side_inputs(self, side_inputs):
         self._side_inputs = side_inputs
 
     def expand(self, pcoll):
-        key = self._process.grouping_key()
-        period, offset = self._process.time_window_period_and_offset()
-        date_range = self._process._date_range
+        process_group = ProcessGroup(
+            gap_detector=self._gd,
+            key=self._key,
+            window_offset_h=self._window_offset_h,
+            date_range=self._date_range
+        )
 
         # Group pcollection by a configured key and time window.
         groups = (
             pcoll
-            | ApplySlidingWindows(period=period, offset=offset, assign_timestamps=True)
-            | GroupBy(key, label="Messages")
+            | ApplySlidingWindows(period=self._period, offset=self._offset, assign_timestamps=True)
+            | GroupBy(self._key, label="Messages")
             | Conditional(
-                FilterWindowsByDateRange(date_range, offset=offset),
-                condition=date_range is not None
+                FilterWindowsByDateRange(self._date_range, offset=self._offset),
+                condition=self._date_range is not None
             )
         )
 
@@ -63,7 +77,7 @@ class Core(beam.PTransform):
         if self._side_inputs is not None:
             side_inputs = beam.pvalue.AsMultiMap(
                 self._side_inputs
-                | GroupBy(key, label="SideInputs")
+                | GroupBy(self._key, label="SideInputs")
             )
 
         # Process the boundaries of the groups
@@ -71,14 +85,14 @@ class Core(beam.PTransform):
             groups
             | beam.Map(self._process.get_group_boundary)
             | "GlobalWindow1" >> beam.WindowInto(beam.window.GlobalWindows())
-            | GroupBy(key, label="Boundaries")
+            | GroupBy(self._key, label="Boundaries")
             | beam.FlatMap(self._process.process_boundaries, side_inputs=side_inputs)
         )
 
         # Process the interior the groups
         output_in_groups = (
             groups
-            | beam.FlatMap(self._process.process_group)
+            | beam.ParDo(process_group)
             | "GlobalWindow2" >> beam.WindowInto(beam.window.GlobalWindows())
         )
 

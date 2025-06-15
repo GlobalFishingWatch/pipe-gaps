@@ -1,0 +1,94 @@
+import logging
+from typing import Iterable, Any
+from datetime import timedelta, date
+
+from apache_beam import DoFn
+from apache_beam.transforms.window import IntervalWindow
+
+from pipe_gaps.utils import datetime_from_date, datetime_from_ts
+from pipe_gaps.core import GapDetector
+from pipe_gaps.common.key import Key
+
+logger = logging.getLogger(__name__)
+
+
+class ProcessGroup(DoFn):
+    KEY_TIMESTAMP = GapDetector.KEY_TIMESTAMP
+    KEY_SSVID = GapDetector.KEY_SSVID
+    KEY_GAP_ID = GapDetector.KEY_GAP_ID
+
+    def __init__(
+        self,
+        gap_detector: GapDetector,
+        key: Key,
+        window_offset_h: int = 12,
+        date_range: tuple[date, date] = None,
+    ):
+        self._gd = gap_detector
+        self._key = key
+        self._window_offset_h = window_offset_h
+        self._date_range = date_range
+
+    def process(
+        self, group: tuple[Any, Iterable[dict]], window: IntervalWindow = DoFn.WindowParam
+    ):
+        key, messages = group
+
+        messages = list(messages)  # On dataflow, this is a _ConcatSequence object.
+        messages.sort(key=lambda x: x[self.KEY_TIMESTAMP])
+
+        start_time = window.start.to_utc_datetime(has_tz=True)
+        end_time = window.end.to_utc_datetime(has_tz=True)
+
+        logger.debug("Processing window [{}, {}]".format(start_time, end_time))
+
+        start_time = start_time + timedelta(hours=self._window_offset_h)
+        if self._date_range is not None:
+            range_start_time = datetime_from_date(self._date_range[0])
+
+            start_index = self._get_index_for_time(messages, range_start_time)
+            if start_index > 0:
+                # To handle border between start date and previous message
+                start_index = start_index - 1
+
+            range_start_time = datetime_from_ts(messages[start_index][self.KEY_TIMESTAMP])
+            start_time = max(start_time, range_start_time)
+
+        gaps = self._gd.detect(messages=messages, start_time=start_time)
+
+        logger.debug(
+            "Found {} gap(s) for {} in range [{}, {}]"
+            .format(
+                len(gaps),
+                self._key.format(key),
+                start_time.date(),
+                end_time.date(),
+            )
+        )
+
+        for gap in gaps:
+            self._debug_gap(gap)
+            yield gap
+
+    def _get_index_for_time(self, messages: list, time):
+        timestamp = time.timestamp()
+        for i, m in enumerate(messages):
+            if m[self.KEY_TIMESTAMP] >= timestamp:
+                return i
+        return -1
+
+    def _debug_gap(self, g: dict):
+        try:
+            start_ts = g["OFF"][self.KEY_TIMESTAMP]
+            end_ts = g["ON"][self.KEY_TIMESTAMP]
+        except KeyError:
+            start_ts = g[f"start_{self.KEY_TIMESTAMP}"]
+            end_ts = g.get(f"end_{self.KEY_TIMESTAMP}")
+
+        start_dt = datetime_from_ts(start_ts)
+        end_dt = datetime_from_ts(end_ts) if end_ts is not None else None
+
+        logger.debug("----------------------------------")
+        logger.debug("Gap OFF: {}".format(start_dt))
+        logger.debug("Gap  ON: {}".format(end_dt))
+        logger.debug("----------------------------------")
