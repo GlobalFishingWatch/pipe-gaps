@@ -15,6 +15,8 @@ from pipe_gaps.common.beam.transforms import (
 
 from pipe_gaps.pipeline.beam.fns.process_group import ProcessGroup
 from pipe_gaps.pipeline.beam.fns.process_boundaries import ProcessBoundaries
+from pipe_gaps.pipeline.beam.fns.extract_group_boundary import ExtractGroupBoundary
+
 
 logger = logging.getLogger(__name__)
 
@@ -42,8 +44,7 @@ class Core(beam.PTransform):
         self._process = core_process
         self._side_inputs = side_inputs
 
-        self._key = self._process.grouping_key()
-        self._period, self._offset = self._process.time_window_period_and_offset()
+        self._key = self._process._grouping_key
         self._date_range = self._process._date_range
         self._gd = self._process._gd
 
@@ -53,6 +54,14 @@ class Core(beam.PTransform):
 
     def set_side_inputs(self, side_inputs):
         self._side_inputs = side_inputs
+
+    @property
+    def window_period_s(self):
+        return self._window_period_d * 24 * 60 * 60
+
+    @property
+    def window_offset_s(self):
+        return self._window_offset_h * 60 * 60
 
     def expand(self, pcoll):
         process_group = ProcessGroup(
@@ -69,13 +78,16 @@ class Core(beam.PTransform):
             date_range=self._date_range
         )
 
+        extract_group_boundary = ExtractGroupBoundary(window_offset_s=self.window_offset_s)
+
         # Group pcollection by a configured key and time window.
         groups = (
             pcoll
-            | ApplySlidingWindows(period=self._period, offset=self._offset, assign_timestamps=True)
+            | ApplySlidingWindows(
+                period=self.window_period_s, offset=self.window_offset_s, assign_timestamps=True)
             | GroupBy(self._key, label="Messages")
             | Conditional(
-                FilterWindowsByDateRange(self._date_range, offset=self._offset),
+                FilterWindowsByDateRange(self._date_range, offset=self.window_offset_s),
                 condition=self._date_range is not None
             )
         )
@@ -91,7 +103,7 @@ class Core(beam.PTransform):
         # Process the boundaries of the groups
         output_in_boundaries = (
             groups
-            | beam.Map(self._process.get_group_boundary)
+            | beam.ParDo(extract_group_boundary)
             | "GlobalWindow1" >> beam.WindowInto(beam.window.GlobalWindows())
             | GroupBy(self._key, label="Boundaries")
             | beam.ParDo(process_boundaries, side_inputs=side_inputs)
@@ -107,5 +119,5 @@ class Core(beam.PTransform):
         # Join the results from interior and boundaries
         return (
             (output_in_groups, output_in_boundaries)
-            | beam.Flatten().with_output_types(self._process.output_type())
+            | beam.Flatten().with_output_types(dict)
         )

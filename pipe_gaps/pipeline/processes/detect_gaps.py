@@ -1,17 +1,11 @@
 import logging
 from datetime import date
-from typing import Iterable, Any
-
-from apache_beam.transforms.window import IntervalWindow
-from apache_beam.transforms.core import DoFn
 
 from pipe_gaps.core import GapDetector
 from pipe_gaps.common.key import Key
 
 
 from .base import CoreProcess
-from .common import Boundary
-
 
 logger = logging.getLogger(__name__)
 
@@ -92,32 +86,3 @@ class DetectGaps(CoreProcess):
             window_offset_h=window_offset_h,
             date_range=date_range,
         )
-
-    def get_group_boundary(
-        self, group: tuple[Any, Iterable[dict]],
-        window: IntervalWindow = DoFn.WindowParam
-    ) -> Boundary:
-        _, offset = self.time_window_period_and_offset()
-
-        start_time = None
-        if isinstance(window, IntervalWindow):
-            start_time = window.start.seconds() + offset
-
-        key, messages = group
-        messages = list(messages)  # On dataflow, this is a _ConcatSequence object.
-
-        return Boundary.from_group(
-            (key.ssvid, messages),
-            offset=offset,
-            start_time=start_time,
-            timestamp_key=self.KEY_TIMESTAMP)
-
-    def grouping_key(self) -> Key:
-        return self._grouping_key
-
-    def time_window_period_and_offset(self):
-        """Returns period and offset for sliding windows in seconds."""
-        period_s = self._window_period_d * 24 * 60 * 60
-        offset_s = self._window_offset_h * 60 * 60
-
-        return period_s, offset_s
