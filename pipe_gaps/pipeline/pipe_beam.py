@@ -10,7 +10,7 @@ from apache_beam.options.pipeline_options import PipelineOptions
 
 from pipe_gaps.pipeline import base
 from pipe_gaps.pipeline.processes import processes_factory
-from pipe_gaps.pipeline.beam.transforms import sources_factory, sinks_factory, Core
+from pipe_gaps.pipeline.beam.transforms import sources_factory, sinks_factory, DetectGaps
 from pipe_gaps.version import __version__
 
 logger = logging.getLogger(__name__)
@@ -98,7 +98,7 @@ class BeamPipeline(base.Pipeline):
         sources = [sources_factory(**p) for p in config.inputs]
         side_inputs = [sources_factory(**p) for p in config.side_inputs]
 
-        core = Core(core_process=processes_factory(**config.core))
+        core = DetectGaps(core_process=processes_factory(**config.core))
         sinks = [sinks_factory(**p) for p in config.outputs]
 
         return cls(

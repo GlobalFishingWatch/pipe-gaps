@@ -13,10 +13,6 @@ logger = logging.getLogger(__name__)
 MAX_WINDOW_PERIOD_D = 180  # Max. window period in days. Requires further testing. Could be higher.
 
 
-class DetectGapsError(Exception):
-    pass
-
-
 class DetectGaps(CoreProcess):
     """Defines the gap detection process step of the "gaps pipeline".
 
@@ -58,25 +54,6 @@ class DetectGaps(CoreProcess):
         window_offset_h: int = 12,
         **config
     ) -> "DetectGaps":
-        if date_range is not None:
-            date_range = [date.fromisoformat(x) for x in date_range]
-
-        if window_period_d is None:
-            window_period_d = MAX_WINDOW_PERIOD_D
-            if date_range is not None:
-                logger.debug("Window period not provided. Will be adjusted to date range.")
-                date_range_size = (date_range[1] - date_range[0]).days
-                window_period_d = min(date_range_size, MAX_WINDOW_PERIOD_D)
-        else:
-            if window_period_d > MAX_WINDOW_PERIOD_D:
-                logger.warning(
-                    "window period {} surpassed maximum of {}"
-                    .format(window_period_d, MAX_WINDOW_PERIOD_D)
-                )
-                logger.warning("Max value will be used.")
-                window_period_d = MAX_WINDOW_PERIOD_D
-
-        logger.debug("Using window period of {} day(s)".format(window_period_d))
 
         return cls(
             gd=GapDetector(**config),

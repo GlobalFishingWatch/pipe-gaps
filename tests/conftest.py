@@ -468,13 +468,12 @@ class TestCases:
             "open_gaps": [],
             "threshold": 6,
             "dates": ["2024-01-01", "2024-01-02", "2024-01-03", "2024-01-04"],
-            "expected_gaps": 4,
-            "expected_dt": {
-                utc_datetime(2023, 12, 31, 20): utc_datetime(2024, 1, 1, 20),
-                utc_datetime(2024, 1, 1, 22): None,
-                utc_datetime(2024, 1, 1, 22): utc_datetime(2024, 1, 3, 10),
-                utc_datetime(2024, 1, 3, 18): utc_datetime(2024, 1, 4, 19),
-            },
+            "expected_gaps": [
+                (utc_datetime(2023, 12, 31, 20), utc_datetime(2024, 1, 1, 20)),
+                (utc_datetime(2024, 1, 1, 22), None),
+                (utc_datetime(2024, 1, 1, 22), utc_datetime(2024, 1, 3, 18)),
+                (utc_datetime(2024, 1, 3, 18), utc_datetime(2024, 1, 4, 19)),
+            ],
             "id": "gap_after_6_pm_with_end_after_tomorrow"
         },
     ]

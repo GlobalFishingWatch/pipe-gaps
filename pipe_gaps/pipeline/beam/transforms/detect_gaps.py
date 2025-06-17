@@ -1,10 +1,13 @@
 """Module with core PTransform, a unique processing step between sources and sinks."""
 
 import logging
+from datetime import date
+from functools import cached_property
 
 import apache_beam as beam
 
-from pipe_gaps.pipeline.processes import CoreProcess
+from pipe_gaps.core import GapDetector
+from pipe_gaps.common.key import Key
 
 from pipe_gaps.common.beam.transforms import (
     ApplySlidingWindows,
@@ -20,9 +23,24 @@ from pipe_gaps.pipeline.beam.fns.extract_group_boundary import ExtractGroupBound
 
 logger = logging.getLogger(__name__)
 
+MAX_WINDOW_PERIOD_D = 180  # Max. window period in days. Requires further testing. Could be higher.
 
-class Core(beam.PTransform):
-    def __init__(self, core_process: CoreProcess, side_inputs=None):
+
+class DetectGaps(beam.PTransform):
+    KEY_TIMESTAMP = GapDetector.KEY_TIMESTAMP
+    KEY_SSVID = GapDetector.KEY_SSVID
+    KEY_GAP_ID = GapDetector.KEY_GAP_ID
+
+    def __init__(
+        self,
+        gap_detector: GapDetector,
+        key: Key = None,
+        eval_last: bool = False,
+        window_period_d: int = None,
+        window_offset_h: int = 12,
+        date_range: tuple[str, str] = None,
+        side_inputs=None
+    ):
         """A core PTransform for pipelines.
 
         This is meant to be a unique processing step between sources and sinks.
@@ -41,41 +59,68 @@ class Core(beam.PTransform):
                 to process the union of the boundaries.
         """
         super().__init__()
-        self._process = core_process
+        self._gap_detector = gap_detector
+        self._key = key or Key([self.KEY_SSVID])
+        self._eval_last = eval_last
+        self._window_period_d = window_period_d
+        self._window_offset_h = window_offset_h
+        self._date_range = date_range
         self._side_inputs = side_inputs
-
-        self._key = self._process._grouping_key
-        self._date_range = self._process._date_range
-        self._gd = self._process._gd
-
-        self._window_period_d = self._process._window_period_d
-        self._window_offset_h = self._process._window_offset_h
-        self._eval_last = self._process._eval_last
 
     def set_side_inputs(self, side_inputs):
         self._side_inputs = side_inputs
 
-    @property
-    def window_period_s(self):
-        return self._window_period_d * 24 * 60 * 60
+    @cached_property
+    def date_range(self):
+        date_range = None
+        if self._date_range is not None:
+            date_range = [date.fromisoformat(x) for x in self._date_range]
 
-    @property
+        return date_range
+
+    @cached_property
+    def window_period_d(self):
+        window_period_d = self._window_period_d
+
+        if window_period_d is None:
+            if self.date_range is not None:
+                logger.debug("Window period is None. Will be adjusted to provided date range.")
+                date_range_size = (self.date_range[1] - self.date_range[0]).days
+                window_period_d = min(date_range_size, MAX_WINDOW_PERIOD_D)
+            else:
+                window_period_d = MAX_WINDOW_PERIOD_D
+        elif window_period_d > MAX_WINDOW_PERIOD_D:
+            logger.warning(
+                "window period {} surpassed maximum of {}."
+                .format(window_period_d, MAX_WINDOW_PERIOD_D)
+            )
+            logger.warning("Max value will be used.")
+            window_period_d = MAX_WINDOW_PERIOD_D
+
+        logger.debug("Using window period of {} day(s)".format(window_period_d))
+        return window_period_d
+
+    @cached_property
+    def window_period_s(self):
+        return self.window_period_d * 24 * 60 * 60
+
+    @cached_property
     def window_offset_s(self):
         return self._window_offset_h * 60 * 60
 
     def expand(self, pcoll):
         process_group = ProcessGroup(
-            gap_detector=self._gd,
+            gap_detector=self._gap_detector,
             key=self._key,
             window_offset_h=self._window_offset_h,
-            date_range=self._date_range
+            date_range=self.date_range
         )
 
         process_boundaries = ProcessBoundaries(
-            gap_detector=self._gd,
+            gap_detector=self._gap_detector,
             key=self._key,
             eval_last=self._eval_last,
-            date_range=self._date_range
+            date_range=self.date_range
         )
 
         extract_group_boundary = ExtractGroupBoundary(window_offset_s=self.window_offset_s)
@@ -87,8 +132,8 @@ class Core(beam.PTransform):
                 period=self.window_period_s, offset=self.window_offset_s, assign_timestamps=True)
             | GroupBy(self._key, label="Messages")
             | Conditional(
-                FilterWindowsByDateRange(self._date_range, offset=self.window_offset_s),
-                condition=self._date_range is not None
+                FilterWindowsByDateRange(self.date_range, offset=self.window_offset_s),
+                condition=self.date_range is not None
             )
         )
 

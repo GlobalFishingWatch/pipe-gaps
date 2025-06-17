@@ -50,6 +50,6 @@ class GroupBy(beam.PTransform):
             PCollection where elements are grouped by the specified keys,
             wrapped in a step with a human-readable label.
         """
-        logger.info(f"Grouping inputs by keys: {self.key.list()}.")
+        # logger.info(f"Grouping {self.label} by keys: {self.key.list()}.")
 
         return pcoll | beam.GroupBy(**self.key.func)
