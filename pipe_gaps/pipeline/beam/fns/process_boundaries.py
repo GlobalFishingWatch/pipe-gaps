@@ -5,11 +5,42 @@ from datetime import timedelta
 from apache_beam.transforms.core import DoFn
 
 from pipe_gaps.core import GapDetector
-from pipe_gaps.pipeline.processes.common import Boundary, Boundaries
+from pipe_gaps.pipeline.beam.fns.extract_group_boundary import Boundary
 from pipe_gaps.utils import datetime_from_date, datetime_from_ts
 from pipe_gaps.common.key import Key
 
 logger = logging.getLogger(__name__)
+
+
+class Boundaries:
+    """Container for Boundary objects."""
+    def __init__(self, boundaries):
+        self._boundaries = sorted(boundaries, key=lambda x: x.first_message()["timestamp"])
+
+    def get_first_message_inside_range(self, date_range):
+        if date_range is not None:
+            start_ds = datetime_from_date(date_range[0]).timestamp()
+            for b in self._boundaries:
+                fm = b.first_message()
+                if fm["timestamp"] >= start_ds:
+                    return fm
+
+        return None
+
+    def consecutive_boundaries(self):
+        return list(zip(self._boundaries[:-1], self._boundaries[1:]))
+
+    def first_boundary(self):
+        return self._boundaries[0]
+
+    def last_boundary(self):
+        return self._boundaries[-1]
+
+    def first_message(self):
+        return self.first_boundary().first_message()
+
+    def last_message(self):
+        return self.last_boundary().last_message()
 
 
 class ProcessBoundaries(DoFn):
