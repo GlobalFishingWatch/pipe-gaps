@@ -4,7 +4,7 @@ import apache_beam as beam
 from apache_beam.testing.test_pipeline import TestPipeline
 
 from pipe_gaps.common.beam.transforms.write_json import WriteJson
-from pipe_gaps.pipeline.schemas import Message
+from pipe_gaps.queries.ais_messages import Message
 from pipe_gaps.common.io import json_load
 
 

@@ -5,7 +5,7 @@ from datetime import date, datetime
 
 import sqlparse
 
-from .base import Query
+from pipe_gaps.common.query import Query
 
 logger = logging.getLogger(__name__)
 

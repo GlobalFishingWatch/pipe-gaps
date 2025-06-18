@@ -7,7 +7,7 @@ from pipe_gaps.common.io import json_load
 
 
 BIGQUERY_SCHEMAS = {
-    "gaps": json_load(files("pipe_gaps.pipeline.schemas").joinpath("ais-gaps.json"))
+    "gaps": json_load(files("pipe_gaps.assets.schemas").joinpath("ais-gaps.json"))
 }
 
 

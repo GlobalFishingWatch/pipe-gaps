@@ -17,8 +17,7 @@ setuptools.setup(
     include_package_data=True,
     package_data={
         'pipe_gaps': [
-            'data/*.json',
-            'pipeline/schemas/*.json'
+            'assets/**/*',
         ]
     },
     classifiers=[

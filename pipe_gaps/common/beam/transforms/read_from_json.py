@@ -5,7 +5,7 @@ from typing import Union
 import apache_beam as beam
 
 from pipe_gaps.common.io import json_load
-from pipe_gaps.pipeline import schemas
+from pipe_gaps.assets import schemas
 
 
 class ReadFromJson(beam.PTransform):

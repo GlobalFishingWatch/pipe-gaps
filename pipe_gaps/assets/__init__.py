@@ -7,7 +7,7 @@ from gfw.common.io import json_load
 
 def sample_messages_path():
     """Returns path to sample input messages."""
-    return files("pipe_gaps.data").joinpath("sample_messages.json")
+    return files("pipe_gaps.assets.sample_data").joinpath("sample_messages.json")
 
 
 def get_sample_messages() -> dict:
@@ -17,7 +17,7 @@ def get_sample_messages() -> dict:
 
 def sample_open_gaps_path():
     """Returns path to sample input messages."""
-    return files("pipe_gaps.data").joinpath("open_gaps.json")
+    return files("pipe_gaps.assets.sample_data").joinpath("open_gaps.json")
 
 
 def get_sample_open_gaps() -> dict:

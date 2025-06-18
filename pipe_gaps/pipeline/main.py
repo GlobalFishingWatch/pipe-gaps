@@ -21,11 +21,11 @@ from gfw.common.beam.utils import generate_unique_labels
 from pipe_gaps.common.io import json_load
 from pipe_gaps.common.beam.transforms.read_from_json import ReadFromJson
 from pipe_gaps.common.beam.transforms.write_json import WriteJson
-from pipe_gaps.common.beam.transforms.read_from_bigquery import ReadFromQuery
+from pipe_gaps.common.beam.transforms.read_from_bigquery import ReadFromBigQuery
 
 from pipe_gaps.core.gap_detector import GapDetector
 from pipe_gaps.version import __version__
-from pipe_gaps.queries import AISGapsQuery
+from pipe_gaps.queries import AISGapsQuery, AISMessagesQuery
 from pipe_gaps.pipeline.beam.transforms.detect_gaps import DetectGaps
 
 
@@ -115,7 +115,7 @@ class RawGapsPipeline(BeamPipeline):
         sinks_labels = generate_unique_labels(self._sinks)
 
         if self._side_inputs is not None and len(self._side_inputs) > 0:
-            side_inputs = p | "ReadSideInputs" >> self._side_inputs[0]
+            side_inputs = p | self._side_inputs[0]
             self._core.set_side_inputs(side_inputs)
 
         # Source transformations
@@ -180,18 +180,20 @@ def build_pipeline(
     if bq_input_open_gaps is None:
         bq_input_open_gaps = bq_output_gaps
 
+    read_from_bigquery_factory = ReadFromBigQuery.get_client_factory(mocked=mock_db_client)
+
     side_inputs = []
     if not skip_open_gaps and start_date > open_gaps_start_date:
         side_inputs.append(
-            ReadFromQuery.build(
-                query_name="gaps",
-                query_params={
-                    "source_gaps": bq_input_open_gaps,
-                    "start_date": open_gaps_start_date,
-                    "is_closed": False,
-                },
-                mock_db_client=mock_db_client,
-                method=bq_read_method
+            ReadFromBigQuery(
+                query=AISGapsQuery(
+                    source_gaps=bq_input_open_gaps,
+                    start_date=open_gaps_start_date,
+                    is_closed=False,
+                ),
+                method=bq_read_method,
+                read_from_bigquery_factory=read_from_bigquery_factory,
+                label="ReadOpenGaps",
             )
         )
 
@@ -224,19 +226,19 @@ def build_pipeline(
         query_start_date = start_date - timedelta(days=buffer_days)
 
         sources.append(
-            ReadFromQuery.build(
-                query_name="messages",
-                query_params={
-                    "source_messages": bq_input_messages,
-                    "source_segments": bq_input_segments,
-                    "start_date": query_start_date,
-                    "end_date": end_date,
-                    "ssvids": ssvids,
-                    "filter_not_overlapping_and_short": filter_not_overlapping_and_short,
-                    "filter_good_seg": filter_good_seg,
-                },
-                mock_db_client=mock_db_client,
-                method=bq_read_method
+            ReadFromBigQuery(
+                query=AISMessagesQuery(
+                    source_messages=bq_input_messages,
+                    source_segments=bq_input_segments,
+                    start_date=query_start_date,
+                    end_date=end_date,
+                    ssvids=ssvids,
+                    filter_not_overlapping_and_short=filter_not_overlapping_and_short,
+                    filter_good_seg=filter_good_seg,
+                ),
+                method=bq_read_method,
+                read_from_bigquery_factory=read_from_bigquery_factory,
+                label="ReadAISMessages",
             ),
         )
 
@@ -256,7 +258,7 @@ def build_pipeline(
             WriteToPartitionedBigQuery(
                 table=bq_output_gaps,
                 description=description,
-                schema=json_load(files("pipe_gaps.pipeline.schemas").joinpath("ais-gaps.json")),
+                schema=json_load(files("pipe_gaps.assets.schemas").joinpath("ais-gaps.json")),
                 partition_field=BQ_TABLE_PARTITION_FIELD,
                 partition_type=BQ_TABLE_PARTITION_TYPE,
                 clustering_fields=BQ_TABLE_CLUSTERING_FIELDS,

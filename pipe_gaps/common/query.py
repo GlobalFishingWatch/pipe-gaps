@@ -4,10 +4,6 @@ from datetime import datetime
 from abc import ABC, abstractmethod
 
 
-class QueryError(Exception):
-    pass
-
-
 class Query(ABC):
     @abstractmethod
     def render(self):
@@ -55,12 +51,3 @@ class Query(ABC):
                 where_clause += f" AND {filter_}"
 
         return where_clause
-
-
-def get_query(query_name: str, query_params: dict) -> Query:
-    q = Query.subclasses()
-
-    if query_name not in q:
-        raise NotImplementedError(f"Query with name '{query_name}' not implemented.")
-
-    return q[query_name](**query_params)

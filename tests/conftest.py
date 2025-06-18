@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from gfw.common.logging import LoggerConfig
 from pipe_gaps.common.io import json_save
 from pipe_gaps.core import GapDetector
-from pipe_gaps.data import get_sample_messages
+from pipe_gaps.assets import get_sample_messages
 
 
 LoggerConfig(
