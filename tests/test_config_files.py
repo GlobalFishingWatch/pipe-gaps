@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from pipe_gaps.utils import json_load
+from gfw.common.io import json_load
 # from pipe_gaps.cli import build_pipeline
 
 # from pydantic import ValidationError, validate_call

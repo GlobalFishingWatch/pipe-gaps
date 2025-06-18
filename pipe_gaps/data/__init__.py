@@ -2,7 +2,7 @@
 
 from importlib_resources import files
 
-from pipe_gaps.utils import json_load
+from gfw.common.io import json_load
 
 
 def sample_messages_path():

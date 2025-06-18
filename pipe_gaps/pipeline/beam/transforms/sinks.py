@@ -7,7 +7,7 @@ from importlib_resources import files
 import apache_beam as beam
 # from apache_beam.io.fileio import default_file_naming
 
-from pipe_gaps.utils import json_load
+from pipe_gaps.common.io import json_load
 
 
 def sinks_factory(kind, **kwargs):

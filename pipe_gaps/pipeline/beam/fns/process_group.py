@@ -5,7 +5,8 @@ from datetime import timedelta, date
 from apache_beam import DoFn
 from apache_beam.transforms.window import IntervalWindow
 
-from pipe_gaps.utils import datetime_from_date, datetime_from_ts
+from gfw.common.datetime import datetime_from_timestamp
+from pipe_gaps.common.datetime import datetime_from_date
 from pipe_gaps.core import GapDetector
 from pipe_gaps.common.key import Key
 
@@ -51,7 +52,7 @@ class ProcessGroup(DoFn):
                 # To handle border between start date and previous message
                 start_index = start_index - 1
 
-            range_start_time = datetime_from_ts(messages[start_index][self.KEY_TIMESTAMP])
+            range_start_time = datetime_from_timestamp(messages[start_index][self.KEY_TIMESTAMP])
             start_time = max(start_time, range_start_time)
 
         gaps = self._gd.detect(messages=messages, start_time=start_time)
@@ -85,8 +86,8 @@ class ProcessGroup(DoFn):
             start_ts = g[f"start_{self.KEY_TIMESTAMP}"]
             end_ts = g.get(f"end_{self.KEY_TIMESTAMP}")
 
-        start_dt = datetime_from_ts(start_ts)
-        end_dt = datetime_from_ts(end_ts) if end_ts is not None else None
+        start_dt = datetime_from_timestamp(start_ts)
+        end_dt = datetime_from_timestamp(end_ts) if end_ts is not None else None
 
         logger.debug("----------------------------------")
         logger.debug("Gap OFF: {}".format(start_dt))

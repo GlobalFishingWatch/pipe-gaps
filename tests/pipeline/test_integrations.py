@@ -2,7 +2,7 @@ import typing
 
 from pipe_gaps.pipeline.beam.transforms.sinks import BIGQUERY_SCHEMAS
 from pipe_gaps.core import GapDetector
-from pipe_gaps.utils import json_load
+from pipe_gaps.common.io import json_load
 
 from pipe_gaps.queries import AISGap
 

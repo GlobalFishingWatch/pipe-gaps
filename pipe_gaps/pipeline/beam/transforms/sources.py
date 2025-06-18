@@ -5,7 +5,7 @@ from typing import Union
 import apache_beam as beam
 
 from pipe_gaps import queries
-from pipe_gaps.utils import json_load
+from pipe_gaps.common.io import json_load
 from pipe_gaps.pipeline import schemas
 
 

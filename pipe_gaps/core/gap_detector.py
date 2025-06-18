@@ -2,7 +2,7 @@
 import logging
 import hashlib
 import operator
-from itertools import islice, chain
+from itertools import islice, chain, pairwise
 from collections import defaultdict
 
 from typing import Union, Generator
@@ -10,8 +10,6 @@ from datetime import datetime, date, timedelta, timezone
 
 from rich.progress import track
 from geopy.distance import geodesic
-
-from pipe_gaps.utils import pairwise, list_sort
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +38,6 @@ class GapDetector:
             Can be an int, float number or a timedelta object.
         n_hours_before: Count positions this amount of hours before each gap.
         show_progress: If True, renders a progress bar.
-        sort_method: The algorithm to use when sorting messages. One of ["timsort", "heapsort"].
         normalize_output: If True, normalizes the output, i.e., the output is a flatten dictionary
             with all the OFF/ON properties at the same level. If False, the output will contain
             a key for the OFF message and another key for the ON message.
@@ -79,7 +76,6 @@ class GapDetector:
         threshold: Union[int, float, timedelta] = THRESHOLD,
         n_hours_before: int = 12,
         show_progress: bool = False,
-        sort_method: str = "timsort",
         normalize_output: bool = False
     ):
         if isinstance(threshold, (int, float)):
@@ -91,7 +87,6 @@ class GapDetector:
         self._threshold_h = threshold
         self._n_hours_before = n_hours_before
         self._show_progress = show_progress
-        self._sort_method = sort_method
         self._normalize_output = normalize_output
 
         self._n_seconds_before = self._n_hours_before.total_seconds()
@@ -313,7 +308,7 @@ class GapDetector:
     # @profile  # noqa  # Uncomment to run memory profiler
     def _sort_messages(self, messages: list) -> None:
         key = operator.itemgetter(self.KEY_TIMESTAMP)
-        list_sort(messages, key=key, method=self._sort_method)
+        messages.sort(key=key)
 
     def _get_index_for_start_time(self, messages: list, start_time: datetime) -> Union[int, None]:
         if isinstance(start_time, datetime):

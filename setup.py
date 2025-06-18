@@ -22,7 +22,6 @@ setuptools.setup(
         ]
     },
     classifiers=[
-        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
@@ -34,10 +33,11 @@ setuptools.setup(
         "geopy~=2.4",
         "google-cloud-bigquery~=3.0",
         "google-cloud-profiler~=4.1",
+        "gfw-common[bq,beam]~=0.1.0rc1",
         "pandas~=2.1",
         "py-cpuinfo~=9.0",
         "pydantic~=2.0",
-        "rich~=13.0",
+        "rich~=14.0",
         "sqlparse~=0.5",
     ],
     extras_require={

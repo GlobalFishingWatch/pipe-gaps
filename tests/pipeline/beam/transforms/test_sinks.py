@@ -8,7 +8,7 @@ from pipe_gaps.pipeline.beam.transforms.sinks import (
     WriteJson, WriteBigQueryTable, WriteToBigQueryMock, sinks_factory
 )
 from pipe_gaps.pipeline.schemas import Message
-from pipe_gaps.utils import json_load
+from pipe_gaps.common.io import json_load
 
 
 def test_write_json(messages, tmp_path):

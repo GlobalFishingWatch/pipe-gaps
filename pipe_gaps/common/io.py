@@ -1,16 +1,5 @@
-"""Utilities package."""
 import json
 from pathlib import Path
-from datetime import datetime, date, timezone
-
-from .logger import setup_logger
-from .timing import timing
-from .collections import pairwise, list_sort
-
-
-__all__ = [  # functions importable directly from package.
-    setup_logger, timing, pairwise, list_sort,
-]
 
 
 def json_load(path: Path, lines: bool = False, coder=None) -> dict:
@@ -47,13 +36,3 @@ def json_save(data: list, path: Path, indent: int = 4, lines: bool = False) -> d
     with open(path, mode='w') as f:
         for item in data:
             f.write(json.dumps(item) + "\n")
-
-
-def datetime_from_date(date_: date, tz=timezone.utc):
-    """Creates datetime from date, using 00:00:00 hs."""
-    return datetime.combine(date_, datetime.min.time(), tzinfo=tz)
-
-
-def datetime_from_ts(ts: float, tz=timezone.utc):
-    """Creates datetime from timestamp."""
-    return datetime.fromtimestamp(ts, tz=tz)

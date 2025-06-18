@@ -3,10 +3,11 @@ from typing import Iterable, Optional, Any
 from datetime import timedelta
 
 from apache_beam.transforms.core import DoFn
+from gfw.common.datetime import datetime_from_timestamp
 
 from pipe_gaps.core import GapDetector
 from pipe_gaps.pipeline.beam.fns.extract_group_boundary import Boundary
-from pipe_gaps.utils import datetime_from_date, datetime_from_ts
+from pipe_gaps.common.datetime import datetime_from_date
 from pipe_gaps.common.key import Key
 
 logger = logging.getLogger(__name__)
@@ -89,7 +90,7 @@ class ProcessBoundaries(DoFn):
         for left, right in boundaries.consecutive_boundaries():
             messages = left.end + right.start
 
-            start_dt = datetime_from_ts(left.last_message()[self.KEY_TIMESTAMP])
+            start_dt = datetime_from_timestamp(left.last_message()[self.KEY_TIMESTAMP])
 
             if not self._is_message_in_range(left.last_message()):
                 # Otherwise should be an open gap and we handle those in step one.
@@ -105,7 +106,7 @@ class ProcessBoundaries(DoFn):
             last_boundary = boundaries.last_boundary()
             last_message = last_boundary.last_message()
 
-            last_message_dt = datetime_from_ts(last_message["timestamp"])
+            last_message_dt = datetime_from_timestamp(last_message["timestamp"])
 
             comparison_date = last_message_dt.date()
             if self._date_range is not None:
@@ -175,7 +176,7 @@ class ProcessBoundaries(DoFn):
 
     def _is_message_in_range(self, message: dict, buffer: bool = True):
         message_ts = message[self.KEY_TIMESTAMP]
-        message_dt = datetime_from_ts(message_ts)
+        message_dt = datetime_from_timestamp(message_ts)
 
         if self._date_range is not None:
             start_dt = datetime_from_date(self._date_range[0])
@@ -196,9 +197,9 @@ class ProcessBoundaries(DoFn):
             start_ts = g[f"start_{self.KEY_TIMESTAMP}"]
             end_ts = g[f"end_{self.KEY_TIMESTAMP}"]
 
-        start_dt = datetime_from_ts(start_ts)
+        start_dt = datetime_from_timestamp(start_ts)
         if end_ts is not None:
-            end_dt = datetime_from_ts(end_ts)
+            end_dt = datetime_from_timestamp(end_ts)
 
         logger.debug("----------------------------------")
         logger.debug("Gap OFF: {}".format(start_dt))

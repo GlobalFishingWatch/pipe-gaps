@@ -3,16 +3,17 @@ import pytest
 from typing import Optional
 from datetime import datetime, timezone
 
-from pipe_gaps import utils
+from gfw.common.logging import LoggerConfig
+from pipe_gaps.common.io import json_save
 from pipe_gaps.core import GapDetector
 from pipe_gaps.data import get_sample_messages
 
 
-utils.setup_logger(
+LoggerConfig(
     warning_level=[
         "apache_beam",
     ]
-)
+).setup()
 
 
 @pytest.fixture(scope="module")
@@ -23,7 +24,7 @@ def messages():
 @pytest.fixture()
 def input_file(tmp_path, messages):
     path = tmp_path.joinpath("test.json")
-    utils.json_save(messages, path)
+    json_save(messages, path)
 
     return path
 

@@ -7,10 +7,10 @@ from datetime import date, timedelta
 from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import assert_that
 
+from gfw.common.datetime import datetime_from_timestamp
 from pipe_gaps.core import GapDetector
 from pipe_gaps.pipeline.beam.transforms.detect_gaps import DetectGaps
-from pipe_gaps.utils import datetime_from_ts
-from pipe_gaps.utils import json_load
+from pipe_gaps.common.io import json_load
 
 from tests.conftest import TestCases
 
@@ -234,10 +234,10 @@ def test_detect_closing_gaps(
 
             gaps = sorted(gaps, key=lambda x: x["OFF"]["timestamp"])
             for g in gaps:
-                g_start = datetime_from_ts(g["OFF"]["timestamp"])
+                g_start = datetime_from_timestamp(g["OFF"]["timestamp"])
                 expected_end = expected_dt[g_start]
                 actual_end = (
-                    datetime_from_ts(g["ON"]["timestamp"])
+                    datetime_from_timestamp(g["ON"]["timestamp"])
                     if g["ON"]["timestamp"] is not None else None
                 )
                 assert expected_end == actual_end
@@ -359,10 +359,10 @@ def test_daily_mode(tmp_path, messages, open_gaps, threshold, dates, expected_ga
     assert len(all_gaps) == len(expected_gaps)
 
     for gap, expected_gap in zip(all_gaps, expected_gaps):
-        gap_start_dt = datetime_from_ts(gap["start_timestamp"])
+        gap_start_dt = datetime_from_timestamp(gap["start_timestamp"])
         gap_end_ts = gap["end_timestamp"]
         if gap_end_ts is not None:
-            gap_end_dt = datetime_from_ts(gap_end_ts)
+            gap_end_dt = datetime_from_timestamp(gap_end_ts)
         else:
             gap_end_dt = None
 

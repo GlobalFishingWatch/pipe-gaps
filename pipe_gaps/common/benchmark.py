@@ -14,9 +14,11 @@ from dataclasses import dataclass
 
 import cpuinfo
 
+from gfw.common.logging import LoggerConfig
+from gfw.common.decorators import timing
+
 from pipe_gaps.data import get_sample_messages
 from pipe_gaps.core import GapDetector
-from pipe_gaps.utils import setup_logger, timing
 
 
 logger = logging.getLogger("Benchmark")
@@ -117,7 +119,6 @@ def _build_input_messages(n: int = 1000) -> list[dict]:
 def _run_process(input_size: int = 1000) -> None:
     """Benchmark for core gap detector."""
     gd = GapDetector(
-        sort_method="timsort",
         threshold=timedelta(hours=1, minutes=20)
     )
 
@@ -178,7 +179,7 @@ def run_benchmark(
 
 def main(args):
     """CLI for benchmark tool."""
-    setup_logger()
+    LoggerConfig().setup()
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     parser = argparse.ArgumentParser(prog=NAME, description=DESCRIPTION)
