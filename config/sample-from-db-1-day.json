@@ -12,11 +12,9 @@
     "n_hours_before": 12,
     "window_period_d": 1,
     "filter_good_seg": true,
-    "pipeline_options": {
-        "project": "world-fishing-827",
-        "runner": "dataflow",
-        "max_num_workers": 50,
-        "machine_type": "e2-custom-2-3072",
-        "job_name": "tom-test-gaps-1-day-fix-6-pm-missing-gaps"
-    }
+    "project": "world-fishing-827",
+    "runner": "dataflow",
+    "max_num_workers": 50,
+    "machine_type": "e2-custom-2-3072",
+    "job_name": "tom-test-gaps-1-day"
 }

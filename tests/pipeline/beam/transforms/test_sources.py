@@ -2,9 +2,9 @@ import pytest
 from datetime import datetime
 from apache_beam.testing.test_pipeline import TestPipeline
 
-from pipe_gaps.pipeline.beam.transforms.sources import (
-    ReadFromQuery, ReadFromJson, ReadFromBigQueryMock, sources_factory
-)
+from pipe_gaps.common.beam.transforms.read_from_bigquery import ReadFromQuery, ReadFromBigQueryMock
+from pipe_gaps.common.beam.transforms.read_from_json import ReadFromJson
+
 from pipe_gaps.data import sample_messages_path
 
 
@@ -40,11 +40,3 @@ def test_read_from_json():
 
     with TestPipeline() as p:
         p | ReadFromJson.build(input_file=path, schema="messages")
-
-
-def test_factory():
-    with pytest.raises(NotImplementedError):
-        sources_factory("dummy")
-
-    path = sample_messages_path()
-    sources_factory("json", input_file=path)

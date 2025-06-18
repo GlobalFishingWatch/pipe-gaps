@@ -101,11 +101,11 @@ class DetectGaps(beam.PTransform):
         return window_period_d
 
     @cached_property
-    def window_period_s(self):
+    def period_s(self):
         return self.window_period_d * 24 * 60 * 60
 
     @cached_property
-    def window_offset_s(self):
+    def offset_s(self):
         return self._window_offset_h * 60 * 60
 
     def expand(self, pcoll):
@@ -123,16 +123,15 @@ class DetectGaps(beam.PTransform):
             date_range=self.date_range
         )
 
-        extract_group_boundary = ExtractGroupBoundary(window_offset_s=self.window_offset_s)
+        extract_group_boundary = ExtractGroupBoundary(window_offset_s=self.offset_s)
 
         # Group pcollection by a configured key and time window.
         groups = (
             pcoll
-            | ApplySlidingWindows(
-                period=self.window_period_s, offset=self.window_offset_s, assign_timestamps=True)
+            | ApplySlidingWindows(self.period_s, self.offset_s, assign_timestamps=True)
             | GroupBy(self._key, label="Messages")
-            | Conditional(
-                FilterWindowsByDateRange(self.date_range, offset=self.window_offset_s),
+            | "FilterWindows" >> Conditional(
+                FilterWindowsByDateRange(self.date_range, offset=self.offset_s),
                 condition=self.date_range is not None
             )
         )
@@ -141,24 +140,21 @@ class DetectGaps(beam.PTransform):
         side_inputs = None
         if self._side_inputs is not None:
             side_inputs = beam.pvalue.AsMultiMap(
-                self._side_inputs
-                | GroupBy(self._key, label="SideInputs")
+                self._side_inputs | GroupBy(self._key, label="OpenGaps")
             )
 
         # Process the boundaries of the groups
-        output_in_boundaries = (
-            groups
-            | beam.ParDo(extract_group_boundary)
-            | "GlobalWindow1" >> beam.WindowInto(beam.window.GlobalWindows())
+        output_in_boundaries = groups | "ProcessBoundaries" >> (
+            beam.ParDo(extract_group_boundary)
+            | "GlobalWindow" >> beam.WindowInto(beam.window.GlobalWindows())
             | GroupBy(self._key, label="Boundaries")
             | beam.ParDo(process_boundaries, side_inputs=side_inputs)
         )
 
         # Process the interior the groups
-        output_in_groups = (
-            groups
-            | beam.ParDo(process_group)
-            | "GlobalWindow2" >> beam.WindowInto(beam.window.GlobalWindows())
+        output_in_groups = groups | "ProcessGroups" >> (
+            beam.ParDo(process_group)
+            | "GlobalWindow" >> beam.WindowInto(beam.window.GlobalWindows())
         )
 
         # Join the results from interior and boundaries

@@ -33,7 +33,7 @@ setuptools.setup(
         "geopy~=2.4",
         "google-cloud-bigquery~=3.0",
         "google-cloud-profiler~=4.1",
-        "gfw-common[bq,beam]~=0.1.0rc1",
+        "gfw-common[bq,beam]~=0.1.0rc2",
         "pandas~=2.1",
         "py-cpuinfo~=9.0",
         "pydantic~=2.0",
@@ -45,7 +45,7 @@ setuptools.setup(
     },
     entry_points={
         "console_scripts": [
-            "pipe-gaps = pipe_gaps.cli:main",
+            "pipe-gaps = pipe_gaps.cli.cli:main",
         ]
     },
 )

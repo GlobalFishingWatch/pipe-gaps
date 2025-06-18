@@ -1,4 +1,4 @@
-{   
+{
     "json_input_messages":  "pipe_gaps/data/sample_messages_lines.json",
     "ssvids": [],
     "date_range": [
@@ -8,5 +8,6 @@
     "min_gap_length": 1.2,
     "n_hours_before": 12,
     "window_period_d": 1,
+    "skip_open_gaps": true,
     "save_json": true
 }
