@@ -6,9 +6,10 @@ from apache_beam import DoFn
 from apache_beam.transforms.window import IntervalWindow
 
 from gfw.common.datetime import datetime_from_timestamp
-from pipe_gaps.common.datetime import datetime_from_date
+
 from pipe_gaps.core import GapDetector
 from pipe_gaps.common.key import Key
+from pipe_gaps.common.datetime import datetime_from_date
 
 logger = logging.getLogger(__name__)
 

@@ -1,8 +1,8 @@
 from typing import Iterable, Any
 from dataclasses import dataclass
 
-from apache_beam.transforms.window import IntervalWindow
 from apache_beam.transforms.core import DoFn
+from apache_beam.transforms.window import IntervalWindow
 
 
 @dataclass(eq=True, frozen=True)

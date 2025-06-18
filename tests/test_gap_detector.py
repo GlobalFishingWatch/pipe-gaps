@@ -1,9 +1,8 @@
 from datetime import datetime, timezone, timedelta
 
 import pytest
+
 from pipe_gaps.core import GapDetector, GapDetectionError
-
-
 from tests.conftest import create_message
 
 

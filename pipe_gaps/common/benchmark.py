@@ -17,8 +17,8 @@ import cpuinfo
 from gfw.common.logging import LoggerConfig
 from gfw.common.decorators import timing
 
-from pipe_gaps.assets import get_sample_messages
 from pipe_gaps.core import GapDetector
+from pipe_gaps.assets import get_sample_messages
 
 
 logger = logging.getLogger("Benchmark")

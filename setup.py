@@ -28,6 +28,7 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
+        "apache-beam[gcp]~=2.63",
         "importlib-resources~=6.0",
         "geopy~=2.4",
         "google-cloud-bigquery~=3.0",
@@ -39,9 +40,6 @@ setuptools.setup(
         "rich~=14.0",
         "sqlparse~=0.5",
     ],
-    extras_require={
-        "beam": ["apache-beam[gcp]~=2.63"],
-    },
     entry_points={
         "console_scripts": [
             "pipe-gaps = pipe_gaps.cli.cli:main",

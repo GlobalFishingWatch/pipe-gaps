@@ -42,18 +42,18 @@ dockershell:
 
 reqs:
 	docker compose run --rm --entrypoint /bin/bash -it ${DOCKER_COMPOSER_SERVICE_DEV} -c \
-		'pip-compile -o ${REQS_PROD_TXT} setup.py --extra beam -v'
+		'pip-compile -o ${REQS_PROD_TXT} setup.py -v'
 
-upgrade-reqs:
+reqs-upgrade:
 	docker compose run --rm --entrypoint /bin/bash -it ${DOCKER_COMPOSER_SERVICE_DEV} -c \
-	'pip-compile -o ${REQS_PROD_TXT} -U setup.py --extra beam -v'
+	'pip-compile -o ${REQS_PROD_TXT} -U setup.py -v'
 
 venv:
 	python3 -m venv ${VENV_NAME}
 
 install:
 	pip install -r ${REQS_DEV}
-	pip install -e .[beam]
+	pip install -e .
 
 test:
 	pytest
@@ -74,4 +74,4 @@ profile:
 	python -m cProfile -o gaps.prof tests/benchmark.py 10e6
 
 
-.PHONY: help gcp build dockershell reqs upgrade-reqs venv install test testintegration testdocker profile
+.PHONY: help gcp build dockershell reqs reqs-upgrade venv install test testintegration testdocker profile

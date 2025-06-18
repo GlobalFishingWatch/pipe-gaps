@@ -5,21 +5,20 @@ import logging
 from datetime import date, timedelta
 from typing import Any
 from types import SimpleNamespace
-from importlib.resources import files
 
 from gfw.common.bigquery_helper import BigQueryHelper
 from gfw.common.beam.pipeline import BeamPipeline
 from gfw.common.beam.transforms import WriteToPartitionedBigQuery
 
-from pipe_gaps.common.io import json_load
 from pipe_gaps.common.beam.transforms.read_from_json import ReadFromJson
 from pipe_gaps.common.beam.transforms.write_json import WriteJson
 from pipe_gaps.common.beam.transforms.read_from_bigquery import ReadFromBigQuery
 
-from pipe_gaps.core.gap_detector import GapDetector
+from pipe_gaps.core import GapDetector
+from pipe_gaps.assets import schemas
 from pipe_gaps.version import __version__
 from pipe_gaps.queries import AISGapsQuery, AISMessagesQuery
-from pipe_gaps.pipeline.beam.transforms.detect_gaps import DetectGaps
+from pipe_gaps.pipeline.transforms.detect_gaps import DetectGaps
 
 
 logger = logging.getLogger(__name__)
@@ -212,7 +211,7 @@ class RawGapsPipeline(BeamPipeline):
                 WriteToPartitionedBigQuery(
                     table=bq_output_gaps,
                     description=description,
-                    schema=json_load(files("pipe_gaps.assets.schemas").joinpath("ais-gaps.json")),
+                    schema=schemas.get_schema("ais-gaps.json"),
                     partition_field=BQ_TABLE_PARTITION_FIELD,
                     partition_type=BQ_TABLE_PARTITION_TYPE,
                     clustering_fields=BQ_TABLE_CLUSTERING_FIELDS,

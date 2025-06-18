@@ -16,9 +16,9 @@ from pipe_gaps.common.beam.transforms import (
     Conditional
 )
 
-from pipe_gaps.pipeline.beam.fns.process_group import ProcessGroup
-from pipe_gaps.pipeline.beam.fns.process_boundaries import ProcessBoundaries
-from pipe_gaps.pipeline.beam.fns.extract_group_boundary import ExtractGroupBoundary
+from pipe_gaps.pipeline.fns.process_group import ProcessGroup
+from pipe_gaps.pipeline.fns.process_boundaries import ProcessBoundaries
+from pipe_gaps.pipeline.fns.extract_group_boundary import ExtractGroupBoundary
 
 
 logger = logging.getLogger(__name__)
