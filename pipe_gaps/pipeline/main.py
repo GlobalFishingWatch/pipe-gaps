@@ -1,22 +1,15 @@
 import json
 import math
 import logging
-from functools import cached_property
 
 from datetime import date, timedelta
 from typing import Any
 from types import SimpleNamespace
 from importlib.resources import files
 
-import apache_beam as beam
-from apache_beam import PTransform
-from apache_beam.pvalue import PCollection
-
 from gfw.common.bigquery_helper import BigQueryHelper
 from gfw.common.beam.pipeline import BeamPipeline
 from gfw.common.beam.transforms import WriteToPartitionedBigQuery
-from gfw.common.beam.transforms import SampleAndLogElements
-from gfw.common.beam.utils import generate_unique_labels
 
 from pipe_gaps.common.io import json_load
 from pipe_gaps.common.beam.transforms.read_from_json import ReadFromJson
@@ -81,7 +74,7 @@ def _create_view(source_id: str, config: dict):
 def run(config: SimpleNamespace) -> None:
     config = vars(config)
     """Builds and runs pipeline."""
-    pipe, output_id = build_pipeline(**config)
+    pipe, output_id = RawGapsPipeline.build(**config)
 
     pipe.run()
     if output_id is not None:
@@ -101,91 +94,53 @@ def build_table_description(**params):
 
 
 class RawGapsPipeline(BeamPipeline):
-    def __init__(self, *args, side_inputs: list[PTransform], **kwargs):
-        super().__init__(*args, **kwargs)
-        self._side_inputs = side_inputs
+    @classmethod
+    def build(
+        cls,
+        date_range: tuple,
+        pipe_type: str = "beam",
+        filter_not_overlapping_and_short: bool = False,
+        filter_good_seg: bool = False,
+        open_gaps_start_date: str = "2019-01-01",
+        skip_open_gaps: bool = False,
+        ssvids: list = (),
+        min_gap_length: float = 6,
+        n_hours_before: int = 12,
+        window_period_d: int = None,
+        eval_last: bool = True,
+        normalize_output: bool = True,
+        json_input_messages: str = None,
+        json_input_open_gaps: str = None,
+        bq_read_method: str = "EXPORT",
+        bq_input_messages: str = None,
+        bq_input_segments: str = "pipe_ais_v3_published.segs_activity",
+        bq_input_open_gaps: str = None,
+        bq_output_gaps: str = None,
+        bq_output_gaps_description: bool = False,
+        bq_write_disposition: str = "WRITE_APPEND",
+        mock_db_client: bool = False,
+        save_json: bool = False,
+        work_dir: str = "workdir",
+        unparsed_args: list = (),
+        **kwargs: Any,
+    ):
+        start_date, end_date = [date.fromisoformat(x) for x in date_range]
+        open_gaps_start_date = date.fromisoformat(open_gaps_start_date)
 
-    @cached_property
-    def pipeline(self) -> tuple[beam.Pipeline, PCollection[Any]]:
-        """Constructs and returns the Apache Beam pipeline object."""
-        # Create the Beam pipeline
-        p = beam.Pipeline(options=self.pipeline_options)
+        if (
+            json_input_messages is None
+            and (bq_input_messages is None or bq_input_segments is None)
+        ):
+            raise ValueError("You need to provide either a JSON inputs or BQ input.")
 
-        source_labels = generate_unique_labels(self._sources)
-        sinks_labels = generate_unique_labels(self._sinks)
+        if bq_input_open_gaps is None:
+            bq_input_open_gaps = bq_output_gaps
 
-        if self._side_inputs is not None and len(self._side_inputs) > 0:
-            side_inputs = p | self._side_inputs[0]
-            self._core.set_side_inputs(side_inputs)
+        read_from_bigquery_factory = ReadFromBigQuery.get_client_factory(mocked=mock_db_client)
 
-        # Source transformations
-        inputs = [
-            p | label >> transform
-            for label, transform in zip(source_labels, self._sources, strict=True)
-        ]
-
-        if len(inputs) > 1:
-            inputs = inputs | "JoinSources" >> beam.Flatten()
-        else:
-            inputs = inputs[0]
-
-        # Core transformation
-        outputs = inputs | self._core
-
-        # Sink transformations
-        for label, sink_transform in zip(sinks_labels, self._sinks, strict=True):
-            outputs | label >> sink_transform
-
-        if logging.getLogger().level == logging.DEBUG:
-            inputs | "Log Inputs" >> SampleAndLogElements(message="Input: {e}", sample_size=1)
-            outputs | "Log Outputs" >> SampleAndLogElements(message="Output: {e}", sample_size=1)
-
-        return p, outputs
-
-
-def build_pipeline(
-    date_range: tuple,
-    pipe_type: str = "beam",
-    filter_not_overlapping_and_short: bool = False,
-    filter_good_seg: bool = False,
-    open_gaps_start_date: str = "2019-01-01",
-    skip_open_gaps: bool = False,
-    ssvids: list = (),
-    min_gap_length: float = 6,
-    n_hours_before: int = 12,
-    window_period_d: int = None,
-    eval_last: bool = True,
-    normalize_output: bool = True,
-    json_input_messages: str = None,
-    json_input_open_gaps: str = None,
-    bq_read_method: str = "EXPORT",
-    bq_input_messages: str = None,
-    bq_input_segments: str = "pipe_ais_v3_published.segs_activity",
-    bq_input_open_gaps: str = None,
-    bq_output_gaps: str = None,
-    bq_output_gaps_description: bool = False,
-    bq_write_disposition: str = "WRITE_APPEND",
-    mock_db_client: bool = False,
-    save_json: bool = False,
-    work_dir: str = "workdir",
-    unparsed_args: list = (),
-    **kwargs: Any,
-):
-    start_date, end_date = [date.fromisoformat(x) for x in date_range]
-    open_gaps_start_date = date.fromisoformat(open_gaps_start_date)
-
-    if json_input_messages is None and (bq_input_messages is None or bq_input_segments is None):
-        raise ValueError("You need to provide either a JSON inputs or BQ input.")
-
-    if bq_input_open_gaps is None:
-        bq_input_open_gaps = bq_output_gaps
-
-    read_from_bigquery_factory = ReadFromBigQuery.get_client_factory(mocked=mock_db_client)
-
-    side_inputs = []
-    if not skip_open_gaps and start_date > open_gaps_start_date:
-        side_inputs.append(
-            ReadFromBigQuery(
+        side_inputs = None
+        if not skip_open_gaps and start_date > open_gaps_start_date:
+            side_inputs = ReadFromBigQuery(
                 query=AISGapsQuery(
                     source_gaps=bq_input_open_gaps,
                     start_date=open_gaps_start_date,
@@ -195,94 +150,94 @@ def build_pipeline(
                 read_from_bigquery_factory=read_from_bigquery_factory,
                 label="ReadOpenGaps",
             )
+
+        gap_detector = GapDetector(
+            threshold=min_gap_length,
+            normalize_output=normalize_output
         )
 
-    gap_detector = GapDetector(
-        threshold=min_gap_length,
-        normalize_output=normalize_output
-    )
+        core_ptransform = DetectGaps(
+            gap_detector=gap_detector,
+            eval_last=eval_last,
+            date_range=date_range,
+            window_period_d=window_period_d,
+            window_offset_h=n_hours_before,
+        )
 
-    core_ptransform = DetectGaps(
-        gap_detector=gap_detector,
-        eval_last=eval_last,
-        date_range=date_range,
-        window_period_d=window_period_d,
-        window_offset_h=n_hours_before,
-    )
+        sources = []
+        sinks = []
 
-    sources = []
-    sinks = []
-
-    if json_input_messages is not None:
-        sources.append(
-            ReadFromJson.build(
-                input_file=json_input_messages,
-                lines=True,
+        if json_input_messages is not None:
+            sources.append(
+                ReadFromJson.build(
+                    input_file=json_input_messages,
+                    lines=True,
+                )
             )
-        )
 
-    if bq_input_messages is not None:
-        buffer_days = math.ceil(n_hours_before / 24)
-        query_start_date = start_date - timedelta(days=buffer_days)
+        if bq_input_messages is not None:
+            buffer_days = math.ceil(n_hours_before / 24)
+            query_start_date = start_date - timedelta(days=buffer_days)
 
-        sources.append(
-            ReadFromBigQuery(
-                query=AISMessagesQuery(
-                    source_messages=bq_input_messages,
-                    source_segments=bq_input_segments,
-                    start_date=query_start_date,
-                    end_date=end_date,
-                    ssvids=ssvids,
-                    filter_not_overlapping_and_short=filter_not_overlapping_and_short,
-                    filter_good_seg=filter_good_seg,
+            sources.append(
+                ReadFromBigQuery(
+                    query=AISMessagesQuery(
+                        source_messages=bq_input_messages,
+                        source_segments=bq_input_segments,
+                        start_date=query_start_date,
+                        end_date=end_date,
+                        ssvids=ssvids,
+                        filter_not_overlapping_and_short=filter_not_overlapping_and_short,
+                        filter_good_seg=filter_good_seg,
+                    ),
+                    method=bq_read_method,
+                    read_from_bigquery_factory=read_from_bigquery_factory,
+                    label="ReadAISMessages",
                 ),
-                method=bq_read_method,
-                read_from_bigquery_factory=read_from_bigquery_factory,
-                label="ReadAISMessages",
-            ),
-        )
-
-    if bq_output_gaps is not None:
-        description = None
-        if bq_output_gaps_description:
-            description = build_table_description(
-                bq_input_messages=bq_input_messages,
-                bq_input_segments=bq_input_segments,
-                filter_good_seg=filter_good_seg,
-                filter_not_overlapping_and_short=filter_not_overlapping_and_short,
-                min_gap_length=min_gap_length,
-                n_hours_before=n_hours_before,
             )
 
-        sinks.append(
-            WriteToPartitionedBigQuery(
-                table=bq_output_gaps,
-                description=description,
-                schema=json_load(files("pipe_gaps.assets.schemas").joinpath("ais-gaps.json")),
-                partition_field=BQ_TABLE_PARTITION_FIELD,
-                partition_type=BQ_TABLE_PARTITION_TYPE,
-                clustering_fields=BQ_TABLE_CLUSTERING_FIELDS,
-                write_disposition=bq_write_disposition,
+        if bq_output_gaps is not None:
+            description = None
+            if bq_output_gaps_description:
+                description = build_table_description(
+                    bq_input_messages=bq_input_messages,
+                    bq_input_segments=bq_input_segments,
+                    filter_good_seg=filter_good_seg,
+                    filter_not_overlapping_and_short=filter_not_overlapping_and_short,
+                    min_gap_length=min_gap_length,
+                    n_hours_before=n_hours_before,
+                )
+
+            sinks.append(
+                WriteToPartitionedBigQuery(
+                    table=bq_output_gaps,
+                    description=description,
+                    schema=json_load(files("pipe_gaps.assets.schemas").joinpath("ais-gaps.json")),
+                    partition_field=BQ_TABLE_PARTITION_FIELD,
+                    partition_type=BQ_TABLE_PARTITION_TYPE,
+                    clustering_fields=BQ_TABLE_CLUSTERING_FIELDS,
+                    write_disposition=bq_write_disposition,
+                    label="WriteGaps"
+                )
             )
+
+        if save_json:
+            sinks.append(
+                WriteJson.build(
+                    output_prefix="gaps",
+                    output_dir=work_dir,
+                )
+            )
+
+        pipeline = cls(
+            sources=sources,
+            core=core_ptransform,
+            sinks=sinks,
+            side_inputs=side_inputs,
+            name="pipe-gaps",
+            version=__version__,
+            unparsed_args=unparsed_args,
+            **kwargs
         )
 
-    if save_json:
-        sinks.append(
-            WriteJson.build(
-                output_prefix="gaps",
-                output_dir=work_dir,
-            )
-        )
-
-    pipeline = RawGapsPipeline(
-        sources=sources,
-        core=core_ptransform,
-        sinks=sinks,
-        side_inputs=side_inputs,
-        name="pipe-gaps",
-        version=__version__,
-        unparsed_args=unparsed_args,
-        **kwargs
-    )
-
-    return pipeline, bq_output_gaps
+        return pipeline, bq_output_gaps

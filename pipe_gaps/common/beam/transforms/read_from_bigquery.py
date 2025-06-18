@@ -66,7 +66,6 @@ class ReadFromBigQuery(beam.PTransform):
         self._query = query
         self._use_schema = use_schema
         self._method = method
-        self._label = label
         self._use_standard_sql = use_standard_sql
         self._read_from_bigquery_factory = read_from_bigquery_factory
         self._read_from_bigquery_kwargs = read_from_bigquery_kwargs

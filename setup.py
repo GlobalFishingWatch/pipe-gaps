@@ -32,7 +32,7 @@ setuptools.setup(
         "geopy~=2.4",
         "google-cloud-bigquery~=3.0",
         "google-cloud-profiler~=4.1",
-        "gfw-common[bq,beam]~=0.1.0rc2",
+        "gfw-common[bq,beam]~=0.1.0rc3",
         "pandas~=2.1",
         "py-cpuinfo~=9.0",
         "pydantic~=2.0",
