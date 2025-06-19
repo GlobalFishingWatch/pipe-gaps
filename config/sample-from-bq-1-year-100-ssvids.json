@@ -106,18 +106,16 @@
         "563097000"
     ],
     "date_range": [
-        "2012-01-01",
+        "2023-01-01",
         "2024-01-01"
     ],
     "min_gap_length": 6,
     "n_hours_before": 12,
-    "window_period_d": 180,
+    "window_period_d": 30,
     "filter_good_seg": true,
-    "pipeline_options": {
-        "project": "world-fishing-827",
-        "runner": "dataflow",
-        "max_num_workers": 200,
-        "machine_type": "e2-standard-2",
-        "job_name": "tom-test-gaps-12-years-100-ssvids-no-side-inputs"
-    }
+    "project": "world-fishing-827",
+    "runner": "dataflow",
+    "max_num_workers": 200,
+    "machine_type": "e2-standard-2",
+    "job_name": "tom-test-gaps-1-year-100-ssvids"
 }

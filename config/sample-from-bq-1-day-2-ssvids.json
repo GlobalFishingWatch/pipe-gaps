@@ -20,5 +20,5 @@
     "runner": "dataflow",
     "max_num_workers": 50,
     "machine_type": "e2-custom-2-3072",
-    "job_name": "tom-test-gaps-1-day-2-ssvids-2-new-labels"
+    "job_name": "tom-test-gaps-1-day-2-ssvids-2"
 }

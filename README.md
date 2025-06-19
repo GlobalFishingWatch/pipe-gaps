@@ -54,10 +54,10 @@ Time gap detector for **[AIS]** position messages.
 [slowly changing dimension]: https://en.wikipedia.org/wiki/Slowly_changing_dimension
 [Semantic Versioning]: https://semver.org
 
-[ais-gaps.py]: pipe_gaps/queries/ais_gaps.py
-[ais-messages.py]: pipe_gaps/queries/ais_messages.py
-[detect_gaps.py]: pipe_gaps/pipeline/transforms/detect_gaps.py
-[gap_detector.py]: pipe_gaps/gap_detector.py
+[ais-gaps.py]: src/pipe_gaps/queries/ais_gaps.py
+[ais-messages.py]: src/pipe_gaps/queries/ais_messages.py
+[detect_gaps.py]: src/pipe_gaps/pipeline/transforms/detect_gaps.py
+[gap_detector.py]: src/pipe_gaps/gap_detector.py
 [pTransform]: https://beam.apache.org/documentation/programming-guide/#applying-transforms
 
 [BeamPipeline]: https://github.com/GlobalFishingWatch/gfw-common/blob/develop/src/gfw/common/beam/pipeline.py

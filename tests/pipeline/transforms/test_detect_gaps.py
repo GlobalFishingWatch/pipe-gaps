@@ -4,7 +4,7 @@ import apache_beam as beam
 from datetime import date, timedelta
 
 
-from apache_beam.testing.test_pipeline import TestPipeline
+from apache_beam.testing.test_pipeline import TestPipeline as _TestPipeline
 from apache_beam.testing.util import assert_that
 
 from gfw.common.datetime import datetime_from_timestamp
@@ -41,7 +41,7 @@ def test_detect_gaps_between_years(messages, threshold, expected_gaps):
     gap_detector = GapDetector(threshold=threshold)
 
     # Run test pipeline
-    with TestPipeline() as p:
+    with _TestPipeline() as p:
         input_pcoll = p | "CreateInput" >> beam.Create(messages)
 
         output = (
@@ -80,7 +80,7 @@ def test_detect_gaps_between_days(messages, open_gaps, threshold, date_range, ex
 
     gap_detector = GapDetector(threshold=threshold)
 
-    with TestPipeline() as p:
+    with _TestPipeline() as p:
         main_input = p | "CreateMessages" >> beam.Create(messages)
         side_input = p | "CreateOpenGaps" >> beam.Create(open_gaps)
 
@@ -129,7 +129,7 @@ def test_detect_gaps_arbitrary_period(
 
     gap_detector = GapDetector(threshold=threshold)
 
-    with TestPipeline() as p:
+    with _TestPipeline() as p:
         main_input = p | "CreateMessages" >> beam.Create(messages)
         side_input = p | "CreateOpenGaps" >> beam.Create(open_gaps)
 
@@ -168,7 +168,7 @@ def test_detect_open_gaps(messages, threshold, expected_gaps):
 
     gap_detector = GapDetector(threshold=threshold)
 
-    with TestPipeline() as p:
+    with _TestPipeline() as p:
         main_input = p | "CreateMessages" >> beam.Create(messages)
 
         output = (
@@ -215,7 +215,7 @@ def test_detect_closing_gaps(
 
     gap_detector = GapDetector(threshold=threshold)
 
-    with TestPipeline() as p:
+    with _TestPipeline() as p:
         main_input = p | "CreateMessages" >> beam.Create(messages)
         side_input = p | "CreateOpenGaps" >> beam.Create(open_gaps)
 
@@ -264,7 +264,7 @@ def test_detect_positions_hours_before(messages, threshold, date_range, expected
 
     gap_detector = GapDetector(threshold=threshold)
 
-    with TestPipeline() as p:
+    with _TestPipeline() as p:
         main_input = p | "CreateMessages" >> beam.Create(messages)
 
         result = (
@@ -318,7 +318,7 @@ def test_daily_mode(tmp_path, messages, open_gaps, threshold, dates, expected_ga
 
         output_file = tmp_path / f"gaps-{start_date}.json"
 
-        with TestPipeline() as p:
+        with _TestPipeline() as p:
             main_inputs = p | "CreateMessages" >> beam.Create(current_messages)
             side_inputs = p | "CreateOpenGaps" >> beam.Create(list(open_gaps_bag.values()))
 

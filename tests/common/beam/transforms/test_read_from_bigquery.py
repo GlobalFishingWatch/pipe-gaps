@@ -1,5 +1,5 @@
 from datetime import datetime
-from apache_beam.testing.test_pipeline import TestPipeline
+from apache_beam.testing.test_pipeline import TestPipeline as _TestPipeline
 
 from pipe_gaps.common.beam.transforms.read_from_bigquery import (
     ReadFromBigQuery, FakeReadFromBigQuery
@@ -27,7 +27,7 @@ def test_read_from_query(messages):
         read_from_bigquery_factory=FakeReadFromBigQuery
     )
 
-    with TestPipeline() as p:
+    with _TestPipeline() as p:
         p | tr
 
     tr = ReadFromBigQuery(
@@ -35,5 +35,5 @@ def test_read_from_query(messages):
         read_from_bigquery_factory=FakeReadFromBigQuery,
         elements=messages
     )
-    with TestPipeline() as p:
+    with _TestPipeline() as p:
         p | tr
