@@ -24,6 +24,9 @@ class ApplySlidingWindows(beam.PTransform):
 
         timestamp_field:
             The name of the field containing the timestamp (UNIX time, in seconds).
+
+        **kwargs:
+            Additional keyword arguments passed to base PTransform class.
     """
 
     def __init__(
@@ -32,7 +35,9 @@ class ApplySlidingWindows(beam.PTransform):
         offset: float,
         assign_timestamps: bool = False,
         timestamp_field: str = "timestamp",
+        **kwargs: Any,
     ):
+        super().__init__(**kwargs)
         self._period = period
         self._offset = offset
         self._assign_timestamps = assign_timestamps

@@ -13,7 +13,6 @@ from pipe_gaps.common.beam.transforms import (
     ApplySlidingWindows,
     GroupBy,
     FilterWindowsByDateRange,
-    Conditional
 )
 
 from pipe_gaps.pipeline.fns.process_group import ProcessGroup
@@ -129,25 +128,25 @@ class DetectGaps(beam.PTransform):
         groups = (
             pcoll
             | ApplySlidingWindows(self.period_s, self.offset_s, assign_timestamps=True)
-            | GroupBy(self._key, label="Messages")
-            | "FilterWindows" >> Conditional(
-                FilterWindowsByDateRange(self.date_range, offset=self.offset_s),
-                condition=self.date_range is not None
-            )
+            | GroupBy(self._key, elements="Messages")
         )
+
+        if self.date_range is not None:
+            filter_tr = FilterWindowsByDateRange(self.date_range, offset=self.offset_s)
+            groups = groups | "FilterWindowsOutOfRange" >> filter_tr
 
         # Open side inputs if they exist, and grouped them by the same key.
         side_inputs = None
         if self._side_inputs is not None:
             side_inputs = beam.pvalue.AsMultiMap(
-                self._side_inputs | GroupBy(self._key, label="OpenGaps")
+                self._side_inputs | GroupBy(self._key, elements="OpenGaps")
             )
 
         # Process the boundaries of the groups
         output_in_boundaries = groups | "ProcessBoundaries" >> (
             beam.ParDo(extract_group_boundary)
             | "GlobalWindow" >> beam.WindowInto(beam.window.GlobalWindows())
-            | GroupBy(self._key, label="Boundaries")
+            | GroupBy(self._key, elements="Boundaries")
             | beam.ParDo(process_boundaries, side_inputs=side_inputs)
         )
 

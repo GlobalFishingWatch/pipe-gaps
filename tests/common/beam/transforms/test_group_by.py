@@ -4,17 +4,24 @@ from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import assert_that, equal_to
 
 from pipe_gaps.common.beam.transforms import GroupBy
+from pipe_gaps.common.key import Key
 
 
 @pytest.mark.parametrize(
     "keys, custom_label, expected_label",
     [
-        (["city", "country"], "", "GroupByCityAndCountry"),
-        (["city", "country"], "Users", "GroupUsersByCityAndCountry"),
+        pytest.param(
+            ["city", "country"], "", "GroupByCityAndCountry",
+            id="without-elements-label"
+        ),
+        pytest.param(
+            ["city", "country"], "Users", "GroupUsersByCityAndCountry",
+            id="with-elements-label"
+        )
     ],
 )
 def test_groupby_label(keys, custom_label, expected_label):
-    transform = GroupBy(keys, label=custom_label)
+    transform = GroupBy(keys, elements=custom_label)
     assert transform.label == expected_label
 
 
@@ -36,7 +43,7 @@ def test_groupby_groups_elements_correctly():
         pcoll = p | beam.Create(input_data)
 
         # Apply GroupBy on keys 'user' and 'country'
-        grouped = pcoll | GroupBy(["user", "country"])
+        grouped = pcoll | GroupBy(key=Key(["user", "country"]))
 
         # Now transform grouped elements to a uniform format for checking:
         # grouped elements have keys plus grouped fields as lists (Beam groups automatically)

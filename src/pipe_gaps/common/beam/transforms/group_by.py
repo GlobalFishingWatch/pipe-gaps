@@ -20,22 +20,26 @@ class GroupBy(beam.PTransform):
     is clearly identified by its grouping keys.
 
     Args:
-        keys:
+        key:
             List of string keys to group by.
             These keys are used both to extract grouping fields from each element
             and to generate a descriptive label for the transform.
 
-        label:
+        elements:
             A label to describe which elements are being grouped by.
             Useful when you want to reuse this same transform in different places of a pipeline.
+
+        **kwargs:
+            Additional keyword arguments passed to base PTransform class.
     """
-    def __init__(self, keys: Union[Key, List[str]], label: str = ""):
-        self.key = keys
+    def __init__(self, key: Union[Key, List[str]], elements: str = "", **kwargs):
+        super().__init__(**kwargs)
+        self.key = key
 
         if isinstance(self.key, (list, tuple)):
             self.key = Key(self.key)
 
-        transform_label = f"Group{label}By{self.key.label()}"
+        transform_label = f"Group{elements}By{self.key.label()}"
         super().__init__(label=transform_label)
 
     def expand(self, pcoll: PCollection) -> PCollection:
@@ -49,6 +53,4 @@ class GroupBy(beam.PTransform):
             PCollection where elements are grouped by the specified keys,
             wrapped in a step with a human-readable label.
         """
-        # logger.info(f"Grouping {self.label} by keys: {self.key.list()}.")
-
         return pcoll | beam.GroupBy(**self.key.func)

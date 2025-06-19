@@ -1,7 +1,8 @@
 """Module with reusable PTransforms for writing output PCollections."""
 import json
-from datetime import datetime
+from typing import Any
 from pathlib import Path
+from datetime import datetime
 
 import apache_beam as beam
 # from apache_beam.io.fileio import default_file_naming
@@ -11,12 +12,21 @@ class WriteToJson(beam.PTransform):
     """Writes PCollection as JSON.
 
     Args:
-        output_dir: Output directory.
-        output_prefix: Prefix to use in filename/s.
+        output_dir:
+            Output directory.
+
+        output_prefix:
+            Prefix to use in filename/s.
+
+        **kwargs:
+            Additional keyword arguments passed to base PTransform class.
     """
     WORKDIR_DEFAULT = "workdir"
 
-    def __init__(self, output_dir: str = WORKDIR_DEFAULT, output_prefix: str = "") -> None:
+    def __init__(
+        self, output_dir: str = WORKDIR_DEFAULT, output_prefix: str = "", **kwargs: Any
+    ) -> None:
+        super().__init__(**kwargs)
         self._output_dir = Path(output_dir)
 
         time = datetime.now().isoformat(timespec="seconds").replace("-", "").replace(":", "")

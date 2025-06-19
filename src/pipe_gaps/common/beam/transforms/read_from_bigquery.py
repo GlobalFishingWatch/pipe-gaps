@@ -46,10 +46,13 @@ class ReadFromBigQuery(beam.PTransform):
             implementation instead of using the real `WriteToBigQuery` transform.
             If not provided, the default `WriteToBigQuery` class will be used.
 
-        **write_to_bigquery_kwargs:
+        write_to_bigquery_kwargs:
             Any additional keyword arguments to be passed to Beam's `ReadFromBigQuery` class.
             Check official documentation:
             https://beam.apache.org/releases/pydoc/2.64.0/apache_beam.io.gcp.bigquery.html#apache_beam.io.gcp.bigquery.ReadFromBigQuery.
+
+        **kwargs:
+            Additional keyword arguments passed to base PTransform class.
     """
 
     def __init__(
@@ -58,17 +61,17 @@ class ReadFromBigQuery(beam.PTransform):
         use_schema: bool = False,
         method: str = beam.io.ReadFromBigQuery.Method.EXPORT,
         use_standard_sql: bool = True,
-        label: str = None,
         read_from_bigquery_factory: Callable[..., io.ReadFromBigQuery] = io.ReadFromBigQuery,
-        **read_from_bigquery_kwargs: Any,
+        read_from_bigquery_kwargs: dict = None,
+        **kwargs: Any,
     ):
-        super().__init__(label=label)
+        super().__init__(**kwargs)
         self._query = query
         self._use_schema = use_schema
         self._method = method
         self._use_standard_sql = use_standard_sql
         self._read_from_bigquery_factory = read_from_bigquery_factory
-        self._read_from_bigquery_kwargs = read_from_bigquery_kwargs
+        self._read_from_bigquery_kwargs = read_from_bigquery_kwargs or {}
 
     @classmethod
     def get_client_factory(cls, mocked: bool = False) -> Callable:
