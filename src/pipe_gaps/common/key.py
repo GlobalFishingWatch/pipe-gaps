@@ -1,7 +1,8 @@
-from functools import cached_property
-
 import logging
+from operator import itemgetter
+from functools import cached_property
 from typing import List
+
 
 logger = logging.getLogger(__name__)
 
@@ -16,10 +17,8 @@ class Key:
 
     @cached_property
     def func(self):
-        return {
-            k: lambda x: x[k]
-            for k in self.keys
-        }
+        # itemgetter returns a callable for each key
+        return {k: itemgetter(k) for k in self.keys}
 
     def list(self):
         return self.keys

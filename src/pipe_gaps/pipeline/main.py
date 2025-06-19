@@ -11,7 +11,7 @@ from gfw.common.beam.pipeline import BeamPipeline
 from gfw.common.beam.transforms import WriteToPartitionedBigQuery
 
 from pipe_gaps.common.beam.transforms.read_from_json import ReadFromJson
-from pipe_gaps.common.beam.transforms.write_json import WriteJson
+from pipe_gaps.common.beam.transforms.write_to_json import WriteToJson
 from pipe_gaps.common.beam.transforms.read_from_bigquery import ReadFromBigQuery
 
 from pipe_gaps.core import GapDetector
@@ -222,7 +222,7 @@ class RawGapsPipeline(BeamPipeline):
 
         if save_json:
             sinks.append(
-                WriteJson.build(
+                WriteToJson(
                     output_prefix="gaps",
                     output_dir=work_dir,
                 )

@@ -1,5 +1,5 @@
 {
-    "json_input_messages":  "pipe_gaps/data/sample_messages_lines.json",
+    "json_input_messages":  "src/pipe_gaps/assets/sample_data/sample_messages_lines.json",
     "ssvids": [],
     "date_range": [
         "2024-01-01",

@@ -31,13 +31,12 @@ class GroupBy(beam.PTransform):
     """
     def __init__(self, keys: Union[Key, List[str]], label: str = ""):
         self.key = keys
-        self.label = label
 
         if isinstance(self.key, (list, tuple)):
             self.key = Key(self.key)
 
-        label = f"Group{self.label}By{self.key.label()}"
-        super().__init__(label=label)
+        transform_label = f"Group{label}By{self.key.label()}"
+        super().__init__(label=transform_label)
 
     def expand(self, pcoll: PCollection) -> PCollection:
         """Applies GroupBy with dynamic key extractors and descriptive labeling.

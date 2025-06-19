@@ -1,6 +1,6 @@
 {   
     "bq_output_gaps": "scratch_tomas_ttl30d.raw_gaps_test_description",
-    "json_input_messages":  "pipe_gaps/data/sample_messages_lines.json",
+    "json_input_messages":  "src/pipe_gaps/assets/sample_data/sample_messages_lines.json",
     "open_gaps_start_date": "2023-01-01",
     "ssvids": [
         "412331104",

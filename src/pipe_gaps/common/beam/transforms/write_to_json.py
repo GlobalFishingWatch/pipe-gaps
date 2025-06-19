@@ -7,7 +7,7 @@ import apache_beam as beam
 # from apache_beam.io.fileio import default_file_naming
 
 
-class WriteJson(beam.PTransform):
+class WriteToJson(beam.PTransform):
     """Writes PCollection as JSON.
 
     Args:
@@ -16,7 +16,7 @@ class WriteJson(beam.PTransform):
     """
     WORKDIR_DEFAULT = "workdir"
 
-    def __init__(self, output_dir: str = WORKDIR_DEFAULT, output_prefix: str = ""):
+    def __init__(self, output_dir: str = WORKDIR_DEFAULT, output_prefix: str = "") -> None:
         self._output_dir = Path(output_dir)
 
         time = datetime.now().isoformat(timespec="seconds").replace("-", "").replace(":", "")
@@ -29,10 +29,6 @@ class WriteJson(beam.PTransform):
         # This is what beam.io.WriteToText does to construct the path.
         self.path = Path(''.join([self._prefix, self._shard_name_template, self._suffix]))
 
-    @classmethod
-    def build(cls, *args, **kwargs):
-        return cls(*args, **kwargs)
-
     def expand(self, pcoll):
         return pcoll | 'WriteToJson' >> (
             beam.Map(json.dumps) |
@@ -42,23 +38,25 @@ class WriteJson(beam.PTransform):
                 file_name_suffix=self._suffix
             )
         )
-
         """
         Why not use beam.io.WriteToJson?
-        The thing is that beam.io.WriteToJson has issues writing locally.
-        Raises an error because interprets the filepath as an invalid gcs_location...
-        It works when you use ReadFromBigQuery and set the gcs_location there (very rare behavior).
-        Also, it uses pandas under the hood.
-        https://beam.apache.org/releases/pydoc/current/apache_beam.io.textio.html#apache_beam.io.textio.WriteToJson.
+        `WriteToJson` has issues writing to local files.
+        It raises an error because it interprets the filepath as an invalid GCS location.
+        It works fine when used with `ReadFromBigQuery` and specifying a GCS location there.
+        Also, under the hood, it uses pandas.
+        https://beam.apache.org/releases/pydoc/current/apache_beam.io.textio.html#apache_beam.io.textio.WriteToJson
 
-        file_naming = default_file_naming(prefix=self._output_prefix, suffix=".json")
-        return pcoll | beam.io.WriteToJson(
-            self._output_dir.as_posix(),
-            file_naming=default_file_naming(prefix=self._output_prefix, suffix=".json"),
-            lines=True,
-            indent=4,
-        )
+        Example usage:
 
-        On the other hand, beam.io.WriteToText PTransform is more predictable.
-        https://beam.apache.org/releases/pydoc/current/apache_beam.io.textio.html#apache_beam.io.textio.WriteToText.
+            file_naming = default_file_naming(prefix=self._output_prefix, suffix=".json")
+            return pcoll | beam.io.WriteToJson(
+                self._output_dir.as_posix(),
+                file_naming=file_naming,
+                lines=True,
+                indent=4,
+            )
+
+        On the other hand, `beam.io.WriteToText` is more predictable and reliable
+        for local file outputs.
+        https://beam.apache.org/releases/pydoc/current/apache_beam.io.textio.html#apache_beam.io.textio.WriteToText
         """
