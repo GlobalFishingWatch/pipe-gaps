@@ -1,37 +1,64 @@
-"""Module with reusable PTransforms for reading input PCollections."""
+"""Module with reusable source PTransform for reading JSON inputs."""
 from pathlib import Path
-from typing import Union
+from typing import Union, Callable, Any
 
 import apache_beam as beam
 
 from pipe_gaps.common.io import json_load
-from pipe_gaps.assets import schemas
+from pipe_gaps.common.beam.exceptions import PTransformError
 
 
 class ReadFromJson(beam.PTransform):
-    """Beam transform to read Pcollection from a JSON file.
+    """Beam transform to read a PCollection from a JSON file.
+
+    This transform loads a local JSON or JSONLines file eagerly (outside the pipeline),
+    then injects the resulting records into the pipeline using `beam.Create`.
+
+    Useful for testing, prototyping, or controlled ingestion.
 
     Args:
-        transform: the PTransform to use.
+        input_file:
+            Path to the local file to read.
+
+        coder:
+            Callable to apply to each decoded record. Defaults to `dict`.
+
+        lines:
+            If True, interprets the input as newline-delimited JSON (JSONLines).
+
+        create_kwargs:
+            Optional dictionary of keyword arguments to pass to `beam.Create`.
+            Use this to control serialization, type hints, etc.
+
+        **kwargs:
+            Additional keyword arguments passed to base PTransform class.
+
+    Raises:
+        PTransformError:
+            If the input file does not exist at pipeline construction time.
+
+    Example:
+        >>> with beam.Pipeline() as p:
+        ...     pcoll = p | ReadFromJson('data/input.json', lines=True)
+        ...     pcoll | beam.Map(print)
     """
-    def __init__(self, transform: beam.PTransform):
-        self._transform = transform
+    def __init__(
+        self,
+        input_file: Union[str, Path],
+        coder: Callable = dict,
+        lines: bool = False,
+        create_kwargs: dict = None,
+        **kwargs: Any,
+    ) -> None:
+        """Builds a ReadFromJson instance."""
+        super().__init__(**kwargs)
+        self._input_file = Path(input_file)
+        self._coder = coder
+        self._lines = lines
+        self._create_kwargs = create_kwargs or {}
 
-    @classmethod
-    def build(
-        cls, input_file: Union[str, Path], schema: str = None, lines: bool = False, **kwargs
-    ) -> "ReadFromJson":
-        """Builds a ReadFromJson instance.
-
-        Args:
-            input_file: The filepath to read.
-            schema: The schema for the PCollection type. If None, uses dict.
-            lines: If True, interprets JSON file as JSONLines format.
-            **kwargs: Extra keyword arguments for beam.io.Create constructor.
-
-        Returns:
-            An instance of ReadFromJson.
-        """
+    def expand(self, p):  # p is the Pipeline, not a PCollection
+        """Apply transform to pipeline 'p': create PCollection from loaded JSON data."""
 
         # Why not use beam.ReadFromJson instead of (beam.Create + json_load)?
         # The thing is that beam.ReadFromJson returns BeamSchema objects,
@@ -42,14 +69,8 @@ class ReadFromJson(beam.PTransform):
         #     | beam.Map(lambda x: dict(x._asdict())).with_output_types(Message)
         # )
 
-        schema = dict
-        if schema is None:
-            schema = schemas.get_schema(schema)
+        if not self._input_file.exists():
+            raise PTransformError(f"Input file does not exist: {self._input_file}")
 
-        transform = beam.Create(json_load(input_file, lines=lines, coder=schema))
-        transform.with_output_types(schema)
-
-        return cls(transform)
-
-    def expand(self, pcoll):
-        return pcoll | self._transform
+        data = json_load(self._input_file, lines=self._lines, coder=self._coder)
+        return p | beam.Create(data, **self._create_kwargs).with_output_types(self._coder)

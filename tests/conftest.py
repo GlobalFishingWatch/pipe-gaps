@@ -25,7 +25,7 @@ def messages():
 @pytest.fixture()
 def input_file(tmp_path, messages):
     path = tmp_path.joinpath("test.json")
-    json_save(messages, path)
+    json_save(path, messages)
 
     return path
 

@@ -1,13 +1,20 @@
 import json
+from typing import Callable
 from pathlib import Path
 
 
-def json_load(path: Path, lines: bool = False, coder=None) -> dict:
+def json_load(path: Path, lines: bool = False, coder: Callable = None) -> dict:
     """Opens JSON file.
 
     Args:
-        path: the filepath.
-        lines: If True, treats the file as a JSON Lines.
+        path:
+            The source path.
+
+        lines:
+            If True, expects JSON Lines format.
+
+        coder:
+            Coder to use when reading JSON records.
     """
 
     if not lines:
@@ -21,18 +28,30 @@ def json_load(path: Path, lines: bool = False, coder=None) -> dict:
         return [json.loads(each_line, object_hook=lambda d: coder(**d)) for each_line in file]
 
 
-def json_save(data: list, path: Path, indent: int = 4, lines: bool = False) -> dict:
+def json_save(path: Path, data: list, indent: int = 4, lines: bool = False) -> Path:
     """Writes JSON file.
 
     Args:
-        path: the filepath.
-        lines: If True, treats the file as a JSON Lines.
+        path:
+            The destination path.
+
+        data:
+            List of records to write.
+
+        indent:
+            Amount of indentation.
+
+        lines:
+            If True, writes in JSON Lines format.
     """
 
     if not lines:
         with open(path, mode="w") as file:
-            return json.dump(data, file, indent=indent)
+            json.dump(data, file, indent=indent)
+            return path
 
     with open(path, mode='w') as f:
         for item in data:
             f.write(json.dumps(item) + "\n")
+
+    return path

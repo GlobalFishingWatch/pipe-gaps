@@ -1,11 +1,32 @@
-from apache_beam.testing.test_pipeline import TestPipeline as _TestPipeline
+from pathlib import Path
+
+import pytest
+from apache_beam.testing.test_pipeline import TestPipeline
+from apache_beam.testing.util import assert_that, equal_to
 
 from pipe_gaps.common.beam.transforms.read_from_json import ReadFromJson
-from pipe_gaps.assets import sample_messages_path
+from pipe_gaps.common.beam.exceptions import PTransformError
+from pipe_gaps.common.io import json_save
 
 
-def test_read_from_json():
-    path = sample_messages_path()
+@pytest.mark.parametrize(
+    "lines",
+    [True, False],
+    ids=["json-lines-true", "json-lines-false"]
+)
+def test_read_from_json_variants(tmp_path, lines):
+    path = tmp_path / ("data.jsonl" if lines else "data.json")
+    input_data = [{"x": 1}, {"x": 2}]
+    json_save(path, input_data, lines=lines)
 
-    with _TestPipeline() as p:
-        p | ReadFromJson.build(input_file=path, schema="messages")
+    with TestPipeline() as p:
+        output = p | ReadFromJson(path, lines=lines)
+        assert_that(output, equal_to(input_data))
+
+
+def test_raises_if_file_does_not_exist():
+    path = Path("/this/does/not/exist.json")
+
+    with pytest.raises(PTransformError, match="Input file does not exist"):
+        with TestPipeline() as p:
+            _ = p | ReadFromJson(path)
