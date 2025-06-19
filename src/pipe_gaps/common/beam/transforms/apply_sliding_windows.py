@@ -33,10 +33,10 @@ class ApplySlidingWindows(beam.PTransform):
         assign_timestamps: bool = False,
         timestamp_field: str = "timestamp",
     ):
-        self.period = period
-        self.offset = offset
-        self.assign_timestamps = assign_timestamps
-        self.timestamp_field = timestamp_field
+        self._period = period
+        self._offset = offset
+        self._assign_timestamps = assign_timestamps
+        self._timestamp_field = timestamp_field
 
     def expand(self, pcoll: PCollection[Dict[str, Any]]) -> PCollection[Dict[str, Any]]:
         """Apply sliding windows to the input PCollection.
@@ -50,14 +50,14 @@ class ApplySlidingWindows(beam.PTransform):
         Returns:
             A windowed PCollection with sliding windows applied.
         """
-        size = self.period + self.offset
+        size = self._period + self._offset
 
-        if self.assign_timestamps:
-            field = self.timestamp_field
+        if self._assign_timestamps:
+            field = self._timestamp_field
             pcoll = pcoll | "AddTimestamps" >> beam.Map(
                 lambda e: beam.window.TimestampedValue(e, e[field])
             )
 
         return pcoll | "ApplySlidingWindows" >> beam.WindowInto(
-            SlidingWindows(size=size, period=self.period, offset=self.offset)
+            SlidingWindows(size=size, period=self._period, offset=self._offset)
         )
