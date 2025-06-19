@@ -1,4 +1,49 @@
-"""This module encapsulates the gap detection core algorithm."""
+"""
+This module encapsulates the core algorithm for detecting time gaps in AIS position messages.
+
+The main class, `GapDetector`, provides functionality to identify intervals
+where AIS data reception was interrupted or missing beyond a configurable threshold.
+
+Features:
+- Detect gaps between consecutive AIS messages based on time thresholds.
+- Support for multiple receiver types: terrestrial, satellite, and dynamic.
+- Calculation of gap distance, duration, and implied vessel speed.
+- Optional output normalization for easier downstream processing.
+- Progress bar visualization for long-running gap detection.
+
+Example usage:
+
+    from datetime import datetime, timedelta
+    from gap_detector import GapDetector
+
+    # Example list of AIS messages (each message is a dict with required keys)
+    messages = [
+        {
+            "ssvid": "12345",
+            "timestamp": 1687000000,
+            "lat": 37.7749,
+            "lon": -122.4194,
+            "receiver_type": "terrestrial",
+        },
+        {
+            "ssvid": "12345",
+            "timestamp": 1687003600,  # 1 hour later
+            "lat": 37.7750,
+            "lon": -122.4195,
+            "receiver_type": "terrestrial",
+        },
+        # ... more messages ...
+    ]
+
+    detector = GapDetector(threshold=timedelta(hours=2))
+    gaps = detector.detect(messages)
+
+    for gap in gaps:
+        print(gap)
+
+Raises:
+    GapDetectionError: When input messages are missing any mandatory key.
+"""
 import logging
 import hashlib
 import operator
@@ -11,19 +56,13 @@ from datetime import datetime, date, timedelta, timezone
 from rich.progress import track
 from geopy.distance import geodesic
 
+from pipe_gaps.common.dictionaries import copy_dict_without
+from pipe_gaps.common.iterables import binary_search_first_ge
+
 logger = logging.getLogger(__name__)
 
 
 FACTOR_SECONDS_TO_HOURS = 1 / 3600
-
-
-def copy_dict_without(dictionary: dict, keys: list) -> dict:
-    """Copies a dictionary removing given keys."""
-    dictionary = dictionary.copy()
-    for k in keys:
-        dictionary.pop(k)
-
-    return dictionary
 
 
 class GapDetectionError(Exception):
@@ -34,11 +73,18 @@ class GapDetector:
     """Detects time gaps between AIS position messages.
 
     Args:
-        threshold: Minimum gap duration in hours. Any gap less than this threshold is discarded.
+        threshold:
+            Minimum gap duration in hours. Any gap less than this threshold is discarded.
             Can be an int, float number or a timedelta object.
-        n_hours_before: Count positions this amount of hours before each gap.
-        show_progress: If True, renders a progress bar.
-        normalize_output: If True, normalizes the output, i.e., the output is a flatten dictionary
+
+        n_hours_before:
+            Count positions this amount of hours before each gap.
+
+        show_progress:
+            If True, renders a progress bar.
+
+        normalize_output:
+            If True, normalizes the output, i.e., the output is a flatten dictionary
             with all the OFF/ON properties at the same level. If False, the output will contain
             a key for the OFF message and another key for the ON message.
     """
@@ -70,6 +116,8 @@ class GapDetector:
 
     MESSAGE_PREFIX_OFF = "start_"
     MESSAGE_PREFIX_ON = "end_"
+
+    METERS_PER_NAUTICAL_MILE = 1852
 
     def __init__(
         self,
@@ -128,22 +176,27 @@ class GapDetector:
         return self._threshold_h
 
     def detect(self, messages: list[dict], start_time: datetime = None) -> list[dict]:
-        """Detects time gaps between AIS position messages from a single vessel.
+        """Detect time gaps between AIS position messages from a single vessel.
 
-        Currently takes (3.62 ± 0.03) seconds to process 10M messages (i7-1355U 5.0GHz).
-        TODO: benchmark must be run again with a more representative input (more gaps found).
+            The method automatically sorts the input messages by timestamp before processing.
+            Users do not need to provide pre-sorted messages.
 
-        Args:
-            messages: List of AIS messages.
-            start_time: only detect gaps after this time (inclusive). Previous messages
-                will be used only to calculate messages N hours before gap.
+            Args:
+                messages:
+                    List of AIS position messages. Each dict must
+                    contain mandatory keys as defined by `mandatory_keys()`.
 
-        Returns:
-            List of gaps. Each gap follows the structure documented in the create_gap method.
+                start_time:
+                    Only detect gaps starting from this time (inclusive).
+                    Messages before this time are used solely to count positions preceding a gap.
 
-        Raises:
-            GapDetectionError: When input messages are missing a mandatory key.
-        """
+            Returns:
+                List of gap dictionaries with detailed gap information.
+
+            Raises:
+                GapDetectionError:
+                    If any message is missing a mandatory key.
+            """
 
         try:
             self._sort_messages(messages)
@@ -206,15 +259,24 @@ class GapDetector:
         """Creates a gap as a dictionary.
 
         Args:
-            off_m: OFF message. When the AIS reception went OFF.
-            on_m: ON message. When the AIS reception went ON. If not provided,
+            off_m:
+                OFF message. When the AIS reception went OFF.
+
+            on_m:
+                ON message. When the AIS reception went ON. If not provided,
                 an open gap will be created.
-            gap_id: unique identifier for the gap. If not provided,
+
+            gap_id:
+                Unique identifier for the gap. If not provided,
                 will be generated from [ssvid, timestamp, lat, lon] of the OFF message.
-            previous_positions: list of previous positions before the gap begins.
+
+            previous_positions:
+                List of previous positions before the gap begins.
                 If provided, will be used when counting positions N hours before gap,
                 differentiating satellite, terrestrial and dynamic receivers.
-            base_gap: gap to use as base. This gap will be updated with the new properties.
+
+            base_gap:
+                Gap to use as base. This gap will be updated with the new properties.
                 Useful when you need to reuse properties of an existing gap (like an open gap).
 
         Returns:
@@ -311,15 +373,11 @@ class GapDetector:
         messages.sort(key=key)
 
     def _get_index_for_start_time(self, messages: list, start_time: datetime) -> Union[int, None]:
-        if isinstance(start_time, datetime):
-            start_time = start_time.timestamp()
-
-        for i, m in enumerate(messages):
-            ts = m[self.KEY_TIMESTAMP]
-            if ts >= start_time:
-                return i
-
-        return None
+        return binary_search_first_ge(
+            messages,
+            start_time.timestamp() if isinstance(start_time, datetime) else start_time,
+            key=lambda m: m[self.KEY_TIMESTAMP]
+        )
 
     def _build_progress_bar(self, gaps: list, total: int) -> Generator:
         return track(gaps, total=total, description=self.PROGRESS_BAR_DESCRIPTION)
@@ -357,7 +415,7 @@ class GapDetector:
 
     def _gap_implied_speed_knots(self, gap_distance_m: float, gap_duration_h: float) -> float:
         try:
-            implied_speed_knots = (gap_distance_m / gap_duration_h) / 1852
+            implied_speed_knots = (gap_distance_m / gap_duration_h) / self.METERS_PER_NAUTICAL_MILE
         except (TypeError, ZeroDivisionError):
             # Happens when gap_distance_m is NULL.
             # Or gap_duration_h is zero.
