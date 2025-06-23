@@ -136,6 +136,7 @@ class RawGapsPipeline(BeamPipeline):
             bq_input_open_gaps = bq_output_gaps
 
         read_from_bigquery_factory = ReadFromBigQuery.get_client_factory(mocked=mock_db_client)
+        write_to_bigquery_factory = WriteToPartitionedBigQuery.get_client_factory(mocked=mock_db_client)
 
         side_inputs = None
         if not skip_open_gaps and start_date > open_gaps_start_date:
@@ -216,6 +217,7 @@ class RawGapsPipeline(BeamPipeline):
                     partition_type=BQ_TABLE_PARTITION_TYPE,
                     clustering_fields=BQ_TABLE_CLUSTERING_FIELDS,
                     write_disposition=bq_write_disposition,
+                    write_to_bigquery_factory=write_to_bigquery_factory,
                     label="WriteGaps"
                 )
             )

@@ -10,13 +10,18 @@ class Boundary:
     """Encapsulates first N and last M AIS position messages for an ssvid and time interval.
 
     Args:
-        ssvid: id for the vessel.
-        start: first message of the time interval.
-        end: last message of the time interval.
+        ssvid:
+            Id for the vessel.
+
+        start:
+            First N messages of the time interval.
+
+        end:
+            Last message of the time interval.
     """
     ssvid: str
-    start: list
-    end: list
+    start: list[dict]
+    end: list[dict]
 
     def __getitem__(self, key):
         return self.__dict__[key]
@@ -46,7 +51,7 @@ class Boundary:
         return cls(ssvid=ssvid, start=start, end=end)
 
     @classmethod
-    def get_index_for_start_time(cls, messages, start_time, default=0):
+    def get_index_for_start_time(cls, messages: list[dict], start_time, default=0):
         # TODO: move to utils. Already implemented in GapDetector.
         for i, m in enumerate(messages):
             if m["timestamp"] >= start_time:
@@ -55,7 +60,7 @@ class Boundary:
         return default
 
     @classmethod
-    def get_last_messages(cls, messages, offset=0):
+    def get_last_messages(cls, messages: list[dict], offset: int = 0):
         # We get all messages within a period of time before the last message.
 
         last_msg_timestamp = messages[-1]["timestamp"]
@@ -86,16 +91,12 @@ class ExtractGroupBoundary(DoFn):
         self._timestamp_key = timestamp_key
 
     def process(
-        self,
-        group: tuple[Any, Iterable[dict]],
-        window: IntervalWindow = DoFn.WindowParam
+        self, group: tuple[Any, Iterable[dict]], window: IntervalWindow = DoFn.WindowParam
     ) -> Iterable[Boundary]:
-        start_time = None
-        if isinstance(window, IntervalWindow):
-            start_time = window.start.seconds() + self._window_offset_s
+        start_time = window.start.seconds() + self._window_offset_s
 
         key, messages = group
-        messages = list(messages)  # On dataflow, this is a _ConcatSequence object.
+        messages = list(messages)  # On dataflow, `messages` is a _ConcatSequence object.
 
         yield Boundary.from_group(
             (key.ssvid, messages),
