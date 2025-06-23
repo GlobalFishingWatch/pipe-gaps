@@ -2,7 +2,7 @@
     "bq_input_messages": "pipe_ais_v3_internal.research_messages",
     "bq_input_segments": "pipe_ais_v3_published.segs_activity",
     "bq_output_gaps": "scratch_tomas_ttl30d.raw_gaps",
-    "open_gaps_start_date": "2023-02-01",
+    "open_gaps_start_date": "2020-02-01",
     "ssvids": [
         "657132500",
         "367375470",
@@ -47,6 +47,6 @@
     "runner": "dataflow",
     "max_num_workers": 200,
     "machine_type": "e2-standard-2",
-    "job_name": "tom-test-gaps-1-month-30-ssvids-profiling",
+    "job_name": "tom-test-gaps-1-month-30-ssvids",
     "dataflow_service_options": "enable_google_cloud_profiler"
 }
