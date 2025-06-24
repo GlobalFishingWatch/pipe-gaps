@@ -9,12 +9,13 @@ from gfw.common.beam.pipeline.dag import LinearDag
 from gfw.common.bigquery_helper import BigQueryHelper
 
 from pipe_gaps.version import __version__
-from pipe_gaps.pipeline.config import GapsPipelineConfig
-from pipe_gaps.common.config.bigquery_table import BigQueryTableConfig as BQTableConfig
+from pipe_gaps.pipeline.operation_config import RawGapsOperationConfig
+from pipe_gaps.common.config.bigquery_table_config import BigQueryTableConfig as BQTableConfig
 
 logger = logging.getLogger(__name__)
 
 
+# TODO: Move this reusable hook to gfw-common.
 def create_view_hook(table_config: BQTableConfig, mock: bool = False) -> Callable[Pipeline, None]:
     def _hook(_: Pipeline) -> None:
         view_id = table_config.view_id
@@ -27,7 +28,7 @@ def create_view_hook(table_config: BQTableConfig, mock: bool = False) -> Callabl
 
 
 def run(config: SimpleNamespace) -> None:
-    config = GapsPipelineConfig(**vars(config))
+    config = RawGapsOperationConfig(**vars(config))
 
     pipeline = Pipeline(
         name="pipe-gaps",
@@ -44,7 +45,7 @@ def run(config: SimpleNamespace) -> None:
 
     result, _ = pipeline.run()
 
-    # Move this logic inside to pipeline.run() method.
+    # TODO: Move this logic inside to Pipeline.run() method of gfw-common.
     if result.state == PipelineState.DONE and config.bq_output_gaps:
         hook = create_view_hook(config.gaps_table_config, mock=config.mock_db_client)
         hook(pipeline)

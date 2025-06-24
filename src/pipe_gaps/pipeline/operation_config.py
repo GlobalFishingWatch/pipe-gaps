@@ -1,6 +1,7 @@
 import math
 
-from dataclasses import dataclass
+from typing import Any
+from dataclasses import dataclass, field, asdict
 from datetime import date, timedelta
 from unittest import mock
 from functools import partial
@@ -10,7 +11,6 @@ from google.cloud import bigquery
 from gfw.common.beam.transforms import WriteToPartitionedBigQuery
 from gfw.common.bigquery_helper import BigQueryHelper
 
-from pipe_gaps.common.config.pipeline import PipelineConfig
 from pipe_gaps.common.beam.transforms.read_from_json import ReadFromJson
 from pipe_gaps.common.beam.transforms.write_to_json import WriteToJson
 from pipe_gaps.common.beam.transforms.read_from_bigquery import ReadFromBigQuery
@@ -18,12 +18,37 @@ from pipe_gaps.common.beam.transforms.read_from_bigquery import ReadFromBigQuery
 from pipe_gaps.core import GapDetector
 from pipe_gaps.version import __version__
 from pipe_gaps.queries import AISGapsQuery, AISMessagesQuery
-from pipe_gaps.pipeline.gaps_table import GapsTableConfig
+from pipe_gaps.pipeline.gaps_table_config import GapsTableConfig
 from pipe_gaps.pipeline.transforms.detect_gaps import DetectGaps
 
 
+ERROR_DATE = "Dates must be in ISO format. Got: {}."
+
+
+class OperationConfigError(Exception):
+    pass
+
+
 @dataclass
-class GapsPipelineConfig(PipelineConfig):
+class OperationConfig:
+    """Base config for Beam-based pipelines."""
+    date_range: tuple[str, str]
+    unknown_parsed_args: dict[str, Any] = field(default_factory=dict)
+    unknown_unparsed_args: list[str] = field(default_factory=list)
+
+    @property
+    def parsed_date_range(self) -> tuple[date, date]:
+        try:
+            return tuple(map(date.fromisoformat, self.date_range))
+        except ValueError:
+            raise OperationConfigError(ERROR_DATE.format(self.date_range))
+
+    def to_dict(self):
+        return asdict(self)
+
+
+@dataclass
+class RawGapsOperationConfig(OperationConfig):
     filter_not_overlapping_and_short: bool = False
     filter_good_seg: bool = False
     open_gaps_start_date: str = "2019-01-01"

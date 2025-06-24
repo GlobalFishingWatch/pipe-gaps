@@ -1,12 +1,14 @@
 import pytest
 from datetime import date, timedelta
 
-from pipe_gaps.pipeline.config import GapsPipelineConfig
+from gfw.common.beam.transforms import WriteToPartitionedBigQuery
+
 from pipe_gaps.common.beam.transforms.read_from_json import ReadFromJson
 from pipe_gaps.common.beam.transforms.write_to_json import WriteToJson
 from pipe_gaps.common.beam.transforms.read_from_bigquery import ReadFromBigQuery
-from gfw.common.beam.transforms import WriteToPartitionedBigQuery
+
 from pipe_gaps.pipeline.transforms.detect_gaps import DetectGaps
+from pipe_gaps.pipeline.operation_config import RawGapsOperationConfig
 
 
 @pytest.fixture
@@ -21,22 +23,22 @@ def base_config_kwargs():
 
 def test_post_init_validation_raises_when_no_inputs():
     with pytest.raises(ValueError, match="You need to provide either a JSON inputs or BQ input."):
-        GapsPipelineConfig(date_range=("2024-01-01", "2024-01-03"))
+        RawGapsOperationConfig(date_range=("2024-01-01", "2024-01-03"))
 
 
 @pytest.fixture
-def config(base_config_kwargs) -> GapsPipelineConfig:
-    return GapsPipelineConfig(**base_config_kwargs)
+def config(base_config_kwargs) -> RawGapsOperationConfig:
+    return RawGapsOperationConfig(**base_config_kwargs)
 
 
 @pytest.fixture
-def config_with_json(base_config_kwargs) -> GapsPipelineConfig:
-    return GapsPipelineConfig(json_input_messages="messages.json", **base_config_kwargs)
+def config_with_json(base_config_kwargs) -> RawGapsOperationConfig:
+    return RawGapsOperationConfig(json_input_messages="messages.json", **base_config_kwargs)
 
 
 @pytest.fixture
-def config_with_save_json(base_config_kwargs) -> GapsPipelineConfig:
-    return GapsPipelineConfig(save_json=True, **base_config_kwargs)
+def config_with_save_json(base_config_kwargs) -> RawGapsOperationConfig:
+    return RawGapsOperationConfig(save_json=True, **base_config_kwargs)
 
 
 @pytest.fixture
@@ -45,7 +47,7 @@ def config_without_bq_io(config_with_json):
     config = config_with_json.to_dict()
     del config["bq_input_messages"]
     del config["bq_output_gaps"]
-    return GapsPipelineConfig(**config)
+    return RawGapsOperationConfig(**config)
 
 
 def test_start_and_end_dates(config):
