@@ -1,12 +1,12 @@
 from dataclasses import dataclass
 
 from pipe_gaps.assets import schemas
-from pipe_gaps.common.table_config import TableConfig
+from pipe_gaps.queries import AISGapsQuery
+from pipe_gaps.common.config.bigquery_table import BigQueryTableConfig
 
 
 PARTITION_FIELD = "start_timestamp"
 PARTITION_TYPE = "MONTH"
-PARTITION_REQUIRE = False
 CLUSTERING_FIELDS = ("is_closed", "version", "ssvid")
 VIEW_SUFFIX = "last_versions"
 SCHEMA_FILE = "ais-gaps.json"
@@ -39,7 +39,7 @@ For more information, see https://github.com/GlobalFishingWatch/pipe-gaps/blob/d
 
 
 @dataclass
-class GapsTableConfig(TableConfig):
+class GapsTableConfig(BigQueryTableConfig):
     schema_file: str = SCHEMA_FILE
     view_suffix: str = VIEW_SUFFIX
     partition_type: str = PARTITION_TYPE
@@ -47,5 +47,10 @@ class GapsTableConfig(TableConfig):
     clustering_fields: tuple = CLUSTERING_FIELDS
     description_template: str = DESCRIPTION_TEMPLATE
 
+    @property
     def schema(self):
-        return schemas.get_schema(self.schema)
+        return schemas.get_schema(self.schema_file)
+
+    @property
+    def view_query(self):
+        return AISGapsQuery.last_versions_query(source_id=self.table_id)

@@ -63,7 +63,7 @@ def cli(args):
         name=NAME,
         description=DESCRIPTION,
         formatter=default_formatter(max_pos=100),
-        run=lambda ns: run(**vars(ns)),
+        run=run,
         options=[
             # Options declared here are going to be inherited by subcommands, if any.
             Option("-i", "--json-input-messages", type=str, help=HELP_JSON_INPUT_MESSAGES),
