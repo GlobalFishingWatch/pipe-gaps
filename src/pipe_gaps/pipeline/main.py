@@ -21,7 +21,7 @@ def create_view_hook(table_config: BQTableConfig, mock: bool = False) -> Callabl
         view_query = table_config.view_query
         logger.info(f"Creating view: {view_id}")
         client_factory = BigQueryHelper.get_client_factory(mocked=mock)
-        bq_client = BigQueryHelper(client_factory=client_factory)
+        bq_client = BigQueryHelper(client_factory=client_factory, project=None)
         bq_client.create_view(view_id=view_id, view_query=view_query, exists_ok=True)
     return _hook
 

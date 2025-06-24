@@ -1,12 +1,16 @@
-from dataclasses import dataclass
-from datetime import date
-
 import math
 
-from datetime import timedelta
+from dataclasses import dataclass
+from datetime import date, timedelta
+from unittest import mock
+from functools import partial
+
+from google.cloud import bigquery
 
 from gfw.common.beam.transforms import WriteToPartitionedBigQuery
+from gfw.common.bigquery_helper import BigQueryHelper
 
+from pipe_gaps.common.config.pipeline import PipelineConfig
 from pipe_gaps.common.beam.transforms.read_from_json import ReadFromJson
 from pipe_gaps.common.beam.transforms.write_to_json import WriteToJson
 from pipe_gaps.common.beam.transforms.read_from_bigquery import ReadFromBigQuery
@@ -14,9 +18,8 @@ from pipe_gaps.common.beam.transforms.read_from_bigquery import ReadFromBigQuery
 from pipe_gaps.core import GapDetector
 from pipe_gaps.version import __version__
 from pipe_gaps.queries import AISGapsQuery, AISMessagesQuery
-from pipe_gaps.pipeline.transforms.detect_gaps import DetectGaps
 from pipe_gaps.pipeline.gaps_table import GapsTableConfig
-from pipe_gaps.common.config.pipeline import PipelineConfig
+from pipe_gaps.pipeline.transforms.detect_gaps import DetectGaps
 
 
 @dataclass
@@ -75,6 +78,24 @@ class GapsPipelineConfig(PipelineConfig):
     @property
     def write_to_bigquery_factory(self):
         return WriteToPartitionedBigQuery.get_client_factory(mocked=self.mock_db_client)
+
+    @property
+    def bigquery_helper_factory(self):
+        # Move this fix to gfw-common.
+        def mock_client_factory(*args, **kwargs):
+            # Extract project from kwargs or use default None.
+            # Otherwise project is not set and is needed.
+            project = kwargs.get("project", None)
+            client = mock.create_autospec(bigquery.Client, project=project, instance=True)
+
+            return client
+
+        if self.mock_db_client:
+            client_factory = mock_client_factory
+        else:
+            client_factory = bigquery.client.Client
+
+        return partial(BigQueryHelper, client_factory=client_factory)
 
     @property
     def gaps_table_config(self):
@@ -170,7 +191,8 @@ class GapsPipelineConfig(PipelineConfig):
                         description_params=self.bq_output_gaps_description_params
                     ),
                     write_to_bigquery_factory=self.write_to_bigquery_factory,
-                    label="WriteGaps"
+                    bigquery_helper_factory=self.bigquery_helper_factory,
+                    label="WriteGaps",
                 )
             )
 
