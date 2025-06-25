@@ -1,0 +1,20 @@
+{   
+    "bq_input_messages": "pipe_ais_v3_internal.research_messages",
+    "bq_input_segments": "pipe_ais_v3_published.segs_activity",
+    "bq_output_gaps": "scratch_tomas_ttl30d.raw_gaps",
+    "open_gaps_start_date": "2012-01-01",
+    "skip_open_gaps": true,
+    "date_range": [
+        "2024-12-15",
+        "2024-12-16"
+    ],
+    "min_gap_length": 6,
+    "n_hours_before": 12,
+    "window_period_d": 1,
+    "filter_good_seg": true,
+    "project": "world-fishing-827",
+    "runner": "dataflow",
+    "max_num_workers": 50,
+    "machine_type": "e2-custom-2-3072",
+    "job_name": "tom-test-gaps-1-day"
+}
