@@ -43,6 +43,7 @@ Time gap detector for **[AIS]** position messages.
 [docker official instructions]: https://docs.docker.com/engine/install/
 [docker compose plugin]: https://docs.docker.com/compose/install/linux/
 [examples]: examples/
+[gfw-common]: https://github.com/GlobalFishingWatch/gfw-common/
 [git installed]: https://git-scm.com/downloads
 [git workflow documentation]: GIT-WORKFLOW.md
 [Makefile]: Makefile
@@ -53,12 +54,16 @@ Time gap detector for **[AIS]** position messages.
 [slowly changing dimension]: https://en.wikipedia.org/wiki/Slowly_changing_dimension
 [Semantic Versioning]: https://semver.org
 
-[ais-gaps.py]: pipe_gaps/queries/ais_gaps.py
-[ais-messages.py]: pipe_gaps/queries/ais_messages.py
-[core.py]: pipe_gaps/pipeline/beam/transforms/core.py
-[detect_gaps.py]: pipe_gaps/pipeline/processes/detect_gaps.py
-[gap_detector.py]: pipe_gaps/core/gap_detector.py
+[ais-gaps.py]: src/pipe_gaps/queries/ais_gaps.py
+[ais-messages.py]: src/pipe_gaps/queries/ais_messages.py
+[detect_gaps.py]: src/pipe_gaps/pipeline/transforms/detect_gaps.py
+[gap_detector.py]: src/pipe_gaps/core/gap_detector.py
+
 [pTransform]: https://beam.apache.org/documentation/programming-guide/#applying-transforms
+
+[Dag]: https://github.com/GlobalFishingWatch/gfw-common/blob/develop/src/gfw/common/beam/pipeline/dag/base.py
+[LinearDag]: https://github.com/GlobalFishingWatch/gfw-common/blob/develop/src/gfw/common/beam/pipeline/dag/linear.py
+[Pipeline]: https://github.com/GlobalFishingWatch/gfw-common/blob/develop/src/gfw/common/beam/pipeline/base.py
 
 [results for 2021-2023]: analysis/
 [profiling results]: benchmarks/measurement-size-10000000-reps-50.json
@@ -366,9 +371,9 @@ SELECT *
 The easiest way of running the gaps detection pipeline is to use the provided command-line interface:
 ```shell
 (.venv) $ pipe-gaps
-usage: pipe-gaps [-h] [-c ] [-v] [--no-rich-logging] [--only-render] [--pipe-type ] [-i ] [-s ] [--bq-input-messages ] [--bq-input-segments ] [--bq-input-open-gaps ] [--bq-output-gaps ]
-                 [--open-gaps-start-date ] [--filter-not-overlapping-and-short ] [--filter-good-seg ] [--skip-open-gaps] [--mock-db-client | --no-mock-db-client]
-                 [--save-json | --no-save-json] [--work-dir ] [--ssvids ] [--date-range ] [--min-gap-length ] [--window-period-d ] [--eval-last | --no-eval-last] [--n-hours-before ]
+usage: pipe-gaps (v0.4.7). [-h] [-c] [-v] [--log-file] [--no-rich-logging] [--only-render] [-i] [-s] [--bq-read-method] [--bq-input-messages] [--bq-input-segments] [--bq-input-open-gaps]
+                           [--bq-output-gaps] [--bq-output-gaps-description] [--open-gaps-start-date] [--filter-not-overlapping-and-short] [--filter-good-seg] [--skip-open-gaps]
+                           [--mock-db-client] [--save-json] [--work-dir] [--ssvids] [--date-range] [--min-gap-length] [--window-period-d] [--eval-last] [--n-hours-before]
 
     Detects time gaps in AIS position messages.
     The definition of a gap is configurable by a time threshold 'min-gap-length'.
@@ -384,37 +389,39 @@ usage: pipe-gaps [-h] [-c ] [-v] [--no-rich-logging] [--only-render] [--pipe-typ
         https://cloud.google.com/dataflow/docs/reference/pipeline-options#python.
 
 options:
-  -h, --help                             show this help message and exit
-  -c  , --config-file                    JSON file with pipeline configuration (default: None).
-  -v, --verbose                          Set logger level to DEBUG.
-  --no-rich-logging                      Disable rich logging (useful prof production environments).
-  --only-render                          Only render command-line call equivalent to provided config file.
+  -h, --help                          show this help message and exit
 
-general pipeline configuration:
-  --pipe-type                            Pipeline type: ['naive', 'beam'].
-  -i  , --json-input-messages            JSON file with input messages [Useful for development].
-  -s  , --json-input-open-gaps           JSON file with open gaps [Useful for development].
-  --bq-input-messages                    BigQuery table with with input messages.
-  --bq-input-segments                    BigQuery table with with input segments.
-  --bq-input-open-gaps                   BigQuery table with open gaps.
-  --bq-output-gaps                       BigQuery table in which to store the gap events.
-  --open-gaps-start-date                 Fetch open gaps starting from this date range e.g., '2012-01-01'.
-  --filter-not-overlapping-and-short     Fetch messages that do not belong to 'overlapping_and_short' segments.
-  --filter-good-seg                      Fetch messages that belong to 'good_seg2' segments.
-  --skip-open-gaps                       If passed, pipeline will not fetch open gaps [Useful for development]. 
-  --mock-db-client, --no-mock-db-client  If passed, mocks the DB client [Useful for development].
-  --save-json, --no-save-json            If passed, saves the results in JSON file [Useful for development].
-  --work-dir                             Directory to use as working directory.
-  --ssvids                               Detect gaps for this list of ssvids, e.g., «412331104,477334300».
-  --date-range                           Detect gaps within this date range, e.g., «2024-01-01,2024-01-02».
+built-in CLI options:
+  -c , --config-file                  Path to config file. (default: None)
+  -v, --verbose                       Set logger level to DEBUG. (default: False)
+  --log-file                          File to send logging output to. (default: None)
+  --no-rich-logging                   Disable rich logging [useful for production environments]. (default: False)
+  --only-render                       Dry run, only renders command line call and prints it. (default: False)
 
-gap detection process:
-  --min-gap-length                       Minimum time difference (hours) to start considering gaps.
-  --window-period-d                      Period (in days) of time windows used to parallelize the process.
-  --eval-last, --no-eval-last            If passed, evaluates last message of each SSVID to create an open gap.
-  --n-hours-before                       Count messages this amount of hours before each gap.
+options defined by 'pipe-gaps' command:
+  -i , --json-input-messages          JSON file with input messages [Useful for development]. (default: None)
+  -s , --json-input-open-gaps         JSON file with open gaps [Useful for development]. (default: None)
+  --bq-read-method                    BigQuery read method. It may be 'DIRECT_READ' or 'EXPORT'. (default: None)
+  --bq-input-messages                 BigQuery table with with input messages. (default: None)
+  --bq-input-segments                 BigQuery table with with input segments. (default: None)
+  --bq-input-open-gaps                BigQuery table with open gaps. (default: None)
+  --bq-output-gaps                    BigQuery table in which to store the gap events. (default: None)
+  --bq-output-gaps-description        If passed, creates a description for the output table. (default: None)
+  --open-gaps-start-date              Fetch open gaps starting from this date range e.g., '2012-01-01'. (default: None)
+  --filter-not-overlapping-and-short  Fetch messages that do not belong to 'overlapping_and_short' segments. (default: None)
+  --filter-good-seg                   Fetch messages that belong to 'good_seg2' segments. (default: None)
+  --skip-open-gaps                    If passed, pipeline will not fetch open gaps [Useful for development].  (default: None)
+  --mock-db-client                    If passed, mocks the DB client [Useful for development]. (default: None)
+  --save-json                         If passed, saves the results in JSON file [Useful for development]. (default: None)
+  --work-dir                          Directory to use as working directory. (default: None)
+  --ssvids                            Detect gaps for this list of ssvids, e.g., «412331104,477334300». (default: None)
+  --date-range                        Detect gaps within this date range, e.g., «2024-01-01,2024-01-02». (default: None)
+  --min-gap-length                    Minimum time difference (hours) to start considering gaps. (default: None)
+  --window-period-d                   Period (in days) of time windows used to parallelize the process. (default: None)
+  --eval-last                         If passed, evaluates last message of each SSVID to create an open gap. (default: None)
+  --n-hours-before                    Count messages this amount of hours before each gap. (default: None)
 
-Example: 
+Examples:
     pipe-gaps -c config/sample-from-file.json --min-gap-length 1.3
 ```
 
@@ -423,10 +430,6 @@ Example:
 
 > [!CAUTION]
 > Date ranges are inclusive for the start date and **exclusive for the end date**.
-
-> [!NOTE]
-> The pipe-type can be "naive" (without parallelization, was useful for development)
-  or "beam" (allows parallelization through [Apache Beam] & [Google Dataflow]).
 
 > [!NOTE]
 > Any option passed to the CLI not explicitly declared will not be parsed by the main CLI,
@@ -455,15 +458,13 @@ This is an example of a JSON config file:
     "min_gap_length": 6,
     "n_hours_before": 12,
     "window_period_d": 1,
-    "pipeline_options": {
-        "project": "world-fishing-827",
-        "runner": "direct"
-    }
+    "project": "world-fishing-827",
+    "runner": "direct"
 }
 ```
 
 > [!CAUTION]
-  Inside `pipeline_options` you can put, for example, any [Apache Beam Pipeline Options].
+  You can declare any [Apache Beam Pipeline Options] in the config file.
   In that case, be careful with flags. You should put the _option name_ and not the _flag name_, 
   e.g., put `"use_public_ips": false` instead of `"no_use_public_ips": true`,
   otherwise the parameter **will be ignored**. This is different from using it from the CLI,
@@ -473,21 +474,34 @@ You can see more configuration examples [here](config/).
 
 ## Implementation details
 
-The pipeline is implemented over a (mostly) generic structure that supports:
-1. Grouping all _main inputs_ by **SSVID** and optionally overlapping time intervals (**TI**)
-    with arbitrary period.
-    For example, you can group by time windows of size 31 days with period of 30 days,
-    meaning that each time window will have an overlap of 1 day.
-2. Grouping _side inputs_ by **SSVID**.
-3. Construct _boundaries_ (first and last N **AIS** messages of each group) and group them by **SSVID**.
-4. Processing _main inputs_ groups from 1.
-5. Processing _boundaries_ from 4 together with _side inputs from_ 2, both grouped by **SSVID**.
+<div align="justify">
+
+This codebase uses the [Pipeline] helper class from the [gfw-common] library.
+The DAG can be defined either by passing a [Dag] object to the constructor
+or by overriding the `apply_dag` method.
+In this case,
+we use the provided [LinearDag] implementation,
+which defines a simple linear flow: `(sources) → (core) → (sinks)`.
+
+The custom logic for the `core` PTransform is encapsulated in the `DetectGaps` class.
+
+This transform implements the following steps (some of them in parallel):
+1. **Groups the main inputs** — **AIS messages** — by `SSVID` and time intervals (`TI`) using sliding windows.  
+2. **Groups side inputs** — open gaps — by `SSVID`.
+3. **Extracts boundaries** — the first and last *N* AIS messages of each group of main inputs.
+4. **Groups boundaries** by `SSVID`.
+5. **Processes main input groups** from step 1.
+6. **Processes boundaries** from step 4, using **side inputs** from step 2.
+7. **Joins the outputs** from steps 5 and 6.
+
 
 Below there is a [diagram](#flow-chart) that describes this work flow.
 
+</div>
+
 > [!NOTE]
 > In the case of the Apache Beam integration with [Dataflow runner],
-  the groups can be processed in parallel accross different workers.
+  the groups will be processed in parallel accross different workers.
 
 ### Most relevant modules
 
@@ -497,8 +511,7 @@ Below there is a [diagram](#flow-chart) that describes this work flow.
 | --- | --- |
 | [ais-gaps.py]     | Encapsulates **AIS** gaps query. |
 | [ais-messages.py] | Encapsulates **AIS** position messages query. |
-| [core.py]         | Defines core [pTransform] that integrates [detect_gaps.py] to Apache Beam. |
-| [detect_gaps.py]  | Defines **DetectGaps** class (core processing step of the pipeline). |
+| [detect_gaps.py]  | Defines **DetectGaps** [PTransform] (core processing step of the pipeline). |
 | [gap_detector.py] | Defines lower level **GapDetector** class that computes gaps in a list of **AIS** messages. |
 
 </div>
@@ -510,7 +523,7 @@ flowchart TD;
     A[Read Main Inputs] ==> |**AIS Messages**| B[Group Inputs]
     C[Read Side Inputs] ==> |**Open Gaps**| D[Group Side Inputs]
 
-    subgraph **Detect Gaps**
+    subgraph **DetectGaps** PTransform
     B ==> |**AIS Messages <br/> by SSVID & TI**| E[Process Groups]
     B ==> |**AIS Messages <br/> by SSVID & TI**| F[Process Boundaries]
     D ==> |**Open Gaps  <br/> by SSVID**| F

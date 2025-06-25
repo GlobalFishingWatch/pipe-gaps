@@ -15,7 +15,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4.1.0
         with:
-          python-version: 3.11
+          python-version: 3.12
 
       - name: Install flake8
         run: pip --disable-pip-version-check install flake8
@@ -24,10 +24,16 @@ jobs:
         run: flake8 --count
 
   tests:
-    runs-on: ubuntu-latest
+    name: Python ${{ matrix.python-version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: true
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        os: ["ubuntu-latest"]
+        python-version: ["3.10", "3.11", "3.12"]
+    env:
+      VENV: .venv
+      PACKAGE: pipe_gaps
 
     steps:
       - uses: actions/checkout@v4
@@ -39,15 +45,25 @@ jobs:
           # cache option make the step fail if you don´t have requirements.txt or pyproject.toml on root.
           # https://github.com/actions/setup-python/issues/807.
   
-      - name: Install dependencies
+      - name: Create virtual environment
+        run: python -m venv $VENV
+
+      - name: Install package with test dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements/test.txt
-          pip install -e .[beam]
-    
+          . $VENV/bin/activate
+          make install-test
+          pip install .
+
       - name: Test with pytest
         run: |
-          make testintegration
+          . $VENV/bin/activate
+          pytest --cov=$PACKAGE --cov-report=xml
+
+      - name: Upload coverage reports to Codecov
+        if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') && matrix.python-version == '3.12'
+        uses: codecov/codecov-action@v4.0.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   tests-in-docker:
     runs-on: ubuntu-latest
@@ -57,12 +73,7 @@ jobs:
         uses: actions/setup-python@v4.1.0
   
       - name: Build docker image
-        run: make build
+        run: make docker-build
     
       - name: Run tests
-        run: make ci-test
-
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v4.0.1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+        run: make docker-ci-test

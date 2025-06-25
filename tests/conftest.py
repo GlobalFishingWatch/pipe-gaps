@@ -3,16 +3,18 @@ import pytest
 from typing import Optional
 from datetime import datetime, timezone
 
-from pipe_gaps import utils
+from gfw.common.logging import LoggerConfig
+
 from pipe_gaps.core import GapDetector
-from pipe_gaps.data import get_sample_messages
+from pipe_gaps.common.io import json_save
+from pipe_gaps.assets import get_sample_messages
 
 
-utils.setup_logger(
+LoggerConfig(
     warning_level=[
         "apache_beam",
     ]
-)
+).setup()
 
 
 @pytest.fixture(scope="module")
@@ -23,7 +25,7 @@ def messages():
 @pytest.fixture()
 def input_file(tmp_path, messages):
     path = tmp_path.joinpath("test.json")
-    utils.json_save(messages, path)
+    json_save(path, messages)
 
     return path
 
@@ -468,13 +470,12 @@ class TestCases:
             "open_gaps": [],
             "threshold": 6,
             "dates": ["2024-01-01", "2024-01-02", "2024-01-03", "2024-01-04"],
-            "expected_gaps": 4,
-            "expected_dt": {
-                utc_datetime(2023, 12, 31, 20): utc_datetime(2024, 1, 1, 20),
-                utc_datetime(2024, 1, 1, 22): None,
-                utc_datetime(2024, 1, 1, 22): utc_datetime(2024, 1, 3, 10),
-                utc_datetime(2024, 1, 3, 18): utc_datetime(2024, 1, 4, 19),
-            },
+            "expected_gaps": [
+                (utc_datetime(2023, 12, 31, 20), utc_datetime(2024, 1, 1, 20)),
+                (utc_datetime(2024, 1, 1, 22), None),
+                (utc_datetime(2024, 1, 1, 22), utc_datetime(2024, 1, 3, 18)),
+                (utc_datetime(2024, 1, 3, 18), utc_datetime(2024, 1, 4, 19)),
+            ],
             "id": "gap_after_6_pm_with_end_after_tomorrow"
         },
     ]
