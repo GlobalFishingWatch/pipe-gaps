@@ -9,7 +9,7 @@ from gfw.common.logging import LoggerConfig
 from gfw.common.cli.formatting import default_formatter
 
 from pipe_gaps.version import __version__
-from pipe_gaps.pipeline.main import run
+from pipe_gaps.pipeline.main import run as run_pipeline
 
 from .validations import date_range, ssvids
 
@@ -58,12 +58,12 @@ HELP_EVAL_LAST = "If passed, evaluates last message of each SSVID to create an o
 HELP_N_HOURS_BEFORE = "Count messages this amount of hours before each gap."
 
 
-def cli(args):
+def run(args):
     gaps_cli = CLI(
         name=NAME,
         description=DESCRIPTION,
         formatter=default_formatter(max_pos=100),
-        run=run,
+        run=run_pipeline,
         options=[
             # Options declared here are going to be inherited by subcommands, if any.
             Option("-i", "--json-input-messages", type=str, help=HELP_JSON_INPUT_MESSAGES),
@@ -109,7 +109,7 @@ def cli(args):
 
 
 def main():
-    cli(sys.argv[1:])
+    run(sys.argv[1:])
 
 
 if __name__ == "__main__":

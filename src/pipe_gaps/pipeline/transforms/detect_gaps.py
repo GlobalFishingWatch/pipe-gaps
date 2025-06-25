@@ -38,7 +38,8 @@ class DetectGaps(beam.PTransform):
         window_period_d: int = None,
         window_offset_h: int = 12,
         date_range: tuple[str, str] = None,
-        side_inputs=None
+        side_inputs=None,
+        **kwargs
     ):
         """A core PTransform for pipelines.
 
@@ -57,7 +58,7 @@ class DetectGaps(beam.PTransform):
             side_inputs: A PCollection with side inputs that will be used
                 to process the union of the boundaries.
         """
-        super().__init__()
+        super().__init__(**kwargs)
         self._gap_detector = gap_detector
         self._key = key or Key([self.KEY_SSVID])
         self._eval_last = eval_last
