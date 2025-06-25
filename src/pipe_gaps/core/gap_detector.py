@@ -47,7 +47,7 @@ Raises:
 import logging
 import hashlib
 import operator
-from itertools import islice, chain, pairwise
+from itertools import chain, pairwise
 from collections import defaultdict
 
 from typing import Union, Generator
@@ -202,16 +202,14 @@ class GapDetector:
             self._sort_messages(messages)
 
             start_idx = 0
-            end_idx = None
-
             if start_time is not None:
                 start_idx = self._get_index_for_start_time(messages, start_time)
-                if start_idx is None:
-                    end_idx = 0
+                if start_idx == -1:
+                    return []
 
-            gaps = pairwise(islice(messages, start_idx, end_idx))
+            gaps = pairwise(messages[start_idx:])
 
-            if self._show_progress:
+            if self._show_progress and len(messages) - start_idx > 1:
                 gaps = self._build_progress_bar(gaps, total=len(messages) - 1 - start_idx)
 
             gaps = list(

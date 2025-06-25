@@ -188,6 +188,7 @@ class ProcessBoundaries(DoFn):
         return True
 
     def _debug_gap(self, g: dict):
+        # TODO: move this elsewhere. It is duplicated.
         end_dt = None
 
         try:

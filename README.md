@@ -57,10 +57,13 @@ Time gap detector for **[AIS]** position messages.
 [ais-gaps.py]: src/pipe_gaps/queries/ais_gaps.py
 [ais-messages.py]: src/pipe_gaps/queries/ais_messages.py
 [detect_gaps.py]: src/pipe_gaps/pipeline/transforms/detect_gaps.py
-[gap_detector.py]: src/pipe_gaps/gap_detector.py
+[gap_detector.py]: src/pipe_gaps/core/gap_detector.py
+
 [pTransform]: https://beam.apache.org/documentation/programming-guide/#applying-transforms
 
-[BeamPipeline]: https://github.com/GlobalFishingWatch/gfw-common/blob/develop/src/gfw/common/beam/pipeline.py
+[Dag]: https://github.com/GlobalFishingWatch/gfw-common/blob/develop/src/gfw/common/beam/pipeline/dag/base.py
+[LinearDag]: https://github.com/GlobalFishingWatch/gfw-common/blob/develop/src/gfw/common/beam/pipeline/dag/linear.py
+[Pipeline]: https://github.com/GlobalFishingWatch/gfw-common/blob/develop/src/gfw/common/beam/pipeline/base.py
 
 [results for 2021-2023]: analysis/
 [profiling results]: benchmarks/measurement-size-10000000-reps-50.json
@@ -471,15 +474,19 @@ You can see more configuration examples [here](config/).
 
 ## Implementation details
 
-The pipeline reuses a generic [BeamPipeline] provided by the [gfw-common] library.
+The pipeline uses the [`Pipeline`] helper class from the [`gfw-common`] library.  
+You can define the DAG of the pipeline either by passing a [`Dag`] object to the constructor  
+or by overriding the `apply_dag` method.  
+In this case,
+we use the provided [`LinearDag`] implementation,
+which defines a simple linear flow: `(sources) → (core) → (sinks)`.
 
-The custom logic for this particular pipeline is encapsulated in the core `DetectGaps` **PTransform**.
+The custom logic for the core PTransform `DetectGaps` class.
 
-This transform implements the following steps:
-1. **Groups the main inputs** — **AIS messages** — by `SSVID` and time intervals (`TI`) using an arbitrary windowing period.  
-   For example, you can group by windows of 31 days with a period of 30 days, resulting in a 1-day overlap between windows.
+This transform implements the following steps (some of them in parallel):
+1. **Groups the main inputs** — **AIS messages** — by `SSVID` and time intervals (`TI`) using sliding windows.  
 2. **Groups side inputs** — open gaps — by `SSVID`.
-3. **Extracts boundaries** — the first and last *N* AIS messages of each group.
+3. **Extracts boundaries** — the first and last *N* AIS messages of each group of main inputs.
 4. **Groups boundaries** by `SSVID`.
 5. **Processes main input groups** from step 1.
 6. **Processes boundaries** from step 4, using **side inputs** from step 2.
@@ -490,7 +497,7 @@ Below there is a [diagram](#flow-chart) that describes this work flow.
 
 > [!NOTE]
 > In the case of the Apache Beam integration with [Dataflow runner],
-  the groups can be processed in parallel accross different workers.
+  the groups will be processed in parallel accross different workers.
 
 ### Most relevant modules
 

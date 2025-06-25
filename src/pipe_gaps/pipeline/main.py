@@ -47,7 +47,7 @@ def run(config: SimpleNamespace) -> None:
 
     # TODO: Move this logic inside to Pipeline.run() method of gfw-common.
     if result.state == PipelineState.DONE and config.bq_output_gaps:
-        hook = create_view_hook(config.gaps_table_config, mock=config.mock_db_client)
+        hook = create_view_hook(config.gaps_table_config, mock=config.mock_bq_clients)
         hook(pipeline)
     else:
         logger.warning("Pipeline did not finish successfully; skipping view creation.")

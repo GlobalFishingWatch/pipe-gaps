@@ -10,7 +10,7 @@ def test_cli_executes_run(tmp_path):
         "--work-dir", str(tmp_path),
         "--filter-good-seg",
         "--filter-not-overlapping-and-short",
-        "--mock-db-client",
+        "--mock-bq-clients",
         "--save-json",
     ]
 

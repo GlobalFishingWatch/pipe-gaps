@@ -46,7 +46,7 @@ HELP_OPEN_GAPS_START_DATE = "Fetch open gaps starting from this date range e.g.,
 HELP_SKIP_OPEN_GAPS = "If passed, pipeline will not fetch open gaps [Useful for development]. "
 HELP_OVERL = "Fetch messages that do not belong to 'overlapping_and_short' segments."
 HELP_GOOD_SEG = "Fetch messages that belong to 'good_seg2' segments."
-HELP_MOCK_DB_CLIENT = "If passed, mocks the DB client [Useful for development]."
+HELP_MOCK_BQ_CLIENTS = "If passed, mocks the BQ clients [Useful for development]."
 HELP_SAVE_JSON = "If passed, saves the results in JSON file [Useful for development]."
 HELP_WORK_DIR = "Directory to use as working directory."
 HELP_SSVIDS = "Detect gaps for this list of ssvids, e.g., «412331104,477334300»."
@@ -78,7 +78,7 @@ def run(args):
             Option("--filter-not-overlapping-and-short", type=bool, help=HELP_OVERL),
             Option("--filter-good-seg", type=bool, help=HELP_GOOD_SEG),
             Option("--skip-open-gaps", type=bool, help=HELP_SKIP_OPEN_GAPS),
-            Option("--mock-db-client", type=bool, help=HELP_MOCK_DB_CLIENT),
+            Option("--mock-bq-clients", type=bool, help=HELP_MOCK_BQ_CLIENTS),
             Option("--save-json", type=bool, help=HELP_SAVE_JSON),
             Option("--work-dir", type=str, help=HELP_WORK_DIR),
             Option("--ssvids", type=ssvids, help=HELP_SSVIDS),

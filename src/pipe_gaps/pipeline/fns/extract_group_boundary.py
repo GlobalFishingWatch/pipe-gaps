@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 from apache_beam.transforms.core import DoFn
 from apache_beam.transforms.window import IntervalWindow
+from pipe_gaps.common.iterables import binary_search_first_ge
 
 
 @dataclass(eq=True, frozen=True)
@@ -51,13 +52,17 @@ class Boundary:
         return cls(ssvid=ssvid, start=start, end=end)
 
     @classmethod
-    def get_index_for_start_time(cls, messages: list[dict], start_time, default=0):
-        # TODO: move to utils. Already implemented in GapDetector.
-        for i, m in enumerate(messages):
-            if m["timestamp"] >= start_time:
-                return i
+    def get_index_for_start_time(cls, messages: list[dict], start_time: int):
+        idx = binary_search_first_ge(
+            messages,
+            start_time,
+            key=lambda m: m["timestamp"]
+        )
 
-        return default
+        if idx < 0:
+            idx = 0
+
+        return idx
 
     @classmethod
     def get_last_messages(cls, messages: list[dict], offset: int = 0):

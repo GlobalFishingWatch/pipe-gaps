@@ -18,7 +18,7 @@ from pipe_gaps.common.beam.transforms.read_from_bigquery import ReadFromBigQuery
 from pipe_gaps.core import GapDetector
 from pipe_gaps.version import __version__
 from pipe_gaps.queries import AISGapsQuery, AISMessagesQuery
-from pipe_gaps.pipeline.gaps_table_config import GapsTableConfig
+from pipe_gaps.pipeline.gaps_table_config import RawGapsTableConfig
 from pipe_gaps.pipeline.transforms.detect_gaps import DetectGaps
 
 
@@ -68,7 +68,7 @@ class RawGapsOperationConfig(OperationConfig):
     bq_output_gaps: str = None
     bq_output_gaps_description: bool = False
     bq_write_disposition: str = "WRITE_APPEND"
-    mock_db_client: bool = False
+    mock_bq_clients: bool = False
     save_json: bool = False
     work_dir: str = "workdir"
 
@@ -98,11 +98,11 @@ class RawGapsOperationConfig(OperationConfig):
 
     @property
     def read_from_bigquery_factory(self):
-        return ReadFromBigQuery.get_client_factory(mocked=self.mock_db_client)
+        return ReadFromBigQuery.get_client_factory(mocked=self.mock_bq_clients)
 
     @property
     def write_to_bigquery_factory(self):
-        return WriteToPartitionedBigQuery.get_client_factory(mocked=self.mock_db_client)
+        return WriteToPartitionedBigQuery.get_client_factory(mocked=self.mock_bq_clients)
 
     @property
     def bigquery_helper_factory(self):
@@ -115,7 +115,7 @@ class RawGapsOperationConfig(OperationConfig):
 
             return client
 
-        if self.mock_db_client:
+        if self.mock_bq_clients:
             client_factory = mock_client_factory
         else:
             client_factory = bigquery.client.Client
@@ -124,7 +124,7 @@ class RawGapsOperationConfig(OperationConfig):
 
     @property
     def gaps_table_config(self):
-        return GapsTableConfig(
+        return RawGapsTableConfig(
             table_id=self.bq_output_gaps,
             write_disposition=self.bq_write_disposition
         )

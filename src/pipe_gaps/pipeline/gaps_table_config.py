@@ -39,7 +39,7 @@ For more information, see https://github.com/GlobalFishingWatch/pipe-gaps/blob/d
 
 
 @dataclass
-class GapsTableConfig(BigQueryTableConfig):
+class RawGapsTableConfig(BigQueryTableConfig):
     schema_file: str = SCHEMA_FILE
     view_suffix: str = VIEW_SUFFIX
     partition_type: str = PARTITION_TYPE
