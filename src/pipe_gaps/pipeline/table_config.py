@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from pipe_gaps.assets import schemas
 from pipe_gaps.queries import AISGapsQuery
-from pipe_gaps.common.config.bigquery_table_config import BigQueryTableConfig
+from pipe_gaps.common.config.bigquery_table import BigQueryTableConfig
 
 
 PARTITION_FIELD = "start_timestamp"

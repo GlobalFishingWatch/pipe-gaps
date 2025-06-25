@@ -1,5 +1,5 @@
 import pytest
-from pipe_gaps.common.config.bigquery_table_config import BigQueryTableConfig
+from pipe_gaps.common.config.bigquery_table import BigQueryTableConfig
 
 
 class DummyTableConfig(BigQueryTableConfig):
