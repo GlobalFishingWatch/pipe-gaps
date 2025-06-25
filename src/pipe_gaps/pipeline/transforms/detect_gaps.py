@@ -1,10 +1,12 @@
 """Module with core PTransform, a unique processing step between sources and sinks."""
 
 import logging
+from typing import Any
 from datetime import date
 from functools import cached_property
 
 import apache_beam as beam
+from apache_beam.pvalue import PCollection
 
 from pipe_gaps.core import GapDetector
 from pipe_gaps.common.key import Key
@@ -38,25 +40,52 @@ class DetectGaps(beam.PTransform):
         window_period_d: int = None,
         window_offset_h: int = 12,
         date_range: tuple[str, str] = None,
-        side_inputs=None,
-        **kwargs
+        side_inputs: PCollection = None,
+        **kwargs: Any
     ):
-        """A core PTransform for pipelines.
+        """A core PTransform for raw gaps detection.
 
         This is meant to be a unique processing step between sources and sinks.
 
         This PTransform will:
             1. Group input PCollection into consecutive closed sets,
-                (that may or may not have overlap) using the grouping key
-                and time window defined in core_process.
+                (that may or may not have overlap) using the grouping Key
+                and time window defined `window_period_d` and `window_offset_h`.
             2. Process the interior of the sets obtained in 1.
             3. Process the union of the boundaries of each pair of consecutive sets.
-            4. Join outputs from 2 and 3 and assigns the output schema defined in core_process.
+            4. Join outputs from 2 and 3.
+
+        TODO: this could be generic if there are other events that follow the same logic.
+        TODO: refactor this to receive the DoFn's to process groups and boundaries.
 
         Args:
-            core_process: The instance that defines the core process.
-            side_inputs: A PCollection with side inputs that will be used
-                to process the union of the boundaries.
+            gap_detector:
+                Instance of `GapDetector` that implements the logic to detect gaps
+                between consecutive messages.
+
+            key:
+                A `Key` object used to group elements, typically by SSVID or a similar entity.
+                Defaults to `Key([GapDetector.KEY_SSVID])` if not provided.
+
+            eval_last:
+                If True, evaluates the last message in each group to possibly generate
+                an open-ended gap.
+
+            window_period_d:
+                Size of the time window (in days) for grouping messages. If not set,
+                it will be computed from `date_range`, capped by `MAX_WINDOW_PERIOD_D`.
+
+            window_offset_h:
+                Offset of the sliding window in hours.
+                Defaults to 12.
+
+            date_range:
+                Tuple of (start_date, end_date) in ISO format strings.
+                Used to trim windows and avoid processing outside of bounds.
+
+            side_inputs:
+                A PCollection with additional data (e.g., open gaps from the previous run)
+                used during boundary processing.
         """
         super().__init__(**kwargs)
         self._gap_detector = gap_detector

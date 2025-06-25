@@ -474,14 +474,16 @@ You can see more configuration examples [here](config/).
 
 ## Implementation details
 
-The pipeline uses the [`Pipeline`] helper class from the [`gfw-common`] library.  
-You can define the DAG of the pipeline either by passing a [`Dag`] object to the constructor  
-or by overriding the `apply_dag` method.  
+<div align="justify">
+
+This codebase uses the [Pipeline] helper class from the [gfw-common] library.
+The DAG can be defined either by passing a [Dag] object to the constructor
+or by overriding the `apply_dag` method.
 In this case,
-we use the provided [`LinearDag`] implementation,
+we use the provided [LinearDag] implementation,
 which defines a simple linear flow: `(sources) → (core) → (sinks)`.
 
-The custom logic for the core PTransform `DetectGaps` class.
+The custom logic for the `core` PTransform is encapsulated in the `DetectGaps` class.
 
 This transform implements the following steps (some of them in parallel):
 1. **Groups the main inputs** — **AIS messages** — by `SSVID` and time intervals (`TI`) using sliding windows.  
@@ -494,6 +496,8 @@ This transform implements the following steps (some of them in parallel):
 
 
 Below there is a [diagram](#flow-chart) that describes this work flow.
+
+</div>
 
 > [!NOTE]
 > In the case of the Apache Beam integration with [Dataflow runner],

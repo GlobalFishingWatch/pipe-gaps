@@ -34,8 +34,20 @@ class Boundary:
         """Instantiates a Boundary object from a group.
 
         Args:
-            group: tuple with (key, messages).
-            timestamp_key: name for the key containing the message timestamp.
+            group:
+                A tuple (key, messages), where `key` is typically the SSVID and `messages`
+                is a list of dicts containing vessel messages.
+
+            offset:
+                The offset in seconds used to determine how far back to look when selecting
+                the last messages in the group.
+
+            start_time:
+                Optional Unix timestamp (in seconds) used to skip initial messages before
+                this threshold. If None, all messages are considered.
+
+            timestamp_key:
+                The key used to extract timestamps from messages. Defaults to "timestamp".
         """
         ssvid, messages = group
 
