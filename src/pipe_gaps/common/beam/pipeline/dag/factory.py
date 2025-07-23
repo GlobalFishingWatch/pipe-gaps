@@ -9,7 +9,7 @@ from apache_beam import PTransform
 
 from gfw.common.beam.pipeline.dag import LinearDag
 from gfw.common.beam.transforms import WriteToPartitionedBigQuery
-from gfw.common.bigquery_helper import BigQueryHelper
+from gfw.common.bigquery.helper import BigQueryHelper
 
 from pipe_gaps.common.beam.transforms.read_from_bigquery import ReadFromBigQuery
 

@@ -1,6 +1,7 @@
 """This module encapsulates AIS GAPS query."""
 import logging
 import typing
+from functools import cached_property
 from datetime import date, datetime
 
 import sqlparse
@@ -102,8 +103,8 @@ class AISGapsQuery(Query):
         self._ssvids = ssvids
         self._is_closed = is_closed
 
-    @classmethod
-    def schema(self):
+    @cached_property
+    def output_type(self):
         return AISGap
 
     @classmethod
@@ -124,7 +125,7 @@ class AISGapsQuery(Query):
 
     def render(self):
         query = self.TEMPLATE.format(
-            fields=self.select_clause(),
+            fields=self.get_select_fields(),
             last_versions_query=self.last_versions_query(source_id=self._source_gaps)
         )
 
@@ -145,7 +146,7 @@ class AISGapsQuery(Query):
             else:
                 filters.append(f"not {self.COLUMN_IS_CLOSED}")
 
-        where_clause = self.where_clause(filters)
+        where_clause = self.get_where_clause(filters)
 
         query = f"{query} \n {where_clause}"
 

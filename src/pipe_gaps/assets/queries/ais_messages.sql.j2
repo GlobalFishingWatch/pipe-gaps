@@ -1,0 +1,30 @@
+SELECT
+  {{ fields }},
+  (
+    CASE
+      WHEN type IN ('AIS.1', 'AIS.2', 'AIS.3') THEN 'A'
+      WHEN type IN ('AIS.18','AIS.19') THEN 'B'
+      ELSE NULL
+    END
+  ) as ais_class
+FROM
+  `{{ source_messages }}`
+WHERE DATE(timestamp) >= '{{ start_date }}'
+  AND DATE(timestamp) < '{{ end_date }}'
+  {% if ssvids %}
+    AND ssvid IN ({{ ssvids | join(', ') }})
+  {% endif %}
+  AND seg_id IN (
+    SELECT
+      seg_id
+    FROM
+      `{{ source_segments }}`
+    WHERE 1=1
+    {%- if filter_good_seg %}
+      AND good_seg2
+    {% endif -%}
+    {%- if filter_not_overlapping_and_short %}
+      AND not overlapping_and_short
+    {% endif -%}
+  )
+  

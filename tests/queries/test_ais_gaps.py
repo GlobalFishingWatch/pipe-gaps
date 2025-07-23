@@ -18,4 +18,4 @@ def test_ais_gaps_query():
     query = queries.AISGapsQuery(start_date=start_date, end_date=start_date)
     query.render()
 
-    query.schema()
+    assert query.output_type == queries.AISGap
