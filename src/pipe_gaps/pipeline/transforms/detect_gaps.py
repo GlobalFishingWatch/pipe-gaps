@@ -11,12 +11,12 @@ from apache_beam.pvalue import PCollection
 from pipe_gaps.core import GapDetector
 from pipe_gaps.common.key import Key
 
-from pipe_gaps.common.beam.transforms import (
+from gfw.common.beam.transforms import (
     ApplySlidingWindows,
     GroupBy,
-    FilterWindowsByDateRange,
 )
 
+from pipe_gaps.common.beam.transforms import FilterWindowsByDateRange
 from pipe_gaps.pipeline.fns.process_group import ProcessGroup
 from pipe_gaps.pipeline.fns.process_boundaries import ProcessBoundaries
 from pipe_gaps.pipeline.fns.extract_group_boundary import ExtractGroupBoundary
@@ -158,7 +158,7 @@ class DetectGaps(beam.PTransform):
         groups = (
             pcoll
             | ApplySlidingWindows(self.period_s, self.offset_s, assign_timestamps=True)
-            | GroupBy(self._key, elements="Messages")
+            | GroupBy(*self._key.keys, elements="Messages")
         )
 
         if self.date_range is not None:
@@ -169,14 +169,14 @@ class DetectGaps(beam.PTransform):
         side_inputs = None
         if self._side_inputs is not None:
             side_inputs = beam.pvalue.AsMultiMap(
-                self._side_inputs | GroupBy(self._key, elements="OpenGaps")
+                self._side_inputs | GroupBy(*self._key.keys, elements="OpenGaps")
             )
 
         # Process the boundaries of the groups
         output_in_boundaries = groups | "ProcessBoundaries" >> (
             beam.ParDo(extract_group_boundary)
             | "GlobalWindow" >> beam.WindowInto(beam.window.GlobalWindows())
-            | GroupBy(self._key, elements="Boundaries")
+            | GroupBy(*self._key.keys, elements="Boundaries")
             | beam.ParDo(process_boundaries, side_inputs=side_inputs)
         )
 

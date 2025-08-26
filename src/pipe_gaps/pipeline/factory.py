@@ -1,13 +1,13 @@
 from gfw.common.beam.transforms import WriteToPartitionedBigQuery
 
-from pipe_gaps.common.beam.transforms.read_from_json import ReadFromJson
-from pipe_gaps.common.beam.transforms.write_to_json import WriteToJson
-from pipe_gaps.common.beam.transforms.read_from_bigquery import ReadFromBigQuery
-from pipe_gaps.common.beam.pipeline.dag.factory import LinearDagFactory
+from gfw.common.beam.transforms.read_from_json import ReadFromJson
+from gfw.common.beam.transforms.write_to_json import WriteToJson
+from gfw.common.beam.pipeline.dag.factory import LinearDagFactory
+from gfw.common.beam.transforms.read_from_bigquery import ReadFromBigQuery
 
 from pipe_gaps.core import GapDetector
 from pipe_gaps.queries import AISGapsQuery, AISMessagesQuery
-from pipe_gaps.pipeline.table_config import RawGapsTableConfig
+from pipe_gaps.pipeline.table_config import RawGapsTableConfig, RawGapsTableDescription
 from pipe_gaps.pipeline.transforms.detect_gaps import DetectGaps
 from pipe_gaps.pipeline.config import RawGapsConfig
 
@@ -18,15 +18,18 @@ class RawGapsLinearDagFactory(LinearDagFactory):
 
     @property
     def raw_gaps_table_config(self):
-        # Returns configuration for the output gaps BigQuery table.
+        """Returns configuration for the output gaps BigQuery table."""
         return RawGapsTableConfig(
             table_id=self.config.bq_output_gaps,
-            write_disposition=self.config.bq_write_disposition,
+            description=RawGapsTableDescription(
+                version=self.config.version,
+                relevant_params=self.bq_output_gaps_description_params
+            ),
         )
 
     @property
     def bq_output_gaps_description_params(self):
-        # Parameters to be included in the description of the BigQuery output table.
+        """Returns Parameters to be included in the description of the BigQuery output table."""
         # Could be as well just return ALL parameters (and remove irrelevant ones).
         return dict(
             bq_input_messages=self.config.bq_input_messages,
@@ -61,8 +64,8 @@ class RawGapsLinearDagFactory(LinearDagFactory):
             ).with_env(self.config.jinja_env)
 
             sources.append(
-                ReadFromBigQuery(
-                    query=query,
+                ReadFromBigQuery.from_query(
+                    query,
                     method=self.config.bq_read_method,
                     read_from_bigquery_factory=self.read_from_bigquery_factory,
                     label="ReadAISMessages",
@@ -88,13 +91,13 @@ class RawGapsLinearDagFactory(LinearDagFactory):
 
     @property
     def side_inputs(self):
-        # Optional side inputs to the core transform (e.g. open gaps data).
+        """Returns side inputs for the core transform (open gaps data)."""
         side_inputs = None
         if (
             not self.config.skip_open_gaps
             and self.config.start_date > self.config.open_gaps_start
         ):
-            side_inputs = ReadFromBigQuery(
+            side_inputs = ReadFromBigQuery.from_query(
                 query=AISGapsQuery(
                     source_gaps=self.config.bq_input_open_gaps or self.config.bq_output_gaps,
                     start_date=self.config.open_gaps_start,
@@ -113,10 +116,8 @@ class RawGapsLinearDagFactory(LinearDagFactory):
         if self.config.bq_output_gaps is not None:
             sinks.append(
                 WriteToPartitionedBigQuery(
-                    **self.raw_gaps_table_config.to_dict(
-                        version=self.config.version,
-                        description_enabled=self.config.bq_output_gaps_description,
-                        description_params=self.bq_output_gaps_description_params,
+                    **self.raw_gaps_table_config.to_bigquery_params(
+                        include_description=self.config.bq_output_gaps_description,
                     ),
                     write_to_bigquery_factory=self.write_to_bigquery_factory,
                     bigquery_helper_factory=self.bigquery_helper_factory,
@@ -133,3 +134,8 @@ class RawGapsLinearDagFactory(LinearDagFactory):
             )
 
         return sinks
+
+    @property
+    def read_from_bigquery_factory(self):
+        # --- TODO: move to LinearDagFactory base class in gfw.common ---
+        return ReadFromBigQuery.get_client_factory(mocked=self.config.mock_bq_clients)

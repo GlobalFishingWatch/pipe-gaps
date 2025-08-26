@@ -1,7 +1,8 @@
 from datetime import datetime
 
+from gfw.common.query import Query
+
 from pipe_gaps import queries
-from pipe_gaps.common.query import Query
 
 
 EXPECTED = """

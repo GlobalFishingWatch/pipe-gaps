@@ -3,9 +3,9 @@ from datetime import timedelta
 
 from gfw.common.beam.transforms import WriteToPartitionedBigQuery
 
-from pipe_gaps.common.beam.transforms.read_from_json import ReadFromJson
-from pipe_gaps.common.beam.transforms.read_from_bigquery import ReadFromBigQuery
-from pipe_gaps.common.beam.transforms.write_to_json import WriteToJson
+from gfw.common.beam.transforms.read_from_json import ReadFromJson
+from gfw.common.beam.transforms.write_to_json import WriteToJson
+from gfw.common.beam.transforms.read_from_bigquery import ReadFromBigQuery
 
 from pipe_gaps.pipeline.factory import RawGapsLinearDagFactory
 from pipe_gaps.pipeline.config import RawGapsConfig

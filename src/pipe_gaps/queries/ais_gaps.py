@@ -4,7 +4,7 @@ from typing import Optional, NamedTuple, Sequence
 from functools import cached_property
 from datetime import date, datetime
 
-from pipe_gaps.common.query import Query
+from gfw.common.query import Query
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +108,6 @@ class AISGapsQuery(Query):
             end_date = end_date.isoformat()
 
         return {
-            "fields": self.get_select_fields(),
             "source_gaps": self._source_gaps,
             "ssvids": self.sql_strings(self._ssvids),
             "start_date": start_date,

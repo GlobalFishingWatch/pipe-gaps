@@ -1,7 +1,7 @@
 import typing
 
 from pipe_gaps.core import GapDetector
-from pipe_gaps.common.io import json_load
+from gfw.common.io import json_load
 from pipe_gaps.assets import schemas
 from pipe_gaps.queries import AISGap
 
