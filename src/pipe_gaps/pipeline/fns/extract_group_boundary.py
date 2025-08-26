@@ -3,7 +3,8 @@ from dataclasses import dataclass
 
 from apache_beam.transforms.core import DoFn
 from apache_beam.transforms.window import IntervalWindow
-from pipe_gaps.common.iterables import binary_search_first_ge
+
+from gfw.common.iterables import binary_search_first_ge
 
 
 @dataclass(eq=True, frozen=True)

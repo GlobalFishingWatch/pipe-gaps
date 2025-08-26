@@ -4,7 +4,7 @@ from typing import Sequence, NamedTuple
 from datetime import date, datetime
 from functools import cached_property
 
-from pipe_gaps.common.query import Query
+from gfw.common.query import Query
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +84,6 @@ class AISMessagesQuery(Query):
     def template_vars(self):
         """Prepares variables to pass to the Jinja2 template."""
         return {
-            "fields": self.get_select_fields(),
             "source_messages": self._source_messages,
             "source_segments": self._source_segments,
             "start_date": self._start_date.isoformat(),

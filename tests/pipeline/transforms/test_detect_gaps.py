@@ -10,7 +10,7 @@ from apache_beam.testing.util import assert_that
 from gfw.common.datetime import datetime_from_timestamp
 
 from pipe_gaps.core import GapDetector
-from pipe_gaps.common.io import json_load
+from gfw.common.io import json_load
 from pipe_gaps.pipeline.transforms.detect_gaps import DetectGaps
 
 from tests.conftest import TestCases

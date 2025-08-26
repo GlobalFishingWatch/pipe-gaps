@@ -56,8 +56,8 @@ from datetime import datetime, date, timedelta, timezone
 from rich.progress import track
 from geopy.distance import geodesic
 
-from pipe_gaps.common.dictionaries import copy_dict_without
-from pipe_gaps.common.iterables import binary_search_first_ge
+from gfw.common.dictionaries import copy_dict_without
+from gfw.common.iterables import binary_search_first_ge
 
 logger = logging.getLogger(__name__)
 

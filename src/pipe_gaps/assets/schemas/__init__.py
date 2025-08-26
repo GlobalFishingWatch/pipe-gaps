@@ -1,6 +1,6 @@
 from importlib.resources import files
 
-from pipe_gaps.common.io import json_load
+from gfw.common.io import json_load
 
 
 def get_schema(filename: str) -> dict[str, str]:

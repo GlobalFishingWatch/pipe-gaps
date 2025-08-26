@@ -2,15 +2,14 @@ import logging
 from typing import Callable
 
 from gfw.common.bigquery.helper import BigQueryHelper
+from gfw.common.bigquery.table_config import TableConfig
 from gfw.common.beam.pipeline import Pipeline
-
-from pipe_gaps.common.config.bigquery_table import BigQueryTableConfig as BQTableConfig
 
 logger = logging.getLogger(__name__)
 
 
 # TODO: Move this reusable hook to gfw-common.
-def create_view_hook(table_config: BQTableConfig, mock: bool = False) -> Callable[Pipeline, None]:
+def create_view_hook(table_config: TableConfig, mock: bool = False) -> Callable[Pipeline, None]:
     def _hook(_: Pipeline) -> None:
         view_id = table_config.view_id
         view_query = table_config.view_query
