@@ -53,4 +53,4 @@ class RawGapsTableConfig(BigQueryTableConfig):
 
     @property
     def view_query(self):
-        return AISGapsQuery.last_versions_query(source_id=self.table_id)
+        return AISGapsQuery(source_gaps=self.table_id).render()

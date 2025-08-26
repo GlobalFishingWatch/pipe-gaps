@@ -1,7 +1,7 @@
 import logging
 from typing import Callable
 
-from gfw.common.bigquery_helper import BigQueryHelper
+from gfw.common.bigquery.helper import BigQueryHelper
 from gfw.common.beam.pipeline import Pipeline
 
 from pipe_gaps.common.config.bigquery_table import BigQueryTableConfig as BQTableConfig
