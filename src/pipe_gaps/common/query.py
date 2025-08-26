@@ -9,7 +9,7 @@ from functools import cached_property
 import sqlparse
 from jinja2 import Environment
 
-from pipe_gaps.common.jinja2 import create_environment
+from pipe_gaps.common.jinja2 import EnvironmentLoader
 
 
 logger = logging.getLogger(__name__)
@@ -18,6 +18,8 @@ logger = logging.getLogger(__name__)
 class Query(ABC):
 
     _jinja_env: Optional[Environment] = None
+
+    DEFAULT_JINJA_FOLDER = "assets/queries"
 
     @classmethod
     def subclasses(cls) -> dict[str, type[Query]]:
@@ -56,10 +58,20 @@ class Query(ABC):
         """Returns the variables to be passed to Jinja2 template."""
 
     @cached_property
+    def top_level_package(self):
+        module = self.__class__.__module__
+        package = module.split(".")[0]
+
+        return package
+
+    @cached_property
     def jinja_env(self) -> Environment:
         """Returns the jinja environment encapsulated in this instance."""
         if self._jinja_env is None:
-            self._jinja_env = create_environment(folder_pattern="**/assets/queries")
+            self._jinja_env = EnvironmentLoader().from_package(
+                package=self.top_level_package,
+                path=self.DEFAULT_JINJA_FOLDER
+            )
 
         return self._jinja_env
 
@@ -106,12 +118,9 @@ class Query(ABC):
 
         return ",".join(clause_parts)
 
-    def get_where_clause(self, filters: list[str]) -> str:
-        """Generates a WHERE clause from a list of filter conditions."""
-        if not filters:
-            return ""
-
-        return "WHERE " + " AND ".join(filters)
+    @staticmethod
+    def sql_strings(strings: list[str]) -> list[str]:
+        return [f"'{s}'" for s in strings]
 
     @staticmethod
     def format(query: str) -> str:

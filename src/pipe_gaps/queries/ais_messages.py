@@ -60,7 +60,7 @@ class AISMessagesQuery(Query):
         end_date: date,
         source_messages: str = DB_TABLE_MESSAGES,
         source_segments: str = DB_TABLE_SEGMENTS,
-        ssvids: Sequence[str] = None,
+        ssvids: Sequence[str] = (),
         filter_good_seg: bool = False,
         filter_not_overlapping_and_short: bool = False
     ):
@@ -68,7 +68,7 @@ class AISMessagesQuery(Query):
         self._end_date = end_date
         self._source_messages = source_messages
         self._source_segments = source_segments
-        self._ssvids = ssvids if ssvids is not None else []
+        self._ssvids = ssvids
         self._filter_good_seg = filter_good_seg
         self._filter_not_overlapping_and_short = filter_not_overlapping_and_short
 
@@ -84,12 +84,12 @@ class AISMessagesQuery(Query):
     def template_vars(self):
         """Prepares variables to pass to the Jinja2 template."""
         return {
+            "fields": self.get_select_fields(),
             "source_messages": self._source_messages,
             "source_segments": self._source_segments,
             "start_date": self._start_date.isoformat(),
             "end_date": self._end_date.isoformat(),
-            "fields": self.get_select_fields(),
-            "ssvids": [f"'{s}'" for s in self._ssvids],
+            "ssvids": self.sql_strings(self._ssvids),
             "filter_not_overlapping_and_short": self._filter_not_overlapping_and_short,
             "filter_good_seg": self._filter_good_seg
         }

@@ -54,11 +54,6 @@ def test_ais_messages_query():
     rendered = query.render(formatted=True)
     expected_formatted = Query.format(EXPECTED)
 
-    print("JAJAJA \n")
-    print(rendered)
-    print("JAJAJA \n")
-    print(expected_formatted)
-
     assert rendered.strip() == expected_formatted.strip()
 
     assert query.output_type == queries.AISMessage

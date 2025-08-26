@@ -99,7 +99,7 @@ class RawGapsLinearDagFactory(LinearDagFactory):
                     source_gaps=self.config.bq_input_open_gaps or self.config.bq_output_gaps,
                     start_date=self.config.open_gaps_start,
                     is_closed=False,
-                ),
+                ).with_env(self.config.jinja_env),
                 method=self.config.bq_read_method,
                 read_from_bigquery_factory=self.read_from_bigquery_factory,
                 label="ReadOpenGaps",

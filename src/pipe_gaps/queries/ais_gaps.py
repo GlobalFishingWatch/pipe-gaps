@@ -1,10 +1,8 @@
 """This module encapsulates AIS GAPS query."""
 import logging
-import typing
+from typing import Optional, NamedTuple, Sequence
 from functools import cached_property
 from datetime import date, datetime
-
-import sqlparse
 
 from pipe_gaps.common.query import Query
 
@@ -13,7 +11,7 @@ logger = logging.getLogger(__name__)
 DB_TABLE_GAPS = "pipe_ais_v3_internal.raw_gaps"
 
 
-class AISGap(typing.NamedTuple):
+class AISGap(NamedTuple):
     """Schema for AIS gaps.
 
     TODO: create this class dynamically using a JSON schema.
@@ -77,26 +75,14 @@ class AISGapsQuery(Query):
 
     NAME = "gaps"
 
-    COLUMN_GAP_ID = "gap_id"
-    COLUMN_IS_CLOSED = "is_closed"
-    COLUMN_SSVID = "ssvid"
-    COLUMN_START_TIME = "start_timestamp"
-    COLUMN_VERSION = "version"
-
-    TEMPLATE = """
-    SELECT
-      {fields}
-    FROM ({last_versions_query})
-    """
-
     def __init__(
         self,
-        start_date: date = None,
-        end_date: date = None,
         source_gaps: str = DB_TABLE_GAPS,
-        ssvids: list = None,
-        is_closed: bool = None
-    ):
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None,
+        ssvids: Sequence[str] = (),
+        is_closed: Optional[bool] = None
+    ) -> None:
         self._start_date = start_date
         self._end_date = end_date
         self._source_gaps = source_gaps
@@ -107,50 +93,25 @@ class AISGapsQuery(Query):
     def output_type(self):
         return AISGap
 
-    @classmethod
-    def last_versions_query(cls, source_id: str = DB_TABLE_GAPS) -> str:
-        """Returns a query to get the latest versions of gaps."""
-        query = f"""
-            SELECT *
-            FROM `{source_id}`
-            QUALIFY ROW_NUMBER() OVER (
-                PARTITION BY
-                    {cls.COLUMN_GAP_ID},
-                    {cls.COLUMN_START_TIME}
-                ORDER BY {cls.COLUMN_VERSION} DESC
-            ) = 1
-        """
+    @cached_property
+    def template_filename(self) -> str:
+        return "ais_gaps.sql.j2"
 
-        return query
+    @cached_property
+    def template_vars(self) -> dict:
+        start_date = self._start_date
+        if start_date is not None:
+            start_date = start_date.isoformat()
 
-    def render(self):
-        query = self.TEMPLATE.format(
-            fields=self.get_select_fields(),
-            last_versions_query=self.last_versions_query(source_id=self._source_gaps)
-        )
+        end_date = self._end_date
+        if end_date is not None:
+            end_date = end_date.isoformat()
 
-        filters = []
-        if self._ssvids is not None:
-            ssvid_filter = ",".join(f'"{s}"' for s in self._ssvids)
-            filters.append(f"{self.COLUMN_SSVID} IN ({ssvid_filter})")
-
-        if self._start_date is not None:
-            filters.append(f"DATE({self.COLUMN_START_TIME}) >= '{self._start_date}'")
-
-        if self._end_date is not None:
-            filters.append(f"DATE({self.COLUMN_START_TIME}) < '{self._end_date}'")
-
-        if self._is_closed is not None:
-            if self._is_closed:
-                filters.append(f"{self.COLUMN_IS_CLOSED}")
-            else:
-                filters.append(f"not {self.COLUMN_IS_CLOSED}")
-
-        where_clause = self.get_where_clause(filters)
-
-        query = f"{query} \n {where_clause}"
-
-        logger.debug("Rendered Query for AIS gaps: ")
-        logger.debug(sqlparse.format(query, reindent=True, keyword_case='upper'))
-
-        return query
+        return {
+            "fields": self.get_select_fields(),
+            "source_gaps": self._source_gaps,
+            "ssvids": self.sql_strings(self._ssvids),
+            "start_date": start_date,
+            "end_date": end_date,
+            "is_closed": self._is_closed,
+        }
