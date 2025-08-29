@@ -4,6 +4,7 @@ from gfw.common.beam.transforms.read_from_json import ReadFromJson
 from gfw.common.beam.transforms.write_to_json import WriteToJson
 from gfw.common.beam.pipeline.dag.factory import LinearDagFactory
 from gfw.common.beam.transforms.read_from_bigquery import ReadFromBigQuery
+from gfw.common.beam.pipeline.hooks import create_view_hook
 
 from pipe_gaps.core import GapDetector
 from pipe_gaps.queries import AISGapsQuery, AISMessagesQuery
@@ -136,6 +137,10 @@ class RawGapsLinearDagFactory(LinearDagFactory):
         return sinks
 
     @property
-    def read_from_bigquery_factory(self):
-        # --- TODO: move to LinearDagFactory base class in gfw.common ---
-        return ReadFromBigQuery.get_client_factory(mocked=self.config.mock_bq_clients)
+    def post_hooks(self):
+        return [
+            create_view_hook(
+                table_config=self.raw_gaps_table_config,
+                mock=self.config.mock_bq_clients
+            )
+        ]

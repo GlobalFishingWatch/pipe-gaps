@@ -8,8 +8,8 @@ from gfw.common.query import Query
 
 logger = logging.getLogger(__name__)
 
-DB_TABLE_MESSAGES = "pipe_ais_v3_internal.research_messages"
-DB_TABLE_SEGMENTS = "pipe_ais_v3_published.segs_activity"
+DB_TABLE_MESSAGES = "world-fishing-827.pipe_ais_v3_internal.research_messages"
+DB_TABLE_SEGMENTS = "world-fishing-827.pipe_ais_v3_published.segs_activity"
 
 
 class AISMessage(NamedTuple):
@@ -84,11 +84,12 @@ class AISMessagesQuery(Query):
     def template_vars(self):
         """Prepares variables to pass to the Jinja2 template."""
         return {
+            "fields": self.get_select_fields(),
             "source_messages": self._source_messages,
             "source_segments": self._source_segments,
             "start_date": self._start_date.isoformat(),
             "end_date": self._end_date.isoformat(),
             "ssvids": self.sql_strings(self._ssvids),
             "filter_not_overlapping_and_short": self._filter_not_overlapping_and_short,
-            "filter_good_seg": self._filter_good_seg
+            "filter_good_seg": self._filter_good_seg,
         }

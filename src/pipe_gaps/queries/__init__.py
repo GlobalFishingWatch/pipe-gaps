@@ -5,5 +5,5 @@ __all__ = [
     AISMessagesQuery,
     AISMessage,
     AISGapsQuery,
-    AISGap
+    AISGap,
 ]

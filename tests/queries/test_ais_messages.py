@@ -24,12 +24,12 @@ SELECT
   END
   ) as ais_class
 FROM
-  `pipe_ais_v3_internal.research_messages`
+  `world-fishing-827.pipe_ais_v3_internal.research_messages`
 WHERE DATE(timestamp) >= '2024-01-01'
   AND DATE(timestamp) < '2024-01-02'
   AND ssvid IN ('1234')
   AND seg_id IN (SELECT seg_id
-    FROM `pipe_ais_v3_published.segs_activity`
+    FROM `world-fishing-827.pipe_ais_v3_published.segs_activity`
     WHERE 1 = 1
     AND good_seg2
     AND NOT overlapping_and_short )
