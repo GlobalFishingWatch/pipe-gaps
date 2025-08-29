@@ -17,5 +17,5 @@
     "project": "world-fishing-827",
     "max_num_workers": 50,
     "machine_type": "e2-custom-2-3072",
-    "job_name": "tom-test-gaps-1-day-2023-01-02"
+    "job_name": "tom-test-gaps-1-day-2020-01-02"
 }
