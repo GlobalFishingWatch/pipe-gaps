@@ -13,8 +13,8 @@
     "n_hours_before": 12,
     "window_period_d": 1,
     "filter_good_seg": true,
-    "runner": "dataflow",
-    "project": "world-fishing-827",
+    "runner": "direct",
+    "gcp_project": "world-fishing-827",
     "max_num_workers": 50,
     "machine_type": "e2-custom-2-3072",
     "job_name": "tom-test-gaps-1-day-2020-01-02"

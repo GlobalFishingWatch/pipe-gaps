@@ -30,6 +30,7 @@ class RawGapsConfig(PipelineConfig):
     mock_bq_clients: bool = False
     save_json: bool = False
     work_dir: str = "workdir"
+    gcp_project: str = None  # TODO: Move this to the base class PipelineConfig.
 
     name = "pipe-gaps"
 
@@ -39,6 +40,11 @@ class RawGapsConfig(PipelineConfig):
             and (self.bq_input_messages is None or self.bq_input_segments is None)
         ):
             raise ValueError("You need to provide either a JSON inputs or BQ input.")
+
+        # TODO: Move this to the base class PipelineConfig.__post_init__.
+        if self.gcp_project is None:
+            raise ValueError("You need to specify a GCP project to execute the pipeline.")
+        # super().__post_init__()
 
     @property
     def open_gaps_start(self) -> date:

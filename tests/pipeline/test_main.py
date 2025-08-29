@@ -11,6 +11,7 @@ def basic_config_kwargs():
         "bq_input_messages": "project.dataset.messages",
         "bq_input_segments": "project.dataset.segments",
         "bq_output_gaps": "project.dataset.gaps",
+        "gcp_project": "test-project",
         "unknown_unparsed_args": [],
         "unknown_parsed_args": {},
         "mock_bq_clients": True,

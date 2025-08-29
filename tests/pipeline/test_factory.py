@@ -38,6 +38,7 @@ def base_config():
         bq_read_method="EXPORT",
         ssvids=(),
         window_period_d=None,
+        gcp_project="test-project",
     )
 
 
