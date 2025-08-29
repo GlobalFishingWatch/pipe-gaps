@@ -14,6 +14,6 @@
     "n_hours_before": 12,
     "window_period_d": 1,
     "filter_good_seg": true,
-    "project": "world-fishing-827",
+    "gcp_project": "world-fishing-827",
     "runner": "direct"
 }

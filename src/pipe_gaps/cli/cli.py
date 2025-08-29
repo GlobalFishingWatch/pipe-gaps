@@ -57,6 +57,8 @@ HELP_WINDOW_PERIOD_D = "Period (in days) of time windows used to parallelize the
 HELP_EVAL_LAST = "If passed, evaluates last message of each SSVID to create an open gap."
 HELP_N_HOURS_BEFORE = "Count messages this amount of hours before each gap."
 
+HELP_GCP_PROJECT = "The GCP execution project to use to run the pipeline and its hooks."
+
 
 def run(args):
     gaps_cli = CLI(
@@ -87,6 +89,7 @@ def run(args):
             Option("--window-period-d", type=float, help=HELP_WINDOW_PERIOD_D),
             Option("--eval-last", type=bool, help=HELP_EVAL_LAST),
             Option("--n-hours-before", type=float, help=HELP_N_HOURS_BEFORE),
+            Option("--gcp-project", type=str, help=HELP_GCP_PROJECT),
         ],
         version=__version__,
         examples=[
