@@ -2,11 +2,11 @@
     "bq_input_messages": "world-fishing-827.pipe_ais_v3_internal.research_messages",
     "bq_input_segments": "world-fishing-827.pipe_ais_v3_published.segs_activity",
     "bq_output_gaps": "world-fishing-827.scratch_tomas_ttl30d.raw_gaps",
-    "bq_output_gaps_description": false,
+    "bq_output_gaps_description": true,
     "open_gaps_start_date": "2012-01-01",
     "skip_open_gaps": false,
     "date_range": [
-        "2020-01-02",
+        "2020-01-01",
         "2020-01-03"
     ],
     "min_gap_length": 6,
@@ -15,7 +15,7 @@
     "filter_good_seg": true,
     "runner": "dataflow",
     "project": "world-fishing-827",
-    "max_num_workers": 50,
+    "max_num_workers": 200,
     "machine_type": "e2-custom-2-3072",
-    "job_name": "tom-test-gaps-1-day-2023-01-02"
+    "job_name": "tom-test-gaps-2020-01-01--2020-01-03"
 }

@@ -15,7 +15,7 @@ def test_raw_gaps_table_config_view_query():
     table_id = "my-project.my_dataset.gaps_table"
     config = RawGapsTableConfig(table_id=table_id)
 
-    query = config.view_query
+    query = config.view_query()
 
     assert isinstance(query, str)
     assert table_id in query

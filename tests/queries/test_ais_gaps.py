@@ -38,7 +38,7 @@ SELECT gap_id,
 FROM
     (
         SELECT *
-        FROM `pipe_ais_v3_internal.raw_gaps` QUALIFY ROW_NUMBER() OVER (
+        FROM `world-fishing-827.pipe_ais_v3_internal.raw_gaps` QUALIFY ROW_NUMBER() OVER (
         PARTITION BY gap_id, start_timestamp ORDER BY VERSION DESC) = 1
     )
 WHERE 1 = 1
