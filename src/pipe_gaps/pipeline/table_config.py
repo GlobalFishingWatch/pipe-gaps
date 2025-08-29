@@ -1,7 +1,8 @@
 from dataclasses import dataclass
+from typing import Any
 
 from pipe_gaps.assets import schemas
-from pipe_gaps.queries import AISGapsQuery
+from pipe_gaps.queries import AISGapsQuery, AISGapsDeleteQuery
 from gfw.common.bigquery.table_config import TableConfig
 from gfw.common.bigquery.table_description import TableDescription
 
@@ -44,3 +45,8 @@ class RawGapsTableConfig(TableConfig):
     def view_query(self):
         """Returns a rendered query to create a view of this table."""
         return AISGapsQuery(source_gaps=self.table_id).render()
+
+    def delete_query(self, **kwargs: Any) -> str:
+        """Returns a rendered query to truncate gaps from start_date."""
+        query = AISGapsDeleteQuery(source_gaps=self.table_id, **kwargs)
+        return query.render()
