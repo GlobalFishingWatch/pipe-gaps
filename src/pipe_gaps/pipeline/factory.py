@@ -142,7 +142,6 @@ class RawGapsLinearDagFactory(LinearDagFactory):
             delete_events_hook(
                 table_config=self.raw_gaps_table_config,
                 start_date=self.config.start_date,
-                project=self.config.gcp_project,
                 mock=self.config.mock_bq_clients
             )
         ]
@@ -152,7 +151,6 @@ class RawGapsLinearDagFactory(LinearDagFactory):
         return [
             create_view_hook(
                 table_config=self.raw_gaps_table_config,
-                project=self.config.gcp_project,
                 mock=self.config.mock_bq_clients
             )
         ]
