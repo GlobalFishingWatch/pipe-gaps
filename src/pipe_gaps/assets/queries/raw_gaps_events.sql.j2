@@ -57,7 +57,14 @@ WITH
             *
         FROM
             `{{ source_raw_gaps }}`
-        WHERE start_timestamp >= '{{ start_date }}'
+          1=1
+        {% if start_date %}
+          AND DATE(start_timestamp) >= '{{ start_date }}'
+        {% endif %}
+
+        {% if end_date %}
+          AND DATE(end_timestamp) < '{{ end_date }}'
+        {% endif %}
     ),
 
     ############
