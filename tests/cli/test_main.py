@@ -1,8 +1,9 @@
-from pipe_gaps.cli import cli
+from pipe_gaps.cli import main
 
 
 def test_cli_executes_run(tmp_path):
     args = [
+        "raw-gaps",
         "--bq-input-messages", "project.dataset.table",
         "--bq-input-segments", "project.dataset.segments",
         "--bq-output-gaps", "project.dataset.output",
@@ -15,4 +16,4 @@ def test_cli_executes_run(tmp_path):
         "--save-json",
     ]
 
-    cli.run(args)
+    main.run(args)

@@ -11,8 +11,8 @@ logger = logging.getLogger(__name__)
 DB_TABLE_GAPS = "world-fishing-827.pipe_ais_v3_internal.raw_gaps"
 
 
-class AISGap(NamedTuple):
-    """Schema for AIS gaps."""
+class RawGap(NamedTuple):
+    """Schema for raw gaps."""
 
     gap_id: str
     ssvid: str
@@ -53,23 +53,32 @@ class AISGap(NamedTuple):
         return self._asdict().items()
 
 
-class AISGapsQuery(Query):
-    """Encapsulates a gaps query.
+class RawGapsQuery(Query):
+    """Encapsulates a raw gaps query.
 
     This query will return only the last version of each gap.
 
     Args:
-        start_date: Fetch gaps whose OFF message timestamp is >= start_date.
-        end_date: Fetch gaps whose OFF message timetsamp is < end_date.
-        source_gaps: Table with AIS gaps.
-        ssvids: List of ssvdis to filter.
-        is_closed: Whether to fetch
-            - only closed gaps (True),
-            - only open gaps (False)
-            - both (None).
+        start_date:
+            Fetch gaps whose OFF message timestamp is >= start_date.
+
+        end_date:
+            Fetch gaps whose OFF message timetsamp is < end_date.
+
+        source_gaps:
+            Table with AIS gaps.
+
+        ssvids:
+            List of ssvdis to filter.
+
+        is_closed:
+            Whether to fetch
+                - only closed gaps (True),
+                - only open gaps (False)
+                - both (None).
     """
 
-    NAME = "gaps"
+    NAME = "raw_gaps"
 
     def __init__(
         self,
@@ -87,11 +96,11 @@ class AISGapsQuery(Query):
 
     @cached_property
     def output_type(self):
-        return AISGap
+        return RawGap
 
     @cached_property
     def template_filename(self) -> str:
-        return "ais_gaps.sql.j2"
+        return "raw_gaps.sql.j2"
 
     @cached_property
     def template_vars(self) -> dict:

@@ -7,10 +7,10 @@ from gfw.common.beam.transforms.read_from_json import ReadFromJson
 from gfw.common.beam.transforms.write_to_json import WriteToJson
 from gfw.common.beam.transforms.read_from_bigquery import ReadFromBigQuery
 
-from pipe_gaps.pipeline.factory import RawGapsLinearDagFactory
-from pipe_gaps.pipeline.config import RawGapsConfig
-from pipe_gaps.pipeline.transforms.detect_gaps import DetectGaps
-from pipe_gaps.pipeline.table_config import RawGapsTableConfig
+from pipe_gaps.pipelines.raw_gaps.factory import RawGapsLinearDagFactory
+from pipe_gaps.pipelines.raw_gaps.config import RawGapsConfig
+from pipe_gaps.pipelines.raw_gaps.transforms.detect_gaps import DetectGaps
+from pipe_gaps.pipelines.raw_gaps.table_config import RawGapsTableConfig
 
 
 @pytest.fixture

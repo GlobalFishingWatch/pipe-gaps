@@ -7,10 +7,10 @@ from gfw.common.beam.transforms.read_from_bigquery import ReadFromBigQuery
 from gfw.common.beam.pipeline.hooks import create_view_hook, delete_events_hook
 
 from pipe_gaps.core import GapDetector
-from pipe_gaps.queries import AISGapsQuery, AISMessagesQuery
-from pipe_gaps.pipeline.table_config import RawGapsTableConfig, RawGapsTableDescription
-from pipe_gaps.pipeline.transforms.detect_gaps import DetectGaps
-from pipe_gaps.pipeline.config import RawGapsConfig
+from pipe_gaps.queries import RawGapsQuery, AISMessagesQuery
+from pipe_gaps.pipelines.raw_gaps.table_config import RawGapsTableConfig, RawGapsTableDescription
+from pipe_gaps.pipelines.raw_gaps.transforms.detect_gaps import DetectGaps
+from pipe_gaps.pipelines.raw_gaps.config import RawGapsConfig
 
 
 class RawGapsLinearDagFactory(LinearDagFactory):
@@ -99,7 +99,7 @@ class RawGapsLinearDagFactory(LinearDagFactory):
             and self.config.start_date > self.config.open_gaps_start
         ):
             side_inputs = ReadFromBigQuery.from_query(
-                query=AISGapsQuery(
+                query=RawGapsQuery(
                     source_gaps=self.config.bq_input_open_gaps or self.config.bq_output_gaps,
                     start_date=self.config.open_gaps_start,
                     is_closed=False,
@@ -138,19 +138,25 @@ class RawGapsLinearDagFactory(LinearDagFactory):
 
     @property
     def pre_hooks(self):
-        return [
-            delete_events_hook(
-                table_config=self.raw_gaps_table_config,
-                start_date=self.config.start_date,
-                mock=self.config.mock_bq_clients
+        pre_hooks = []
+        if self.config.bq_output_gaps is not None:
+            pre_hooks.append(
+                delete_events_hook(
+                    table_config=self.raw_gaps_table_config,
+                    start_date=self.config.start_date,
+                    mock=self.config.mock_bq_clients
+                )
             )
-        ]
+        return pre_hooks
 
     @property
     def post_hooks(self):
-        return [
-            create_view_hook(
-                table_config=self.raw_gaps_table_config,
-                mock=self.config.mock_bq_clients
+        post_hooks = []
+        if self.config.bq_output_gaps is not None:
+            post_hooks.append(
+                create_view_hook(
+                    table_config=self.raw_gaps_table_config,
+                    mock=self.config.mock_bq_clients
+                )
             )
-        ]
+        return post_hooks

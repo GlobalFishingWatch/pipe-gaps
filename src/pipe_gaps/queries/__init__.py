@@ -1,11 +1,11 @@
-from .ais_gaps import AISGapsQuery, AISGap
-from .ais_gaps_delete import AISGapsDeleteQuery
+from .raw_gaps import RawGapsQuery, RawGap
+from .raw_gaps_delete import RawGapsDeleteQuery
 from .ais_messages import AISMessagesQuery, AISMessage
 
 __all__ = [
     AISMessagesQuery,
     AISMessage,
-    AISGapsQuery,
-    AISGap,
-    AISGapsDeleteQuery,
+    RawGapsQuery,
+    RawGap,
+    RawGapsDeleteQuery,
 ]
