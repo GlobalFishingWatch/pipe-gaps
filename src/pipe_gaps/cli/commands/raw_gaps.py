@@ -1,27 +1,16 @@
-"""This module implements a CLI for the gaps pipeline."""
-import sys
-import logging
+from typing import Any
+from types import SimpleNamespace
 
+from gfw.common.cli import Command, Option
 
-from gfw.common.cli import CLI
-from gfw.common.cli.command import Option
-from gfw.common.logging import LoggerConfig
-from gfw.common.cli.formatting import default_formatter
+from pipe_gaps.pipelines.raw_gaps.main import run
+from pipe_gaps.cli.validations import date_range, ssvids
 
-from pipe_gaps.version import __version__
-from pipe_gaps.pipeline.main import run as run_pipeline
-
-from .validations import date_range, ssvids
-
-logger = logging.getLogger(__name__)
-
-
-NAME = "pipe-gaps"
 DESCRIPTION = """
-    Detects time gaps in AIS position messages.
-    The definition of a gap is configurable by a time threshold 'min-gap-length'.
+    Detects raw time gaps in AIS position messages.
+    The definition of a raw gap is configurable by a time threshold 'min-gap-length'.
     For more information, check the documentation at
-        https://github.com/GlobalFishingWatch/pipe-gaps/tree/develop.
+        https://github.com/GlobalFishingWatch/pipe-gaps/.
 
     You can provide a configuration file or command-line arguments.
     The latter take precedence, so if you provide both, command-line arguments
@@ -31,7 +20,6 @@ DESCRIPTION = """
     defined for Apache Beam PipelineOptions class. For more information, see
         https://cloud.google.com/dataflow/docs/reference/pipeline-options#python.
 """
-_DEFAULT = "(default: %(default)s)"
 
 HELP_BQ_READ_METHOD = "BigQuery read method. It may be 'DIRECT_READ' or 'EXPORT'."
 HELP_BQ_INPUT_MESSAGES = "BigQuery table with with input messages."
@@ -58,14 +46,18 @@ HELP_EVAL_LAST = "If passed, evaluates last message of each SSVID to create an o
 HELP_N_HOURS_BEFORE = "Count messages this amount of hours before each gap."
 
 
-def run(args):
-    gaps_cli = CLI(
-        name=NAME,
-        description=DESCRIPTION,
-        formatter=default_formatter(max_pos=100),
-        run=run_pipeline,
-        options=[
-            # Options declared here are going to be inherited by subcommands, if any.
+class RawGaps(Command):
+    @property
+    def name(cls):
+        return "raw_gaps"
+
+    @property
+    def description(self):
+        return DESCRIPTION
+
+    @property
+    def options(self):
+        return [
             Option("-i", "--json-input-messages", type=str, help=HELP_JSON_INPUT_MESSAGES),
             Option("-s", "--json-input-open-gaps", type=str, help=HELP_JSON_INPUT_OPEN_GAPS),
             Option("--bq-read-method", type=str, help=HELP_BQ_READ_METHOD),
@@ -87,30 +79,8 @@ def run(args):
             Option("--window-period-d", type=float, help=HELP_WINDOW_PERIOD_D),
             Option("--eval-last", type=bool, help=HELP_EVAL_LAST),
             Option("--n-hours-before", type=float, help=HELP_N_HOURS_BEFORE),
-        ],
-        version=__version__,
-        examples=[
-            "pipe-gaps -c config/sample-from-file.json --min-gap-length 1.3",
-        ],
-        logger_config=LoggerConfig(
-            warning_level=[
-                "apache_beam.runners.portability",
-                "apache_beam.runners.worker",
-                "apache_beam.transforms.core",
-                "apache_beam.io.filesystem",
-                "apache_beam.io.gcp.bigquery_tools",
-                "urllib3"
-            ]
-        ),
-        allow_unknown=True
-    )
+        ]
 
-    return gaps_cli.execute(args)
-
-
-def main():
-    run(sys.argv[1:])
-
-
-if __name__ == "__main__":
-    main()
+    @classmethod
+    def run(cls, config: SimpleNamespace, **kwargs: Any) -> Any:
+        return run(config, **kwargs)

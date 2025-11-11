@@ -3,8 +3,8 @@ from types import SimpleNamespace
 
 from gfw.common.beam.pipeline.factory import PipelineFactory
 
-from pipe_gaps.pipeline.config import RawGapsConfig
-from pipe_gaps.pipeline.factory import RawGapsLinearDagFactory
+from pipe_gaps.pipelines.raw_gaps.config import RawGapsConfig
+from pipe_gaps.pipelines.raw_gaps.factory import RawGapsLinearDagFactory
 from pipe_gaps.version import __version__
 
 

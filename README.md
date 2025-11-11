@@ -5,7 +5,7 @@
     <img alt="Coverage" src="https://codecov.io/gh/GlobalFishingWatch/pipe-gaps/branch/develop/graph/badge.svg?token=OO2L9SXVG0">
   </a>
   <a>
-    <img alt="Python versions" src="https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue">
+    <img alt="Python versions" src="https://img.shields.io/badge/python-3.12-blue">
   </a>
   <a>
     <img alt="Apache Beam version" src="https://img.shields.io/badge/ApacheBeam-2.61.0-orange">
@@ -56,8 +56,9 @@ Time gap detector for **[AIS]** position messages.
 
 [ais-gaps.py]: src/pipe_gaps/queries/ais_gaps.py
 [ais-messages.py]: src/pipe_gaps/queries/ais_messages.py
-[detect_gaps.py]: src/pipe_gaps/pipeline/transforms/detect_gaps.py
+[detect_gaps.py]: src/pipe_gaps/pipelines/raw_gaps/transforms/detect_gaps.py
 [gap_detector.py]: src/pipe_gaps/core/gap_detector.py
+[assets/schemas/]: src/pipe_gaps/assets/schemas
 
 [pTransform]: https://beam.apache.org/documentation/programming-guide/#applying-transforms
 
@@ -229,12 +230,12 @@ make test
 ```
 Make sure you can build the docker image:
 ```shell
-make build
+make docker-build
 ```
 
 In order to be able to connect to BigQuery, authenticate and configure the project:
 ```shell
-make gcp
+make docker-gcp
 ```
 
 ### Gap detection low level process
@@ -287,7 +288,7 @@ gaps = gd.detect(messages)
 print(json.dumps(gaps, indent=4))
 ```
 
-### Gap detection pipeline
+### Raw Gaps detection pipeline
 
 The gaps detection pipeline is described in the following diagram:
 
@@ -296,7 +297,7 @@ flowchart LR;
     subgraph tables [**BigQuery Tables**]
         A[(messages)]
         B[(segments)]
-        C[(gaps)]
+        C[(raw_gaps)]
     end
 
     subgraph inputs [**Inputs**]
@@ -326,8 +327,7 @@ flowchart LR;
 
 #### BigQuery output schema
 
-The schema for the output **gap events** table is defined in 
-[pipe_gaps/pipeline/schemas/ais-gaps.json](/pipe_gaps/pipeline/schemas/ais-gaps.json).
+The schema for the **raw_gaps** table is defined in [assets/schemas/].
 
 #### BigQuery data persistence pattern
 
@@ -368,61 +368,34 @@ SELECT *
 
 #### Running from CLI
 
-The easiest way of running the gaps detection pipeline is to use the provided command-line interface:
+The easiest way of running the raw gaps detection pipeline is to use the provided command-line interface:
 ```shell
-(.venv) $ pipe-gaps
-usage: pipe-gaps (v0.4.7). [-h] [-c] [-v] [--log-file] [--no-rich-logging] [--only-render] [-i] [-s] [--bq-read-method] [--bq-input-messages] [--bq-input-segments] [--bq-input-open-gaps]
-                           [--bq-output-gaps] [--bq-output-gaps-description] [--open-gaps-start-date] [--filter-not-overlapping-and-short] [--filter-good-seg] [--skip-open-gaps]
-                           [--mock-db-client] [--save-json] [--work-dir] [--ssvids] [--date-range] [--min-gap-length] [--window-period-d] [--eval-last] [--n-hours-before]
+(.venv) $ pipe-gaps -h
+usage: pipe-gaps (v0.7.0). [-h] <command> ...
 
-    Detects time gaps in AIS position messages.
-    The definition of a gap is configurable by a time threshold 'min-gap-length'.
-    For more information, check the documentation at
-        https://github.com/GlobalFishingWatch/pipe-gaps/tree/develop.
-
-    You can provide a configuration file or command-line arguments.
-    The latter take precedence, so if you provide both, command-line arguments
-    will overwrite options in the config file provided.
-
-    Besides the arguments defined here, you can also pass any pipeline option
-    defined for Apache Beam PipelineOptions class. For more information, see
-        https://cloud.google.com/dataflow/docs/reference/pipeline-options#python.
+Tools for creating gap events (time gaps in AIS position messages).
 
 options:
-  -h, --help                          show this help message and exit
+  -h, --help  show this help message and exit
 
-built-in CLI options:
-  -c , --config-file                  Path to config file. (default: None)
-  -v, --verbose                       Set logger level to DEBUG. (default: False)
-  --log-file                          File to send logging output to. (default: None)
-  --no-rich-logging                   Disable rich logging [useful for production environments]. (default: False)
-  --only-render                       Dry run, only renders command line call and prints it. (default: False)
-
-options defined by 'pipe-gaps' command:
-  -i , --json-input-messages          JSON file with input messages [Useful for development]. (default: None)
-  -s , --json-input-open-gaps         JSON file with open gaps [Useful for development]. (default: None)
-  --bq-read-method                    BigQuery read method. It may be 'DIRECT_READ' or 'EXPORT'. (default: None)
-  --bq-input-messages                 BigQuery table with with input messages. (default: None)
-  --bq-input-segments                 BigQuery table with with input segments. (default: None)
-  --bq-input-open-gaps                BigQuery table with open gaps. (default: None)
-  --bq-output-gaps                    BigQuery table in which to store the gap events. (default: None)
-  --bq-output-gaps-description        If passed, creates a description for the output table. (default: None)
-  --open-gaps-start-date              Fetch open gaps starting from this date range e.g., '2012-01-01'. (default: None)
-  --filter-not-overlapping-and-short  Fetch messages that do not belong to 'overlapping_and_short' segments. (default: None)
-  --filter-good-seg                   Fetch messages that belong to 'good_seg2' segments. (default: None)
-  --skip-open-gaps                    If passed, pipeline will not fetch open gaps [Useful for development].  (default: None)
-  --mock-db-client                    If passed, mocks the DB client [Useful for development]. (default: None)
-  --save-json                         If passed, saves the results in JSON file [Useful for development]. (default: None)
-  --work-dir                          Directory to use as working directory. (default: None)
-  --ssvids                            Detect gaps for this list of ssvids, e.g., «412331104,477334300». (default: None)
-  --date-range                        Detect gaps within this date range, e.g., «2024-01-01,2024-01-02». (default: None)
-  --min-gap-length                    Minimum time difference (hours) to start considering gaps. (default: None)
-  --window-period-d                   Period (in days) of time windows used to parallelize the process. (default: None)
-  --eval-last                         If passed, evaluates last message of each SSVID to create an open gap. (default: None)
-  --n-hours-before                    Count messages this amount of hours before each gap. (default: None)
+Available subcommands:
+  <command>
+    raw-gaps  
+                  Detects raw gaps in AIS position messages.
+                  The definition of a raw gap is configurable by a time threshold 'min-gap-length'.
+                  For more information, check the documentation at
+                      https://github.com/GlobalFishingWatch/pipe-gaps/.
+              
+                  You can provide a configuration file or command-line arguments.
+                  The latter take precedence, so if you provide both, command-line arguments
+                  will overwrite options in the config file provided.
+              
+                  Besides the arguments defined here, you can also pass any pipeline option
+                  defined for Apache Beam PipelineOptions class. For more information, see
+                      https://cloud.google.com/dataflow/docs/reference/pipeline-options#python.
 
 Examples:
-    pipe-gaps -c config/sample-from-file.json --min-gap-length 1.3
+    pipe-gaps raw_gaps -c config/sample-from-file.json --min-gap-length 1.3
 ```
 
 > [!CAUTION]

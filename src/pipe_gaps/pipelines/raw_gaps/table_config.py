@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from pipe_gaps.assets import schemas
-from pipe_gaps.queries import AISGapsQuery, AISGapsDeleteQuery
+from pipe_gaps.queries import RawGapsQuery, RawGapsDeleteQuery
 from gfw.common.bigquery.table_config import TableConfig
 from gfw.common.bigquery.table_description import TableDescription
 
@@ -32,7 +32,7 @@ class RawGapsTableDescription(TableDescription):
 
 @dataclass
 class RawGapsTableConfig(TableConfig):
-    schema_file: str = "ais-gaps.json"
+    schema_file: str = "raw-gaps.json"
     view_suffix: str = "last_versions"
     partition_type: str = "MONTH"
     partition_field: str = "start_timestamp"
@@ -44,9 +44,9 @@ class RawGapsTableConfig(TableConfig):
 
     def view_query(self):
         """Returns a rendered query to create a view of this table."""
-        return AISGapsQuery(source_gaps=self.table_id).render()
+        return RawGapsQuery(source_gaps=self.table_id).render()
 
     def delete_query(self, **kwargs: Any) -> str:
         """Returns a rendered query to truncate gaps from start_date."""
-        query = AISGapsDeleteQuery(source_gaps=self.table_id, **kwargs)
+        query = RawGapsDeleteQuery(source_gaps=self.table_id, **kwargs)
         return query.render()

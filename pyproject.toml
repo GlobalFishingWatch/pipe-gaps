@@ -56,7 +56,7 @@ Repository = "https://github.com/GlobalFishingWatch/pipe-gaps"
 Issues = "https://github.com/GlobalFishingWatch/pipe-gaps/issues"
 
 [project.scripts]
-pipe-gaps = "pipe_gaps.cli.cli:main"
+pipe-gaps = "pipe_gaps.cli.main:main"
 
 [project.optional-dependencies]
 
