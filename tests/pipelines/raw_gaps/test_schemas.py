@@ -15,7 +15,7 @@ SCHEMA_KEY_NOT_IN_GAPS_QUERY = "Output schema contains key '{}' not present in G
 
 def test_output_gaps_comply_schema(input_file):
     messages = json_load(input_file)
-    schema = schemas.get_schema("raw-gaps.json")
+    schema = schemas.get_schema("raw_gaps.json")
 
     detector = GapDetector(threshold=1.2, normalize_output=True)
     gap = detector.create_gap(messages[20], messages[21], previous_positions=messages[0:20])
@@ -30,7 +30,7 @@ def test_output_gaps_comply_schema(input_file):
 
 
 def test_input_gaps_comply_schema(input_file):
-    schema = schemas.get_schema("raw-gaps.json")
+    schema = schemas.get_schema("raw_gaps.json")
     output_gap_schema_keys = [f["name"] for f in schema]
 
     input_gaps_query_schema_keys = typing.get_type_hints(RawGap).keys()

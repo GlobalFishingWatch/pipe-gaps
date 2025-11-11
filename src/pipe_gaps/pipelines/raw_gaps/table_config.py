@@ -32,7 +32,7 @@ class RawGapsTableDescription(TableDescription):
 
 @dataclass
 class RawGapsTableConfig(TableConfig):
-    schema_file: str = "raw-gaps.json"
+    schema_file: str = "raw_gaps.json"
     view_suffix: str = "last_versions"
     partition_type: str = "MONTH"
     partition_field: str = "start_timestamp"
