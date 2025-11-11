@@ -27,7 +27,6 @@ HELP_BQ_INPUT_MESSAGES = "BigQuery table with with input messages."
 HELP_BQ_INPUT_SEGMENTS = "BigQuery table with with input segments."
 HELP_BQ_INPUT_OPEN_GAPS = "BigQuery table with open gaps."
 HELP_BQ_OUTPUT_GAPS = "BigQuery table in which to store the gap events."
-HELP_BQ_OUTPUT_GAPS_DESCRIPTION = "If passed, creates a description for the output table."
 HELP_JSON_INPUT_MESSAGES = "JSON file with input messages [Useful for development]."
 HELP_JSON_INPUT_OPEN_GAPS = "JSON file with open gaps [Useful for development]."
 
@@ -66,7 +65,6 @@ class RawGaps(Command):
             Option("--bq-input-segments", type=str, help=HELP_BQ_INPUT_SEGMENTS),
             Option("--bq-input-open-gaps", type=str, help=HELP_BQ_INPUT_OPEN_GAPS),
             Option("--bq-output-gaps", type=str, help=HELP_BQ_OUTPUT_GAPS),
-            Option("--bq-output-gaps-description", type=str, help=HELP_BQ_OUTPUT_GAPS_DESCRIPTION),
             Option("--open-gaps-start-date", type=str, help=HELP_OPEN_GAPS_START_DATE),
             Option("--filter-not-overlapping-and-short", type=bool, help=HELP_OVERL),
             Option("--filter-good-seg", type=bool, help=HELP_GOOD_SEG),

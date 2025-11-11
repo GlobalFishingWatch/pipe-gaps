@@ -1,10 +1,10 @@
-from gfw.common.beam.transforms import WriteToPartitionedBigQuery
+from gfw.common.beam.transforms import WriteToBigQueryWrapper
 
 from gfw.common.beam.transforms.read_from_json import ReadFromJson
 from gfw.common.beam.transforms.write_to_json import WriteToJson
 from gfw.common.beam.pipeline.dag.factory import LinearDagFactory
 from gfw.common.beam.transforms.read_from_bigquery import ReadFromBigQuery
-from gfw.common.beam.pipeline.hooks import create_view_hook, delete_events_hook
+from gfw.common.beam.pipeline.hooks import create_view_hook, delete_events_hook, create_table_hook
 
 from pipe_gaps.core import GapDetector
 from pipe_gaps.queries import RawGapsQuery, AISMessagesQuery
@@ -116,12 +116,11 @@ class RawGapsLinearDagFactory(LinearDagFactory):
         sinks = []
         if self.config.bq_output_gaps is not None:
             sinks.append(
-                WriteToPartitionedBigQuery(
-                    **self.raw_gaps_table_config.to_bigquery_params(
-                        include_description=self.config.bq_output_gaps_description,
-                    ),
+                WriteToBigQueryWrapper(
+                    table=self.raw_gaps_table_config.table_id,
+                    schema=self.raw_gaps_table_config.schema,
                     write_to_bigquery_factory=self.write_to_bigquery_factory,
-                    bigquery_helper_factory=self.bigquery_helper_factory,
+                    write_disposition=self.config.bq_write_disposition,
                     label="WriteGaps",
                 )
             )
@@ -140,6 +139,13 @@ class RawGapsLinearDagFactory(LinearDagFactory):
     def pre_hooks(self):
         pre_hooks = []
         if self.config.bq_output_gaps is not None:
+            pre_hooks.append(
+                create_table_hook(
+                    table_config=self.raw_gaps_table_config,
+                    mock=self.config.mock_bq_clients
+                )
+            )
+
             pre_hooks.append(
                 delete_events_hook(
                     table_config=self.raw_gaps_table_config,

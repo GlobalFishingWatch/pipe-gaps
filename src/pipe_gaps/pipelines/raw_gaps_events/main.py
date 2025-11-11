@@ -6,7 +6,6 @@ from importlib import resources
 
 
 from gfw.common.bigquery.helper import BigQueryHelper
-from gfw.common.datetime import datetime_from_isoformat
 
 from pipe_gaps.assets import queries
 from pipe_gaps.version import __version__
@@ -17,7 +16,7 @@ from pipe_gaps.pipelines.raw_gaps_events.table_config import (
 logger = logging.getLogger(__name__)
 
 
-QUERY_FILENAME = 'normalize.sql.j2'
+QUERY_FILENAME = 'raw_gaps_events.sql.j2'
 
 
 def run(
@@ -37,7 +36,10 @@ def run(
 
     labels = labels or {}
 
-    bq = BigQueryHelper(dry_run=dry_run, client_factory=bq_client_factory)
+    query_params = vars(config)
+    project = query_params.pop("project")
+
+    bq = BigQueryHelper(dry_run=dry_run, project=project, client_factory=bq_client_factory)
 
     table_config = RawGapsEventsTableConfig(
         table_id=config.bq_output,
@@ -51,12 +53,9 @@ def run(
     bq.create_table(**table_config.to_bigquery_params(), exists_ok=True, labels=labels)
 
     queries_path = resources.files(queries)
-    query_params = vars(config)
-    start_date = datetime_from_isoformat(config.pop("start_date"))
-
     events_query = bq.format_jinja2(
         template_path=QUERY_FILENAME,
-        search_path=queries_path,
+        search_path=str(queries_path),
         start_date=start_date,
         end_date=end_date,
         **query_params,

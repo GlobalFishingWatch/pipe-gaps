@@ -1,9 +1,10 @@
-source_raw_gaps: "gfw-int-pipe-v3.pipe_ais_v3_internal.raw_gaps_last_versions"
-source_segment_info: "global-fishing-watch.pipe_ais_v3_published.segment_info"
-source_regions: "global-fishing-watch.pipe_regions_layers.event_regions"
-source_voyages: "global-fishing-watch.pipe_ais_v3_published.voyages_c4"
-source_port_visits: "global-fishing-watch.pipe_ais_v3_published.product_events_port_visit_v2"
-source_all_vessels_byyear: "global-fishing-watch.pipe_ais_v3_published.product_vessel_info_summary"
-date_range: ["2025-11-01, 2025-11-02]"
+bq_input_raw_gaps: "gfw-int-pipe-v3.pipe_ais_v3_internal.raw_gaps_last_versions"
+bq_input_segment_info: "global-fishing-watch.pipe_ais_v3_published.segment_info"
+bq_input_regions: "global-fishing-watch.pipe_regions_layers.event_regions"
+bq_input_voyages: "global-fishing-watch.pipe_ais_v3_published.voyages_c4"
+bq_input_port_visits: "global-fishing-watch.pipe_ais_v3_published.product_events_port_visit_v2"
+bq_input_all_vessels_byyear: "global-fishing-watch.pipe_ais_v3_published.product_vessel_info_summary"
+bq_output: "world-fishing-827.scratch_tomas_ttl30d.raw_gaps_events"
+date_range: ["2025-11-01", "2025-11-02"]
 
 project: world-fishing-827

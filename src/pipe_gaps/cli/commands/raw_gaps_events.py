@@ -13,6 +13,7 @@ HELP_BQ_OUTPUT = "BigQuery table in which to store the raw gap events."
 
 HELP_MOCK_BQ_CLIENTS = "If passed, mocks the BQ clients [Useful for development]."
 HELP_DATE_RANGE = "Create raw gaps events for this date range, e.g., «2024-01-01,2024-01-02»."
+HELP_BQ_PROJECT = "Project to use when executing the events query."
 
 
 class RawGapsEvents(Command):
@@ -34,7 +35,8 @@ class RawGapsEvents(Command):
             Option("--bq-input-regions_table", type=str, help=HELP_BQ_INPUT_RAW_GAPS),
             Option("--bq-input-all_vessels_byyear", type=str, help=HELP_BQ_INPUT_RAW_GAPS),
             Option("--bq-output", type=str, help=HELP_BQ_OUTPUT),
-            Option("--date-range", required=True, type=date_range, help=HELP_DATE_RANGE),
+            Option("--project", type=str, help=HELP_BQ_PROJECT),
+            Option("--date-range", type=date_range, help=HELP_DATE_RANGE),
             Option("--mock-bq-clients", type=bool, help=HELP_MOCK_BQ_CLIENTS),
         ]
 

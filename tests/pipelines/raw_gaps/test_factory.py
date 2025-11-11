@@ -1,7 +1,7 @@
 import pytest
 from datetime import timedelta
 
-from gfw.common.beam.transforms import WriteToPartitionedBigQuery
+from gfw.common.beam.transforms import WriteToBigQueryWrapper
 
 from gfw.common.beam.transforms.read_from_json import ReadFromJson
 from gfw.common.beam.transforms.write_to_json import WriteToJson
@@ -22,7 +22,6 @@ def base_config():
         bq_input_segments="some_bq_segments",
         bq_output_gaps="output_gaps_table",
         bq_write_disposition="WRITE_APPEND",
-        bq_output_gaps_description=True,
         filter_good_seg=True,
         filter_not_overlapping_and_short=True,
         min_gap_length=5.0,
@@ -47,7 +46,6 @@ def test_raw_gaps_table_config_property(base_config):
 
     assert isinstance(config, RawGapsTableConfig)
     assert config.table_id == base_config.bq_output_gaps
-    assert config.write_disposition == base_config.bq_write_disposition
 
 
 def test_bq_output_gaps_description_params(base_config):
@@ -133,8 +131,8 @@ def test_sinks_with_bq_and_json(base_config):
     factory = RawGapsLinearDagFactory(base_config)
 
     sinks = factory.sinks
-    # Should contain a WriteToPartitionedBigQuery and a WriteToJson
-    assert any(isinstance(s, WriteToPartitionedBigQuery) for s in sinks)
+    # Should contain a WriteToBigQueryWrapper and a WriteToJson
+    assert any(isinstance(s, WriteToBigQueryWrapper) for s in sinks)
     assert any(isinstance(s, WriteToJson) for s in sinks)
 
 
@@ -143,5 +141,5 @@ def test_sinks_with_only_bq(base_config):
     factory = RawGapsLinearDagFactory(base_config)
 
     sinks = factory.sinks
-    assert all(isinstance(s, WriteToPartitionedBigQuery) for s in sinks)
+    assert all(isinstance(s, WriteToBigQueryWrapper) for s in sinks)
     assert len(sinks) == 1
