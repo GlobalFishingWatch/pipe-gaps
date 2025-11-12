@@ -7,13 +7,6 @@ from gfw.common.bigquery.table_config import TableConfig
 from gfw.common.bigquery.table_description import TableDescription
 
 
-SHIPTYPES = 'shiptypes.json'
-QUERY_NORMALIZE = 'normalize.sql.j2'
-QUERY_DEDUPLICATE = 'deduplicate.sql.j2'
-SCHEMA_NORMALIZE = 'normalize-schema.json'
-PARTITION_FIELD = 'timestamp'
-
-
 SUMMARY = """\
 This is the raw gaps events table.
 
@@ -42,13 +35,13 @@ class RawGapsEventsTableConfig(TableConfig):
     clustering_fields: tuple = ("seg_id", "event_start")
 
     @property
-    def schema(self):
+    def schema(self) -> list[dict]:
         return schemas.get_schema(self.schema_file)
 
-    def view_query(self):
+    def view_query(self) -> str | None:
         """Returns a rendered query to create a view of this table."""
         pass
 
-    def delete_query(self, **kwargs: Any) -> str:
+    def delete_query(self, **kwargs: Any) -> str | None:
         """Returns a rendered query to truncate gaps from start_date."""
         pass

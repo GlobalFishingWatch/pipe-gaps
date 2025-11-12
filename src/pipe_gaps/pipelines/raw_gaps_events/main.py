@@ -1,14 +1,13 @@
 import logging
-from datetime import date
 from types import SimpleNamespace
 from typing import Callable
-from importlib import resources
-
+from functools import cached_property
 
 from gfw.common.bigquery.helper import BigQueryHelper
+from gfw.common.query import Query
 
-from pipe_gaps.assets import queries
 from pipe_gaps.version import __version__
+from pipe_gaps.pipelines.raw_gaps_events.config import RawGapsEventsConfig
 from pipe_gaps.pipelines.raw_gaps_events.table_config import (
     RawGapsEventsTableConfig, RawGapsEventsTableDescription
 )
@@ -16,30 +15,54 @@ from pipe_gaps.pipelines.raw_gaps_events.table_config import (
 logger = logging.getLogger(__name__)
 
 
-QUERY_FILENAME = 'raw_gaps_events.sql.j2'
+class RawGapsEventsQuery(Query):
+    def __init__(self, config: RawGapsEventsConfig) -> None:
+        self.config = config
+
+    @cached_property
+    def template_filename(self) -> str:
+        return "raw_gaps_events.sql.j2"
+
+    @cached_property
+    def template_vars(self) -> dict:
+        start_date, end_date = self.config.date_range
+
+        return {
+            "source_raw_gaps": self.config.bq_input_raw_gaps,
+            "source_segment_info": self.config.bq_input_segment_info,
+            "source_regions": self.config.bq_input_regions,
+            "source_voyages": self.config.bq_input_voyages,
+            "source_port_visits": self.config.bq_input_port_visits,
+            "source_all_vessels_byyear": self.config.bq_input_all_vessels_byyear,
+            "start_date": self.config.start_date,
+            "end_date": self.config.end_date,
+        }
 
 
 def run(
     config: SimpleNamespace,
     unknown_unparsed_args: tuple = (),
     unknown_parsed_args: dict = None,
-    bq_client_factory: Callable = BigQueryHelper.get_client_factory(),
-    labels: dict = None,
-    dry_run: bool = False,
+    bq_client_factory: Callable = None,
 ) -> None:
 
-    if config.date_range is None:
-        raise ValueError("You must provide a date-range.")
+    config = RawGapsEventsConfig.from_namespace(
+        config,
+        version=__version__,
+        name="pipe-gaps--raw-gaps-events"
+    )
 
-    start_date_str, end_date_str = config.date_range
-    start_date, end_date = (date.fromisoformat(start_date_str), date.fromisoformat(end_date_str))
+    bq_client_factory = bq_client_factory or BigQueryHelper.get_client_factory(
+        mocked=config.mock_bq_clients
+    )
 
-    labels = labels or {}
+    events_query = RawGapsEventsQuery(config)
 
-    query_params = vars(config)
-    project = query_params.pop("project")
-
-    bq = BigQueryHelper(dry_run=dry_run, project=project, client_factory=bq_client_factory)
+    bq = BigQueryHelper(
+        dry_run=config.dry_run,
+        project=config.project,
+        client_factory=bq_client_factory
+    )
 
     table_config = RawGapsEventsTableConfig(
         table_id=config.bq_output,
@@ -50,17 +73,14 @@ def run(
     )
 
     logger.info(f"Creating events table '{config.bq_output}' (if it doesn't already exist)...")
-    bq.create_table(**table_config.to_bigquery_params(), exists_ok=True, labels=labels)
+    bq.create_table(**table_config.to_bigquery_params(), exists_ok=True, labels=config.labels)
 
-    queries_path = resources.files(queries)
-    events_query = bq.format_jinja2(
-        template_path=QUERY_FILENAME,
-        search_path=str(queries_path),
-        start_date=start_date,
-        end_date=end_date,
-        **query_params,
+    logger.info(f'Executing events query for date range: {config.date_range}...')
+    query_result = bq.run_query(
+        query_str=events_query.render(),
+        destination=config.bq_output,
+        labels=config.labels
     )
 
-    logger.info(f'Executing events query from date {start_date}...')
-    bq.run_query(events_query, labels=labels)
+    _ = query_result.query_job.result()
     logger.info("Done.")

@@ -6,7 +6,8 @@ from gfw.common.cli import Command, Option
 from pipe_gaps.pipelines.raw_gaps.main import run
 from pipe_gaps.cli.validations import date_range, ssvids
 
-DESCRIPTION = """Detects raw time gaps in AIS position messages.
+DESCRIPTION = """\
+Detects raw time gaps in AIS position messages.
 
 The definition of a raw gap is configurable by a time threshold 'min-gap-length'.
 For more information, check the documentation at
@@ -18,8 +19,7 @@ will overwrite options in the config file provided.
 
 Besides the arguments defined here, you can also pass any pipeline option
 defined for Apache Beam PipelineOptions class. For more information, see
-    https://cloud.google.com/dataflow/docs/reference/pipeline-options#python.
-
+    https://cloud.google.com/dataflow/docs/reference/pipeline-options#python.\n
 """
 
 HELP_BQ_READ_METHOD = "BigQuery read method. It may be 'DIRECT_READ' or 'EXPORT'."
