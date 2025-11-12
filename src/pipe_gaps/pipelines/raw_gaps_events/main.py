@@ -33,7 +33,7 @@ class RawGapsEventsQuery(Query):
             "source_regions": self.config.bq_input_regions,
             "source_voyages": self.config.bq_input_voyages,
             "source_port_visits": self.config.bq_input_port_visits,
-            "source_all_vessels_byyear": self.config.bq_input_all_vessels_byyear,
+            "source_vessels_byyear": self.config.bq_input_vessels_byyear,
             "start_date": self.config.start_date,
             "end_date": self.config.end_date,
         }

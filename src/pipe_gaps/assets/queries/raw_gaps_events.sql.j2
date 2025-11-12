@@ -9,7 +9,7 @@
 -- * source_raw_gaps
 -- * source_segment_info
 -- * source_regions
--- * source_all_vessels_byyear
+-- * source_vessels_byyear
 -- * start_date
 
 WITH
@@ -101,7 +101,7 @@ WITH
     source_all_vessels AS (
         SELECT
             *
-        FROM `{{ source_all_vessels_byyear }}`
+        FROM `{{ source_vessels_byyear }}`
     ),
 
     ############### Create base event table ################

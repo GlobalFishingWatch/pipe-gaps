@@ -40,8 +40,6 @@ class RawGapsEventsTableConfig(TableConfig):
 
     def view_query(self) -> str | None:
         """Returns a rendered query to create a view of this table."""
-        pass
 
     def delete_query(self, **kwargs: Any) -> str | None:
         """Returns a rendered query to truncate gaps from start_date."""
-        pass

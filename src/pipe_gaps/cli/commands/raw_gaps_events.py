@@ -10,7 +10,13 @@ DESCRIPTION = """\
 Creates raw gaps publication events.
 """
 
-HELP_BQ_INPUT_RAW_GAPS = "BigQuery table with input raw gaps."
+HELP_BQ_INPUT_RAW_GAPS = "BigQuery table with raw gaps."
+HELP_BQ_INPUT_SEGMENT_INFO = "BigQuery table with segments information."
+HELP_BQ_INPUT_VOYAGES = "BigQuery table with voyages."
+HELP_BQ_INPUT_PORT_VISITS = "BigQuery table with port visits."
+HELP_BQ_INPUT_REGIONS = "BigQuery table with regions."
+HELP_BQ_INPUT_VESSELS_BYYEAR = "BigQuery table with vessels by year."
+
 HELP_BQ_OUTPUT = "BigQuery table in which to store the raw gap events."
 
 HELP_MOCK_BQ_CLIENTS = "If passed, mocks the BQ clients [Useful for development]."
@@ -35,11 +41,11 @@ class RawGapsEvents(Command):
             Option("--project", type=str, help=HELP_BQ_PROJECT),
             Option("--dry-run", type=bool, help=HELP_DRY_RUN),
             Option("--bq-input-raw-gaps", type=str, help=HELP_BQ_INPUT_RAW_GAPS),
-            Option("--bq-input-segment-info", type=str, help=HELP_BQ_INPUT_RAW_GAPS),
-            Option("--bq-input-voyages", type=str, help=HELP_BQ_INPUT_RAW_GAPS),
-            Option("--bq-input-port-visits", type=str, help=HELP_BQ_INPUT_RAW_GAPS),
-            Option("--bq-input-regions", type=str, help=HELP_BQ_INPUT_RAW_GAPS),
-            Option("--bq-input-all-vessels-byyear", type=str, help=HELP_BQ_INPUT_RAW_GAPS),
+            Option("--bq-input-segment-info", type=str, help=HELP_BQ_INPUT_SEGMENT_INFO),
+            Option("--bq-input-voyages", type=str, help=HELP_BQ_INPUT_VOYAGES),
+            Option("--bq-input-port-visits", type=str, help=HELP_BQ_INPUT_PORT_VISITS),
+            Option("--bq-input-regions", type=str, help=HELP_BQ_INPUT_REGIONS),
+            Option("--bq-input-vessels-byyear", type=str, help=HELP_BQ_INPUT_VESSELS_BYYEAR),
             Option("--bq-output", type=str, help=HELP_BQ_OUTPUT),
             Option("--mock-bq-clients", type=bool, help=HELP_MOCK_BQ_CLIENTS),
         ]
