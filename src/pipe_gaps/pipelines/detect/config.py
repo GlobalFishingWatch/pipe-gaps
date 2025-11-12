@@ -3,11 +3,11 @@ import math
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 
-from gfw.common.pipeline.config import PipelineConfig
+from gfw.common.beam.pipeline.config import PipelineConfig
 
 
 @dataclass
-class RawGapsConfig(PipelineConfig):
+class DetectGapsConfig(PipelineConfig):
     filter_not_overlapping_and_short: bool = False
     filter_good_seg: bool = False
     open_gaps_start_date: str = "2019-01-01"
@@ -25,7 +25,6 @@ class RawGapsConfig(PipelineConfig):
     bq_input_segments: str = "pipe_ais_v3_published.segs_activity"
     bq_input_open_gaps: str = None
     bq_output_gaps: str = None
-    bq_output_gaps_description: bool = False
     bq_write_disposition: str = "WRITE_APPEND"
     mock_bq_clients: bool = False
     save_json: bool = False

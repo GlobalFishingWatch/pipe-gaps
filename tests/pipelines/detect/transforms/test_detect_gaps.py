@@ -11,7 +11,7 @@ from gfw.common.datetime import datetime_from_timestamp
 
 from pipe_gaps.core import GapDetector
 from gfw.common.io import json_load
-from pipe_gaps.pipelines.raw_gaps.transforms.detect_gaps import DetectGaps
+from pipe_gaps.pipelines.detect.transforms.detect_gaps import DetectGaps
 
 from tests.conftest import TestCases
 

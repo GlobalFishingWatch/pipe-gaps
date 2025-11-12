@@ -1,7 +1,7 @@
 import pytest
 from types import SimpleNamespace
 
-from pipe_gaps.pipelines.raw_gaps import main
+from pipe_gaps.pipelines.detect import main
 
 
 @pytest.fixture

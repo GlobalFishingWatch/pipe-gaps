@@ -3,22 +3,23 @@ from types import SimpleNamespace
 
 from gfw.common.cli import Command, Option
 
-from pipe_gaps.pipelines.raw_gaps.main import run
+from pipe_gaps.pipelines.detect.main import run
 from pipe_gaps.cli.validations import date_range, ssvids
 
-DESCRIPTION = """
-    Detects raw time gaps in AIS position messages.
-    The definition of a raw gap is configurable by a time threshold 'min-gap-length'.
-    For more information, check the documentation at
-        https://github.com/GlobalFishingWatch/pipe-gaps/.
+DESCRIPTION = """\
+Detects time gaps in AIS position messages.
 
-    You can provide a configuration file or command-line arguments.
-    The latter take precedence, so if you provide both, command-line arguments
-    will overwrite options in the config file provided.
+The definition of a gap is configurable by a time threshold 'min-gap-length'.
+For more information, check the documentation at
+    https://github.com/GlobalFishingWatch/pipe-gaps/.
 
-    Besides the arguments defined here, you can also pass any pipeline option
-    defined for Apache Beam PipelineOptions class. For more information, see
-        https://cloud.google.com/dataflow/docs/reference/pipeline-options#python.
+You can provide a configuration file or command-line arguments.
+The latter take precedence, so if you provide both, command-line arguments
+will overwrite options in the config file provided.
+
+Besides the arguments defined here, you can also pass any pipeline option
+defined for Apache Beam PipelineOptions class. For more information, see
+    https://cloud.google.com/dataflow/docs/reference/pipeline-options#python.\n
 """
 
 HELP_BQ_READ_METHOD = "BigQuery read method. It may be 'DIRECT_READ' or 'EXPORT'."
@@ -26,7 +27,6 @@ HELP_BQ_INPUT_MESSAGES = "BigQuery table with with input messages."
 HELP_BQ_INPUT_SEGMENTS = "BigQuery table with with input segments."
 HELP_BQ_INPUT_OPEN_GAPS = "BigQuery table with open gaps."
 HELP_BQ_OUTPUT_GAPS = "BigQuery table in which to store the gap events."
-HELP_BQ_OUTPUT_GAPS_DESCRIPTION = "If passed, creates a description for the output table."
 HELP_JSON_INPUT_MESSAGES = "JSON file with input messages [Useful for development]."
 HELP_JSON_INPUT_OPEN_GAPS = "JSON file with open gaps [Useful for development]."
 
@@ -46,10 +46,10 @@ HELP_EVAL_LAST = "If passed, evaluates last message of each SSVID to create an o
 HELP_N_HOURS_BEFORE = "Count messages this amount of hours before each gap."
 
 
-class RawGaps(Command):
+class DetectGaps(Command):
     @property
     def name(cls):
-        return "raw_gaps"
+        return "detect"
 
     @property
     def description(self):
@@ -65,7 +65,6 @@ class RawGaps(Command):
             Option("--bq-input-segments", type=str, help=HELP_BQ_INPUT_SEGMENTS),
             Option("--bq-input-open-gaps", type=str, help=HELP_BQ_INPUT_OPEN_GAPS),
             Option("--bq-output-gaps", type=str, help=HELP_BQ_OUTPUT_GAPS),
-            Option("--bq-output-gaps-description", type=str, help=HELP_BQ_OUTPUT_GAPS_DESCRIPTION),
             Option("--open-gaps-start-date", type=str, help=HELP_OPEN_GAPS_START_DATE),
             Option("--filter-not-overlapping-and-short", type=bool, help=HELP_OVERL),
             Option("--filter-good-seg", type=bool, help=HELP_GOOD_SEG),

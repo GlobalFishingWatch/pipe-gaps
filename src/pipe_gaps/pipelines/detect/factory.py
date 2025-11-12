@@ -1,28 +1,28 @@
-from gfw.common.beam.transforms import WriteToPartitionedBigQuery
+from gfw.common.beam.transforms import WriteToBigQueryWrapper
 
 from gfw.common.beam.transforms.read_from_json import ReadFromJson
 from gfw.common.beam.transforms.write_to_json import WriteToJson
 from gfw.common.beam.pipeline.dag.factory import LinearDagFactory
 from gfw.common.beam.transforms.read_from_bigquery import ReadFromBigQuery
-from gfw.common.beam.pipeline.hooks import create_view_hook, delete_events_hook
+from gfw.common.beam.pipeline.hooks import create_view_hook, delete_events_hook, create_table_hook
 
 from pipe_gaps.core import GapDetector
-from pipe_gaps.queries import RawGapsQuery, AISMessagesQuery
-from pipe_gaps.pipelines.raw_gaps.table_config import RawGapsTableConfig, RawGapsTableDescription
-from pipe_gaps.pipelines.raw_gaps.transforms.detect_gaps import DetectGaps
-from pipe_gaps.pipelines.raw_gaps.config import RawGapsConfig
+from pipe_gaps.queries import GapsQuery, AISMessagesQuery
+from pipe_gaps.pipelines.detect.table_config import GapsTableConfig, GapsTableDescription
+from pipe_gaps.pipelines.detect.transforms.detect_gaps import DetectGaps
+from pipe_gaps.pipelines.detect.config import DetectGapsConfig
 
 
-class RawGapsLinearDagFactory(LinearDagFactory):
-    def __init__(self, config: RawGapsConfig):
+class DetectGapsLinearDagFactory(LinearDagFactory):
+    def __init__(self, config: DetectGapsConfig):
         self.config = config
 
     @property
-    def raw_gaps_table_config(self):
+    def gaps_table_config(self):
         """Returns configuration for the output gaps BigQuery table."""
-        return RawGapsTableConfig(
+        return GapsTableConfig(
             table_id=self.config.bq_output_gaps,
-            description=RawGapsTableDescription(
+            description=GapsTableDescription(
                 version=self.config.version,
                 relevant_params=self.bq_output_gaps_description_params
             ),
@@ -99,7 +99,7 @@ class RawGapsLinearDagFactory(LinearDagFactory):
             and self.config.start_date > self.config.open_gaps_start
         ):
             side_inputs = ReadFromBigQuery.from_query(
-                query=RawGapsQuery(
+                query=GapsQuery(
                     source_gaps=self.config.bq_input_open_gaps or self.config.bq_output_gaps,
                     start_date=self.config.open_gaps_start,
                     is_closed=False,
@@ -116,12 +116,11 @@ class RawGapsLinearDagFactory(LinearDagFactory):
         sinks = []
         if self.config.bq_output_gaps is not None:
             sinks.append(
-                WriteToPartitionedBigQuery(
-                    **self.raw_gaps_table_config.to_bigquery_params(
-                        include_description=self.config.bq_output_gaps_description,
-                    ),
+                WriteToBigQueryWrapper(
+                    table=self.gaps_table_config.table_id,
+                    schema=self.gaps_table_config.schema,
                     write_to_bigquery_factory=self.write_to_bigquery_factory,
-                    bigquery_helper_factory=self.bigquery_helper_factory,
+                    write_disposition=self.config.bq_write_disposition,
                     label="WriteGaps",
                 )
             )
@@ -141,8 +140,15 @@ class RawGapsLinearDagFactory(LinearDagFactory):
         pre_hooks = []
         if self.config.bq_output_gaps is not None:
             pre_hooks.append(
+                create_table_hook(
+                    table_config=self.gaps_table_config,
+                    mock=self.config.mock_bq_clients
+                )
+            )
+
+            pre_hooks.append(
                 delete_events_hook(
-                    table_config=self.raw_gaps_table_config,
+                    table_config=self.gaps_table_config,
                     start_date=self.config.start_date,
                     mock=self.config.mock_bq_clients
                 )
@@ -155,7 +161,7 @@ class RawGapsLinearDagFactory(LinearDagFactory):
         if self.config.bq_output_gaps is not None:
             post_hooks.append(
                 create_view_hook(
-                    table_config=self.raw_gaps_table_config,
+                    table_config=self.gaps_table_config,
                     mock=self.config.mock_bq_clients
                 )
             )

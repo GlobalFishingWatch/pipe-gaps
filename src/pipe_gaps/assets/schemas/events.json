@@ -1,0 +1,188 @@
+[
+    {
+        "name": "event_id",
+        "mode": "NULLABLE",
+        "type": "STRING",
+        "description": "Unique identifier."
+    },
+    {
+        "name": "event_type",
+        "mode": "NULLABLE",
+        "type": "STRING",
+        "description": "Type discriminator, such as fishing, encounter, etc. Different event types have completely different structures in the event_info field."
+    },
+    {
+        "name": "vessel_id",
+        "mode": "NULLABLE",
+        "type": "STRING",
+        "description": "Id of the main vessel involved in the event. When an event has multiple vessels associated with it (for example, encounters) you will find multiple records, one for each vessel involved."
+    },
+    {
+        "name": "seg_id",
+        "mode": "NULLABLE",
+        "type": "STRING",
+        "description": "Id of the segment involved in the event."
+    },
+    {
+        "name": "event_start",
+        "mode": "NULLABLE",
+        "type": "TIMESTAMP",
+        "description": "Start time of the event. When an event occurs in an instant (such as port in and out), both timestamp_min and timestamp_max are equal to the main timestamp field. Otherwise, timestamp_min and timestamp max define the temporal boundaries of the event."
+    },
+    {
+        "name": "event_end",
+        "mode": "NULLABLE",
+        "type": "TIMESTAMP",
+        "description": "End time of the event. When an event occurs in an instant (such as port in and out), both timestamp_min and timestamp_max are equal to the main timestamp field. Otherwise, timestamp_min and timestamp max define the temporal boundaries of the event."
+    },
+    {
+        "name": "lat_mean",
+        "mode": "NULLABLE",
+        "type": "FLOAT",
+        "description": "Mean latitude where the event ocurred. When an event occurs over a region (for example, encounters) this is the mean latitude over all the individual points involved."
+    },
+    {
+        "name": "lon_mean",
+        "mode": "NULLABLE",
+        "type": "FLOAT",
+        "description": "Mean longitude where the event ocurred. When an event occurs over a region (for example, encounters) this is the mean longitude over all the individual points involved."
+    },
+    {
+        "name": "lat_min",
+        "mode": "NULLABLE",
+        "type": "FLOAT",
+        "description": "Minimum latitude of a bounded event. When an event occurs in a single position (such as port in and out), both lat_min and lat_max are equal to the main latitude field. Otherwise, lat_min, lat_max, lon_min and lon_max  define the spatial boundaries of the event."
+    },
+    {
+        "name": "lat_max",
+        "mode": "NULLABLE",
+        "type": "FLOAT",
+        "description": "Maximum latitude of a bounded event. When an event occurs in a single position (such as port in and out), both lat_min and lat_max are equal to the main latitude field. Otherwise, lat_min, lat_max, lon_min and lon_max  define the spatial boundaries of the event."
+    },
+    {
+        "name": "lon_min",
+        "mode": "NULLABLE",
+        "type": "FLOAT",
+        "description": "Minimum longitude of a bounded event. When an event occurs in a single position (such as port in and out), both lon_min and lon_max are equal to the main longitude field. Otherwise, lat_min, lat_max, lon_min and lon_max  define the spatial boundaries of the event."
+    },
+    {
+        "name": "lon_max",
+        "mode": "NULLABLE",
+        "type": "FLOAT",
+        "description": "Maximum longitude of a bounded event. When an event occurs in a single position (such as port in and out), both lon_min and lon_max are equal to the main longitude field. Otherwise, lat_min, lat_max, lon_min and lon_max  define the spatial boundaries of the event."
+    },
+    {
+        "name": "regions_mean_position",
+        "type": "RECORD",
+        "mode": "NULLABLE",
+        "fields":
+        [
+            {
+                "name": "eez",
+                "type": "STRING",
+                "mode": "REPEATED"
+            },
+            {
+                "name": "mpa",
+                "type": "STRING",
+                "mode": "REPEATED"
+            },
+            {
+                "name": "mpa_no_take",
+                "type": "STRING",
+                "mode": "REPEATED"
+            },
+            {
+                "name": "mpa_no_take_partial",
+                "type": "STRING",
+                "mode": "REPEATED"
+            },
+            {
+                "name": "high_seas",
+                "type": "STRING",
+                "mode": "REPEATED"
+            },
+            {
+                "name": "rfmo",
+                "type": "STRING",
+                "mode": "REPEATED"
+            },
+            {
+                "name": "fao",
+                "type": "STRING",
+                "mode": "REPEATED"
+            },
+            {
+                "name": "major_fao",
+                "type": "STRING",
+                "mode": "REPEATED"
+            },
+            {
+                "name": "eez12nm",
+                "type": "STRING",
+                "mode": "REPEATED"
+            },
+            {
+                "name": "hsp",
+                "type": "STRING",
+                "mode": "REPEATED",
+                "description": "High seas pocket."
+            },
+            {
+                "name": "protectedseas",
+                "type": "STRING",
+                "mode": "REPEATED",
+                "description": "Protected seas."
+            },
+            {
+                "name": "duke_paa",
+                "type": "STRING",
+                "mode": "REPEATED",
+                "description": "Preferential Access Areas - Duke."
+            },
+            {
+                "name": "fra_gfcm_fao",
+                "type": "STRING",
+                "mode": "REPEATED",
+                "description": "General Fisheries Commission for the Mediterranean - GFCM."
+            }
+        ],
+        "description": "The regions where the event happened. Calculated using the mean position."
+    },
+    {
+        "name": "start_distance_from_shore_km",
+        "mode": "NULLABLE",
+        "type": "FLOAT",
+        "description": "Distance from shore when the event starts."
+    },
+    {
+        "name": "end_distance_from_shore_km",
+        "mode": "NULLABLE",
+        "type": "FLOAT",
+        "description": "Distance from shore when the event ends."
+    },
+    {
+        "name": "start_distance_from_port_km",
+        "mode": "NULLABLE",
+        "type": "FLOAT",
+        "description": "Distance from port when the event starts."
+    },
+    {
+        "name": "end_distance_from_port_km",
+        "mode": "NULLABLE",
+        "type": "FLOAT",
+        "description": "Distance from port when the event ends."
+    },
+    {
+        "name": "event_info",
+        "mode": "NULLABLE",
+        "type": "STRING",
+        "description": "Custom, schemaless metadata for the event in json format. This field depends entirely on the event type, different event types will contain entirely different schemas for this field. The schema is stable for each type."
+    },
+    {
+        "name": "event_vessels",
+        "mode": "NULLABLE",
+        "type": "STRING",
+        "description": "JSON array of very basic vessel information on the different vessels involved in the event. Always has at least one record, for the main vessel the event is about."
+    }
+]

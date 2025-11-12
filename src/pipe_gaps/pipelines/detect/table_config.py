@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from pipe_gaps.assets import schemas
-from pipe_gaps.queries import RawGapsQuery, RawGapsDeleteQuery
+from pipe_gaps.queries import GapsQuery, GapsDeleteQuery
 from gfw.common.bigquery.table_config import TableConfig
 from gfw.common.bigquery.table_description import TableDescription
 
@@ -22,7 +22,7 @@ CAVEATS = """\
 
 
 @dataclass
-class RawGapsTableDescription(TableDescription):
+class GapsTableDescription(TableDescription):
     repo_name: str = "pipe-gaps"
     title: str = "RAW GAPS"
     subtitle: str = "𝗧𝗶𝗺𝗲 𝗴𝗮𝗽𝘀 𝗯𝗲𝘁𝘄𝗲𝗲𝗻 𝗔𝗜𝗦 𝗽𝗼𝘀𝗶𝘁𝗶𝗼𝗻𝘀"
@@ -31,8 +31,8 @@ class RawGapsTableDescription(TableDescription):
 
 
 @dataclass
-class RawGapsTableConfig(TableConfig):
-    schema_file: str = "raw-gaps.json"
+class GapsTableConfig(TableConfig):
+    schema_file: str = "gaps.json"
     view_suffix: str = "last_versions"
     partition_type: str = "MONTH"
     partition_field: str = "start_timestamp"
@@ -44,9 +44,9 @@ class RawGapsTableConfig(TableConfig):
 
     def view_query(self):
         """Returns a rendered query to create a view of this table."""
-        return RawGapsQuery(source_gaps=self.table_id).render()
+        return GapsQuery(source_gaps=self.table_id).render()
 
     def delete_query(self, **kwargs: Any) -> str:
         """Returns a rendered query to truncate gaps from start_date."""
-        query = RawGapsDeleteQuery(source_gaps=self.table_id, **kwargs)
+        query = GapsDeleteQuery(source_gaps=self.table_id, **kwargs)
         return query.render()

@@ -17,9 +17,9 @@ from gfw.common.beam.transforms import (
 )
 
 from pipe_gaps.common.beam.transforms import FilterWindowsByDateRange
-from pipe_gaps.pipelines.raw_gaps.fns.process_group import ProcessGroup
-from pipe_gaps.pipelines.raw_gaps.fns.process_boundaries import ProcessBoundaries
-from pipe_gaps.pipelines.raw_gaps.fns.extract_group_boundary import ExtractGroupBoundary
+from pipe_gaps.pipelines.detect.fns.process_group import ProcessGroup
+from pipe_gaps.pipelines.detect.fns.process_boundaries import ProcessBoundaries
+from pipe_gaps.pipelines.detect.fns.extract_group_boundary import ExtractGroupBoundary
 
 
 logger = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ class DetectGaps(beam.PTransform):
         side_inputs: PCollection = None,
         **kwargs: Any
     ):
-        """A core PTransform for raw gaps detection.
+        """A core PTransform for gap detection.
 
         This is meant to be a unique processing step between sources and sinks.
 

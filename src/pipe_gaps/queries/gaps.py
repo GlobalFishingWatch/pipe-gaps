@@ -1,4 +1,4 @@
-"""This module encapsulates a SELECT query for AIS raw gaps."""
+"""This module encapsulates a SELECT query for AIS gaps."""
 import logging
 from typing import Optional, NamedTuple, Sequence
 from functools import cached_property
@@ -11,8 +11,8 @@ logger = logging.getLogger(__name__)
 DB_TABLE_GAPS = "world-fishing-827.pipe_ais_v3_internal.raw_gaps"
 
 
-class RawGap(NamedTuple):
-    """Schema for raw gaps."""
+class Gap(NamedTuple):
+    """Schema for gaps."""
 
     gap_id: str
     ssvid: str
@@ -53,8 +53,8 @@ class RawGap(NamedTuple):
         return self._asdict().items()
 
 
-class RawGapsQuery(Query):
-    """Encapsulates a raw gaps query.
+class GapsQuery(Query):
+    """Encapsulates a gaps query.
 
     This query will return only the last version of each gap.
 
@@ -78,7 +78,7 @@ class RawGapsQuery(Query):
                 - both (None).
     """
 
-    NAME = "raw_gaps"
+    NAME = "gaps"
 
     def __init__(
         self,
@@ -96,11 +96,11 @@ class RawGapsQuery(Query):
 
     @cached_property
     def output_type(self):
-        return RawGap
+        return Gap
 
     @cached_property
     def template_filename(self) -> str:
-        return "raw_gaps.sql.j2"
+        return "gaps.sql.j2"
 
     @cached_property
     def template_vars(self) -> dict:

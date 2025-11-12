@@ -50,26 +50,26 @@ WHERE 1 = 1
 """
 
 
-def test_raw_gaps_query():
+def test_gaps_query():
     start_date = datetime(2024, 1, 1).date()
     end_date = datetime(2024, 1, 2).date()
 
     # Test without ssvids filter.
-    query = queries.RawGapsQuery(start_date=start_date)
+    query = queries.GapsQuery(start_date=start_date)
     query.render()
 
     # Test with ssvids filter.
-    query = queries.RawGapsQuery(start_date=start_date, ssvids=["1234"])
+    query = queries.GapsQuery(start_date=start_date, ssvids=["1234"])
     query.render()
 
     # Test with end_date filter.
-    query = queries.RawGapsQuery(
+    query = queries.GapsQuery(
         start_date=start_date,
         end_date=end_date,
         is_closed=False,
         ssvids=["1234", "5678"]
     )
-    assert query.output_type == queries.RawGap
+    assert query.output_type == queries.Gap
 
     rendered = query.render(formatted=True)
 

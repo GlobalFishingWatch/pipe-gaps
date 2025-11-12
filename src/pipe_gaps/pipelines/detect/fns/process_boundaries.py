@@ -7,7 +7,7 @@ from gfw.common.datetime import datetime_from_timestamp, datetime_from_date
 
 from pipe_gaps.core import GapDetector
 from pipe_gaps.common.key import Key
-from pipe_gaps.pipelines.raw_gaps.fns.extract_group_boundary import Boundary
+from pipe_gaps.pipelines.detect.fns.extract_group_boundary import Boundary
 
 logger = logging.getLogger(__name__)
 
