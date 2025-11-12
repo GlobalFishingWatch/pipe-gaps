@@ -54,11 +54,12 @@ Time gap detector for **[AIS]** position messages.
 [slowly changing dimension]: https://en.wikipedia.org/wiki/Slowly_changing_dimension
 [Semantic Versioning]: https://semver.org
 
-[ais-gaps.py]: src/pipe_gaps/queries/ais_gaps.py
+[gaps.py]: src/pipe_gaps/queries/gaps.py
 [ais-messages.py]: src/pipe_gaps/queries/ais_messages.py
-[detect_gaps.py]: src/pipe_gaps/pipelines/raw_gaps/transforms/detect_gaps.py
+[detect_gaps.py]: src/pipe_gaps/pipelines/detect/transforms/detect_gaps.py
 [gap_detector.py]: src/pipe_gaps/core/gap_detector.py
 [assets/schemas/]: src/pipe_gaps/assets/schemas
+[schemas/gaps.json]: src/pipe_gaps/assets/schemas/gaps.json
 
 [pTransform]: https://beam.apache.org/documentation/programming-guide/#applying-transforms
 
@@ -79,10 +80,11 @@ Time gap detector for **[AIS]** position messages.
 - [Usage](#usage)
   * [Installation](#installation)
   * [Gap detection low level process](#gap-detection-low-level-process)
-  * [Gap detection pipeline](#gap-detection-pipeline)
-    + [Running from CLI](#using-from-cli)
+  * [Gaps detection pipeline](#gaps-detection-pipeline)
     + [BigQuery output schema](#bigquery-output-schema)
     + [BigQuery data persistence pattern](#bigquery-data-persistence-pattern)
+    * [Events publication process](#events-publication-process)
+    + [Running from CLI](#running-from-cli)
 - [Implementation details](#implementation-details)
   * [Most relevant modules](#most-relevant-modules)
   * [Flow chart](#flow-chart)
@@ -254,11 +256,6 @@ Any other fields are not mandatory but can be passed to be included in the gap e
 
 </div>
 
-> [!NOTE]
-> Currently, the algorithm takes about `(3.62 ± 0.03)` seconds to process 10M messages.  
-  Tested on a i7-1355U 5.0GHz processor. You can check the [profiling results].
-
-
 ```python
 import json
 from datetime import timedelta, datetime
@@ -288,7 +285,7 @@ gaps = gd.detect(messages)
 print(json.dumps(gaps, indent=4))
 ```
 
-### Raw Gaps detection pipeline
+### Gaps detection pipeline
 
 The gaps detection pipeline is described in the following diagram:
 
@@ -327,7 +324,7 @@ flowchart LR;
 
 #### BigQuery output schema
 
-The schema for the **raw_gaps** table is defined in [assets/schemas/].
+The schema for the output table is defined in [schemas/gaps.json].
 
 #### BigQuery data persistence pattern
 
@@ -352,7 +349,7 @@ SELECT *
           MAX(version)
               OVER (PARTITION BY gap_id)
               AS last_version,
-      FROM `world-fishing-827.scratch_tomas_ttl30d.pipe_ais_gaps_filter_no_overlapping_and_short`
+      FROM `gfw-int-pipe-v3.pipe_ais_v3_internal.raw_gaps`
     )
     WHERE version = last_version
 ```
@@ -360,15 +357,35 @@ SELECT *
 Another alternative:
 ```sql
 SELECT *
-    FROM `world-fishing-827.scratch_tomas_ttl30d.pipe_ais_gaps_filter_no_overlapping_and_short`
+    FROM `gfw-int-pipe-v3.pipe_ais_v3_internal.raw_gaps`
     QUALIFY ROW_NUMBER() OVER (PARTITION BY gap_id ORDER BY version DESC) = 1
 ```
 
+For convenience, the pipeline uses a post hook to create a view that queries the last version of each gap.
+The name of the view is `raw_gaps_last_versions`.
+
 </div>
+
+#### Events publication process
+
+<div align="justify">
+
+In order to create gap **events** ready to be published,
+we need to translate the output to the common schema defined in
+[schemas/events.json](src/pipe_gaps/assets/schemas/events.json).
+All the needed transformations are encapsulated in the query
+[queries/events.sql.j2](src/pipe_gaps/assets/queries/events.sql.j2).
+This process can be executed with the command `pipe-gaps publish`. See next section.
+
+</div>
+
+> [!NOTE]
+> The `seg_id` parameter of the event is assigned from the `start_seg_id` of the gap.
+  This is an arbitrary choice without strong justification. Further analysis is recommended.
 
 #### Running from CLI
 
-The easiest way of running the raw gaps detection pipeline is to use the provided command-line interface:
+The easiest way of running the gaps detection pipeline is to use the provided command-line interface:
 ```shell
 (.venv) $ pipe-gaps -h
 usage: pipe-gaps (v0.7.0). [-h] <command> ...
@@ -380,22 +397,24 @@ options:
 
 Available subcommands:
   <command>
-    raw-gaps  
-                  Detects raw gaps in AIS position messages.
-                  The definition of a raw gap is configurable by a time threshold 'min-gap-length'.
-                  For more information, check the documentation at
-                      https://github.com/GlobalFishingWatch/pipe-gaps/.
+    detect    Detects time gaps in AIS position messages.
               
-                  You can provide a configuration file or command-line arguments.
-                  The latter take precedence, so if you provide both, command-line arguments
-                  will overwrite options in the config file provided.
+              The definition of a gap is configurable by a time threshold 'min-gap-length'.
+              For more information, check the documentation at
+                  https://github.com/GlobalFishingWatch/pipe-gaps/.
               
-                  Besides the arguments defined here, you can also pass any pipeline option
-                  defined for Apache Beam PipelineOptions class. For more information, see
-                      https://cloud.google.com/dataflow/docs/reference/pipeline-options#python.
+              You can provide a configuration file or command-line arguments.
+              The latter take precedence, so if you provide both, command-line arguments
+              will overwrite options in the config file provided.
+              
+              Besides the arguments defined here, you can also pass any pipeline option
+              defined for Apache Beam PipelineOptions class. For more information, see
+                  https://cloud.google.com/dataflow/docs/reference/pipeline-options#python.
+              
+    publish   Enrich gaps data and create publication events.
 
 Examples:
-    pipe-gaps raw_gaps -c config/sample-from-file.json --min-gap-length 1.3
+    pipe-gaps detect -c config/sample-from-file-to-file.json --min-gap-length 1.3
 ```
 
 > [!CAUTION]
@@ -412,7 +431,7 @@ Examples:
   as words separator.
 
 
-This is an example of a JSON config file:
+This is an example of a JSON config file for `detect` command:
 ```json
 {   
     "bq_input_messages": "pipe_ais_v3_published.messages",
@@ -442,6 +461,24 @@ This is an example of a JSON config file:
   e.g., put `"use_public_ips": false` instead of `"no_use_public_ips": true`,
   otherwise the parameter **will be ignored**. This is different from using it from the CLI,
   where _you should_ pass `--no_use_public_ips` argument. 
+
+
+This is an example of a YAML config file for the publication `publish` command:
+```yaml
+# Query parameters:
+bq_input_gaps: "gfw-int-pipe-v3.pipe_ais_v3_internal.raw_gaps_last_versions"
+bq_input_segment_info: "global-fishing-watch.pipe_ais_v3_published.segment_info"
+bq_input_regions: "global-fishing-watch.pipe_regions_layers.event_regions"
+bq_input_voyages: "global-fishing-watch.pipe_ais_v3_published.voyages_c4"
+bq_input_port_visits: "global-fishing-watch.pipe_ais_v3_published.product_events_port_visit_v2"
+bq_input_all_vessels_byyear: "global-fishing-watch.pipe_ais_v3_published.product_vessel_info_summary"
+bq_output: "world-fishing-827.scratch_tomas_ttl30d.product_events_ais_gap"
+date_range: ["2025-11-01", "2025-11-02"]
+
+# General parameters:
+dry_run: false
+project: world-fishing-827
+```
 
 You can see more configuration examples [here](config/). 
 
@@ -482,7 +519,7 @@ Below there is a [diagram](#flow-chart) that describes this work flow.
 
 | Module | Description |
 | --- | --- |
-| [ais-gaps.py]     | Encapsulates **AIS** gaps query. |
+| [gaps.py]         | Encapsulates **AIS** gaps query. |
 | [ais-messages.py] | Encapsulates **AIS** position messages query. |
 | [detect_gaps.py]  | Defines **DetectGaps** [PTransform] (core processing step of the pipeline). |
 | [gap_detector.py] | Defines lower level **GapDetector** class that computes gaps in a list of **AIS** messages. |
