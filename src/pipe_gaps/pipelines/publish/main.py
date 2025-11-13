@@ -79,7 +79,8 @@ def run(
     query_result = bq.run_query(
         query_str=events_query.render(),
         destination=config.bq_output,
-        labels=config.labels
+        labels=config.labels,
+        write_disposition=config.bq_write_disposition,
     )
 
     _ = query_result.query_job.result()

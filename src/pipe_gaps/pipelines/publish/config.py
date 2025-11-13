@@ -15,7 +15,7 @@ class PublishGapsConfig(PipelineConfig):
     bq_input_regions: str = None
     bq_input_vessels_byyear: str = None
     bq_output: str = None
-    bq_write_disposition: str = "WRITE_APPEND"
+    bq_write_disposition: str = "WRITE_TRUNCATE"
     labels: dict = field(default_factory=dict)
     project: str = None
     dry_run: bool = False

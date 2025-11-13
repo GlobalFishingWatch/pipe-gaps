@@ -3,7 +3,8 @@ import sys
 import logging
 
 
-from gfw.common.cli import CLI
+from gfw.common.cli import CLI, Option
+from gfw.common.cli.actions import NestedKeyValueAction
 from gfw.common.logging import LoggerConfig
 from gfw.common.cli.formatting import default_formatter
 
@@ -16,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 NAME = "pipe-gaps"
 DESCRIPTION = "Tools for creating gap events (time gaps in AIS position messages)."
+HELP_LABELS = "Labels to audit costs over the queries."
 
 
 def run(args):
@@ -26,6 +28,11 @@ def run(args):
         subcommands=[
             DetectGaps,
             PublishGaps,
+        ],
+        options=[  # Common options for all subcommands.
+            Option(
+                "--labels", type=str, nargs="*", action=NestedKeyValueAction, help=HELP_LABELS
+            ),
         ],
         version=__version__,
         examples=[

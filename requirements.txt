@@ -53,7 +53,7 @@ geographiclib==2.0
     # via geopy
 geopy==2.4.1
     # via pipe-gaps (setup.py)
-gfw-common[beam,bq]==0.1.0
+gfw-common[beam,bq]==0.2.0
     # via pipe-gaps (setup.py)
 google-api-core[grpc]==2.25.1
     # via
