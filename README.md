@@ -388,7 +388,7 @@ This process can be executed with the command `pipe-gaps publish`. See next sect
 The easiest way of running the gaps detection pipeline is to use the provided command-line interface:
 ```shell
 (.venv) $ pipe-gaps -h
-usage: pipe-gaps (v0.7.0). [-h] <command> ...
+usage: pipe-gaps (v0.8.0). [-h] <command> ...
 
 Tools for creating gap events (time gaps in AIS position messages).
 
