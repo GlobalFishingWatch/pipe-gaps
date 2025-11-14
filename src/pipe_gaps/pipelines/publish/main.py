@@ -72,15 +72,15 @@ def run(
         ),
     )
 
-    logger.info(f"Creating events table '{config.bq_output}' (if it doesn't already exist)...")
-    bq.create_table(**table_config.to_bigquery_params(), exists_ok=True, labels=config.labels)
+    logger.info(f"Re-creating events table '{config.bq_output}' (if already exists)...")
+    bq.client.delete_table(config.bq_output, not_found_ok=True)
+    bq.create_table(**table_config.to_bigquery_params(), labels=config.labels)
 
     logger.info(f'Executing events query for date range: {config.date_range}...')
     query_result = bq.run_query(
         query_str=events_query.render(),
         destination=config.bq_output,
         labels=config.labels,
-        write_disposition=config.bq_write_disposition,
     )
 
     _ = query_result.query_job.result()
