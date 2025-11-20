@@ -1,5 +1,5 @@
 {   
-    "bq_output_gaps": "scratch_tomas_ttl30d.raw_gaps_test_description",
+    "bq_output_gaps": "scratch_tomas_ttl30d.raw_gaps_test_table_creation",
     "json_input_messages":  "src/pipe_gaps/assets/sample_data/sample_messages_lines.json",
     "open_gaps_start_date": "2023-01-01",
     "ssvids": [
@@ -14,6 +14,6 @@
     "n_hours_before": 12,
     "window_period_d": 1,
     "filter_good_seg": true,
-    "gcp_project": "world-fishing-827",
+    "project": "world-fishing-827",
     "runner": "direct"
 }
