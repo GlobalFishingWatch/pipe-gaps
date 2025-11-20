@@ -4,11 +4,9 @@ from gfw.common.beam.transforms.read_from_json import ReadFromJson
 from gfw.common.beam.transforms.write_to_json import WriteToJson
 from gfw.common.beam.pipeline.dag.factory import LinearDagFactory
 from gfw.common.beam.transforms.read_from_bigquery import ReadFromBigQuery
-from gfw.common.beam.pipeline.hooks import create_view_hook, delete_events_hook, create_table_hook
 
 from pipe_gaps.core import GapDetector
 from pipe_gaps.queries import GapsQuery, AISMessagesQuery
-from pipe_gaps.pipelines.detect.table_config import GapsTableConfig, GapsTableDescription
 from pipe_gaps.pipelines.detect.transforms.detect_gaps import DetectGaps
 from pipe_gaps.pipelines.detect.config import DetectGapsConfig
 
@@ -16,30 +14,6 @@ from pipe_gaps.pipelines.detect.config import DetectGapsConfig
 class DetectGapsLinearDagFactory(LinearDagFactory):
     def __init__(self, config: DetectGapsConfig):
         self.config = config
-
-    @property
-    def gaps_table_config(self):
-        """Returns configuration for the output gaps BigQuery table."""
-        return GapsTableConfig(
-            table_id=self.config.bq_output_gaps,
-            description=GapsTableDescription(
-                version=self.config.version,
-                relevant_params=self.bq_output_gaps_description_params
-            ),
-        )
-
-    @property
-    def bq_output_gaps_description_params(self):
-        """Returns Parameters to be included in the description of the BigQuery output table."""
-        # Could be as well just return ALL parameters (and remove irrelevant ones).
-        return dict(
-            bq_input_messages=self.config.bq_input_messages,
-            bq_input_segments=self.config.bq_input_segments,
-            filter_good_seg=self.config.filter_good_seg,
-            filter_not_overlapping_and_short=self.config.filter_not_overlapping_and_short,
-            min_gap_length=self.config.min_gap_length,
-            n_hours_before=self.config.n_hours_before,
-        )
 
     @property
     def sources(self):
@@ -117,8 +91,8 @@ class DetectGapsLinearDagFactory(LinearDagFactory):
         if self.config.bq_output_gaps is not None:
             sinks.append(
                 WriteToBigQueryWrapper(
-                    table=self.gaps_table_config.table_id,
-                    schema=self.gaps_table_config.schema,
+                    table=self.config.table_config.table_id,
+                    schema=self.config.table_config.schema,
                     write_to_bigquery_factory=self.write_to_bigquery_factory,
                     write_disposition=self.config.bq_write_disposition,
                     label="WriteGaps",
@@ -134,35 +108,3 @@ class DetectGapsLinearDagFactory(LinearDagFactory):
             )
 
         return sinks
-
-    @property
-    def pre_hooks(self):
-        pre_hooks = []
-        if self.config.bq_output_gaps is not None:
-            pre_hooks.append(
-                create_table_hook(
-                    table_config=self.gaps_table_config,
-                    mock=self.config.mock_bq_clients
-                )
-            )
-
-            pre_hooks.append(
-                delete_events_hook(
-                    table_config=self.gaps_table_config,
-                    start_date=self.config.start_date,
-                    mock=self.config.mock_bq_clients
-                )
-            )
-        return pre_hooks
-
-    @property
-    def post_hooks(self):
-        post_hooks = []
-        if self.config.bq_output_gaps is not None:
-            post_hooks.append(
-                create_view_hook(
-                    table_config=self.gaps_table_config,
-                    mock=self.config.mock_bq_clients
-                )
-            )
-        return post_hooks
