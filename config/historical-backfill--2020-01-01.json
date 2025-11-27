@@ -1,0 +1,25 @@
+{   
+    "bq_input_messages": "gfw-int-pipe-v3.pipe_ais_v3_internal.research_messages",
+    "bq_input_segments": "global-fishing-watch.pipe_ais_v3_published.segs_activity",
+    "bq_output_gaps": "gfw-int-pipe-v3.pipe_ais_v3_internal.raw_gaps",
+    "date_range": [
+        "2012-01-01",
+        "2025-11-24"
+    ],
+    "open_gaps_start_date": "2012-01-01",
+    "filter_good_seg": true,
+    "min_gap_length": 4,
+    "n_hours_before": 12,
+    "window_period_d": 180,
+    "project": "gfw-research",
+    "runner": "dataflow",
+    "max_num_workers": 300,
+    "machine_type": "e2-custom-2-32768",
+    "temp_location": "gs://pipe-temp-us-central-ttl7/dataflow_temp",
+    "staging_location": "gs://pipe-temp-us-central-ttl7/dataflow_staging",
+    "region": "us-central1",
+    "subnetwork": "regions/us-central1/subnetworks/gfw-internal-us-central1",
+    "sdk_container_image": "gcr.io/world-fishing-827/github.com/globalfishingwatch/pipe-gaps:main",
+    "service_account_email": "pipeline-ais-v3@gfw-research.iam.gserviceaccount.com",
+    "job_name": "tom-gaps-historical-backfill--2012-01-01--2025-11-24"
+}
