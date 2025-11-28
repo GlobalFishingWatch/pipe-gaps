@@ -54,6 +54,5 @@ gaps_vessel_id AS (
   ON latest_gaps.end_seg_id = sa_2.seg_id
 )
 
-SELECT COUNT(*) count, gap_max_distance_from_port_m < 5000 AS near_port
+SELECT *
 FROM gaps_vessel_id
-GROUP BY near_port
