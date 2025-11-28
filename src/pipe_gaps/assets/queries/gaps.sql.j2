@@ -1,31 +1,59 @@
-SELECT
-  {{ fields }}
-FROM (
-  SELECT *
-  FROM `{{ source_gaps }}`
-  QUALIFY ROW_NUMBER() OVER (
-    PARTITION BY gap_id, start_timestamp
-    ORDER BY version DESC
-  ) = 1
-)
-WHERE
-  1=1
-  {% if start_date %}
-    AND DATE(start_timestamp) >= '{{ start_date }}'
-  {% endif %}
-
-  {% if end_date %}
-    AND DATE(end_timestamp) < '{{ end_date }}'
-  {% endif %}
-
-  {% if ssvids %}
-    AND ssvid IN ({{ ssvids | join(', ') }})
-  {% endif %}
-
-  {% if is_closed is not none %}
-    {% if is_closed %}
-      AND is_closed
-    {% else %}
-      AND NOT is_closed
+WITH latest_gaps AS (
+  SELECT
+    {{ fields }} EXCEPT(start_msgid, end_msgid, version)
+  FROM (
+    SELECT *
+    FROM `{{ source_gaps }}`
+    QUALIFY ROW_NUMBER() OVER (
+      PARTITION BY gap_id, start_timestamp
+      ORDER BY version DESC
+    ) = 1
+  )
+  WHERE
+    1=1
+    {% if start_date %}
+      AND DATE(start_timestamp) >= '{{ start_date }}'
     {% endif %}
-  {% endif %}
+
+    {% if end_date %}
+      AND DATE(end_timestamp) < '{{ end_date }}'
+    {% endif %}
+
+    {% if ssvids %}
+      AND ssvid IN ({{ ssvids | join(', ') }})
+    {% endif %}
+
+    {% if is_closed is not none %}
+      {% if is_closed %}
+        AND is_closed
+      {% else %}
+        AND NOT is_closed
+      {% endif %}
+    {% endif %}
+),
+
+gaps_vessel_id AS (
+  SELECT
+    latest_gaps.*,
+    si_1.vessel_id AS vessel_1_id,
+    si_2.vessel_id AS vessel_2_id,
+    si_1.vessel_id != si_2.vessel_id AS multi_vessel_gap,
+    sa_1.overlapping_and_short AS gap_start_overlapping_and_short,
+    sa_2.overlapping_and_short AS gap_end_overlapping_and_short,
+    sa_1.overlapping_and_short AND sa_2.overlapping_and_short AS gap_overlapping_and_short,
+    GREATEST(start_distance_from_port_m, end_distance_from_port_m) AS gap_max_distance_from_port_m,
+    GREATEST(start_distance_from_shore_m, end_distance_from_shore_m) AS gap_max_distance_from_shore_m
+  FROM latest_gaps
+  INNER JOIN `{{ source_segment_info }}` si_1
+  ON latest_gaps.start_seg_id = si_1.seg_id
+  INNER JOIN `{{ source_segment_info }}` si_2
+  ON latest_gaps.end_seg_id = si_2.seg_id
+  INNER JOIN `{{ source_segs_activity }}` sa_1
+  ON latest_gaps.start_seg_id = sa_1.seg_id
+  INNER JOIN `{{ source_segs_activity }}` sa_2
+  ON latest_gaps.end_seg_id = sa_2.seg_id
+)
+
+SELECT COUNT(*) count, gap_max_distance_from_port_m < 5000 AS near_port
+FROM gaps_vessel_id
+GROUP BY near_port
