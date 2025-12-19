@@ -6,15 +6,16 @@ from dataclasses import dataclass, field
 from gfw.common.beam.pipeline.config import PipelineConfig
 
 
-@dataclass
+@dataclass(kw_only=True)
 class PublishGapsConfig(PipelineConfig):
-    bq_input_gaps: str = None
-    bq_input_segment_info: str = None
-    bq_input_voyages: str = None
-    bq_input_port_visits: str = None
-    bq_input_regions: str = None
-    bq_input_vessels_byyear: str = None
-    bq_output: str = None
+    bq_input_gaps: str
+    bq_input_segment_info: str
+    bq_input_segs_activity: str
+    bq_input_voyages: str
+    bq_input_port_visits: str
+    bq_input_regions: str
+    bq_input_vessels_byyear: str
+    bq_output: str
+    project: str
     labels: dict = field(default_factory=dict)
-    project: str = None
     dry_run: bool = False

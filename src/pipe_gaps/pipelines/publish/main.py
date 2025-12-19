@@ -30,6 +30,7 @@ class GapEventQuery(Query):
         return {
             "source_gaps": self.config.bq_input_gaps,
             "source_segment_info": self.config.bq_input_segment_info,
+            "source_segs_activity": self.config.bq_input_segs_activity,
             "source_regions": self.config.bq_input_regions,
             "source_voyages": self.config.bq_input_voyages,
             "source_port_visits": self.config.bq_input_port_visits,
@@ -72,16 +73,22 @@ def run(
         ),
     )
 
-    logger.info(f"Creating events table '{config.bq_output}' (if doesn't already exist)...")
-    bq.create_table(**table_config.to_bigquery_params(), exists_ok=True, labels=config.labels)
-
     logger.info(f'Executing events query for date range: {config.date_range}...')
     query_result = bq.run_query(
         query_str=events_query.render(),
         destination=config.bq_output,
         labels=config.labels,
-        write_disposition="WRITE_TRUNCATE_DATA"
+        write_disposition="WRITE_TRUNCATE"
     )
 
     _ = query_result.query_job.result()
+
+    # TODO: Move this to BigQueryHelper.
+    logger.info("Updating table schema and description...")
+    table = bq.client.get_table(table_config.table_id)
+    table.schema = table_config.schema
+    table.description = table_config.description.render()
+    table = bq.client.update_table(table, ["schema", "description"])
     logger.info("Done.")
+    logger.info("You can check the results in:")
+    logger.info(f"{table_config.table_id}")
