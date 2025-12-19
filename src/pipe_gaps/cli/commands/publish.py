@@ -12,6 +12,7 @@ Enrich gaps data and create publication events.
 
 HELP_BQ_INPUT_GAPS = "BigQuery table with gaps."
 HELP_BQ_INPUT_SEGMENT_INFO = "BigQuery table with segments information."
+HELP_BQ_INPUT_SEGS_ACTIVITY = "BigQuery table with research aggregated segments data."
 HELP_BQ_INPUT_VOYAGES = "BigQuery table with voyages."
 HELP_BQ_INPUT_PORT_VISITS = "BigQuery table with port visits."
 HELP_BQ_INPUT_REGIONS = "BigQuery table with regions."
@@ -42,6 +43,7 @@ class PublishGaps(Command):
             Option("--dry-run", type=bool, help=HELP_DRY_RUN),
             Option("--bq-input-gaps", type=str, help=HELP_BQ_INPUT_GAPS),
             Option("--bq-input-segment-info", type=str, help=HELP_BQ_INPUT_SEGMENT_INFO),
+            Option("--bq-input-segs-activity", type=str, help=HELP_BQ_INPUT_SEGS_ACTIVITY),
             Option("--bq-input-voyages", type=str, help=HELP_BQ_INPUT_VOYAGES),
             Option("--bq-input-port-visits", type=str, help=HELP_BQ_INPUT_PORT_VISITS),
             Option("--bq-input-regions", type=str, help=HELP_BQ_INPUT_REGIONS),

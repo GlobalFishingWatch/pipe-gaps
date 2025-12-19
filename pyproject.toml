@@ -15,7 +15,7 @@ namespaces = false
 
 [project]
 name = "pipe-gaps"
-version = "0.8.4"
+version = "0.9.0"
 description = "Time gap detector for AIS position messages."
 readme = "README.md"
 license = "Apache-2.0"

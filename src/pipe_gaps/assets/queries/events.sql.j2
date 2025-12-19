@@ -8,6 +8,7 @@
 -- * source_voyages
 -- * source_port_visits
 -- * source_segment_info
+-- * source_segs_activity
 -- * source_regions
 -- * source_vessels_byyear
 -- * start_date
@@ -72,12 +73,15 @@ WITH
     ############
     # Segments #
     ############
-    source_segment_info AS (
-        SELECT
-            *
-        FROM
-            `{{ source_segment_info }}`
+    segment_info AS (
+      SELECT
+        si.seg_id,
+        si.vessel_id,
+        sa.overlapping_and_short
+      FROM `{{ source_segment_info }}` si
+      JOIN `{{ source_segs_activity }}` sa USING (seg_id)
     ),
+
 
     ################
     # Regions data #
@@ -117,7 +121,7 @@ WITH
             TO_HEX(MD5(FORMAT("%s|%s|%t|%t",'gaps', vessels.vessel_id, start_timestamp, end_timestamp))) AS event_id,
             'gaps' AS event_type,
             vessels.vessel_id,
-            segment_info.seg_id,
+            s1.seg_id,
             start_timestamp AS event_start,
             end_timestamp AS event_end,
             (start_lat + end_lat) / 2 AS lat_mean,
@@ -142,26 +146,36 @@ WITH
                         SAFE.STRING(PARSE_JSON(vessel_trip_end_anchorages.event_info, wide_number_mode=>'round').intermediate_anchorage.id) as id,
                         SAFE.STRING(PARSE_JSON(vessel_trip_end_anchorages.event_info, wide_number_mode=>'round').intermediate_anchorage.flag) as flag,
                         SAFE.STRING(PARSE_JSON(vessel_trip_end_anchorages.event_info, wide_number_mode=>'round').intermediate_anchorage.name) as name
-                    ) as main_vessel_destination_port
+                    ) as main_vessel_destination_port,
+                    s1.vessel_id AS vessel_1_id,
+                    s2.vessel_id AS vessel_2_id,
+                    s1.vessel_id IS DISTINCT FROM s2.vessel_id AS is_multi_vessel_gap,
+                    s1.overlapping_and_short AS gap_start_overlapping_and_short,
+                    s2.overlapping_and_short AS gap_end_overlapping_and_short,
+                    s1.overlapping_and_short AND s2.overlapping_and_short AS gap_overlapping_and_short,
+                    LEAST(start_distance_from_port_m, end_distance_from_port_m) AS gap_min_distance_from_port_m,
+                    LEAST(start_distance_from_shore_m, end_distance_from_shore_m) AS gap_min_distance_from_shore_m
                 )
             ) AS event_info,
             TO_JSON_STRING([
                 STRUCT(
-                    vessels.vessel_id AS `id`,
                     gaps.ssvid AS `ssvid`,
-                    vessels.shipname AS `name`,
-                    segment_info.seg_id,
+                    vessels.vessel_id AS `id`,
+                    vessels.ais_shipname AS `name`,
                     vessels.prod_shiptype AS `type`,
-                    vessels.mmsi_flag AS `flag`
+                    vessels.ais_mmsi_flag AS `flag`,
+                    s1.seg_id
                 )
             ]) AS event_vessels,
         FROM source_gaps AS gaps
             # Join with segments. 
-            JOIN source_segment_info AS segment_info ON
-                gaps.start_seg_id = segment_info.seg_id
+            JOIN segment_info s1 ON gaps.start_seg_id = s1.seg_id
+            JOIN segment_info s2 ON gaps.end_seg_id   = s2.seg_id
 
             # Join source_gaps with vessels.
-            JOIN source_all_vessels AS vessels USING (vessel_id, year)
+            JOIN source_all_vessels AS vessels 
+              ON vessels.vessel_id = s1.vessel_id
+             AND vessels.year      = gaps.year
 
             # Join with voyages.
             LEFT JOIN flattened_voyages AS voyages ON ( 
@@ -174,7 +188,6 @@ WITH
             LEFT JOIN port_visit_source AS vessel_trip_end_anchorages ON
                 voyages.trip_end_visit_id = vessel_trip_end_anchorages.visit_id
     ),
-
 
     #
     # Finally, enhance the event with info related to regions and distances.
