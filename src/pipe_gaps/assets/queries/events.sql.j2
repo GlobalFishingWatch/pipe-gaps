@@ -118,9 +118,9 @@ WITH
     ########################################################
     base_gap_event AS (
         SELECT
-            TO_HEX(MD5(FORMAT("%s|%s|%t|%t",'gaps', vessels.vessel_id, start_timestamp, end_timestamp))) AS event_id,
+            TO_HEX(MD5(FORMAT("%s|%s|%t|%t",'gaps', vessel_start.vessel_id, start_timestamp, end_timestamp))) AS event_id,
             'gaps' AS event_type,
-            vessels.vessel_id,
+            vessel_start.vessel_id,
             s1.seg_id,
             start_timestamp AS event_start,
             end_timestamp AS event_end,
@@ -139,7 +139,7 @@ WITH
                     duration_h,
                     convert_m_to_km(distance_m) AS total_distance_km,
                     implied_speed_knots,
-                    vessels.prod_shiptype as vessel_class,
+                    vessel_start.prod_shiptype as vessel_class,
                     STRUCT(
                     -- destination port after event
                         vessel_trip_end_anchorages.event_id AS event_id,
@@ -160,32 +160,56 @@ WITH
                     LEAST(
                       start_distance_from_shore_m,
                       COALESCE(end_distance_from_shore_m, start_distance_from_shore_m)
-                    ) AS gap_min_distance_from_shore_m,
+                    ) AS gap_min_distance_from_shore_m
                 )
             ) AS event_info,
-            TO_JSON_STRING([
-                STRUCT(
-                    gaps.ssvid AS `ssvid`,
-                    vessels.vessel_id AS `id`,
-                    vessels.ais_shipname AS `name`,
-                    vessels.prod_shiptype AS `type`,
-                    vessels.ais_mmsi_flag AS `flag`,
-                    s1.seg_id
+            TO_JSON_STRING(
+                ARRAY_CONCAT(
+                [
+                  STRUCT(
+                    gaps.ssvid AS ssvid,
+                    vessel_start.vessel_id AS id,
+                    vessel_start.shipname AS name,
+                    vessel_start.prod_shiptype AS type,
+                    vessel_start.mmsi_flag AS flag,
+                    s1.seg_id AS seg_id
+                  )
+                ],
+                IF(
+                  s2.vessel_id IS NOT NULL
+                  AND s2.vessel_id != s1.vessel_id,
+                  [
+                    STRUCT(
+                      gaps.ssvid AS ssvid,
+                      vessel_end.vessel_id AS id,
+                      vessel_end.shipname AS name,
+                      vessel_end.prod_shiptype AS type,
+                      vessel_end.mmsi_flag AS flag,
+                      s2.seg_id AS seg_id
+                    )
+                  ],
+                  []
                 )
-            ]) AS event_vessels,
+              )
+            ) AS event_vessels,
         FROM source_gaps AS gaps
             # Join with segments. 
             LEFT JOIN segment_info s1 ON gaps.start_seg_id = s1.seg_id
             LEFT JOIN segment_info s2 ON gaps.end_seg_id   = s2.seg_id
 
-            # Join source_gaps with vessels.
-            JOIN source_all_vessels AS vessels 
-              ON vessels.vessel_id = s1.vessel_id
-             AND vessels.year      = gaps.year
+            # Start / OFF vessel (mandatory)
+            JOIN source_all_vessels AS vessel_start
+              ON vessel_start.vessel_id = s1.vessel_id
+             AND vessel_start.year      = gaps.year
+
+            # End / ON vessel (optional, open gaps allowed)
+            LEFT JOIN source_all_vessels AS vessel_end
+              ON vessel_end.vessel_id = s2.vessel_id
+             AND vessel_end.year      = gaps.year
 
             # Join with voyages.
             LEFT JOIN flattened_voyages AS voyages ON ( 
-                vessels.vessel_id = voyages.vessel_id 
+                vessel_start.vessel_id = voyages.vessel_id
                 AND (voyages.trip_start < start_timestamp OR voyages.trip_start IS NULL)
                 AND voyages.trip_end > end_timestamp 
             )
