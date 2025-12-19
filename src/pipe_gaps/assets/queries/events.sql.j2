@@ -149,12 +149,18 @@ WITH
                     ) as main_vessel_destination_port,
                     s1.vessel_id AS vessel_1_id,
                     s2.vessel_id AS vessel_2_id,
-                    s1.vessel_id IS DISTINCT FROM s2.vessel_id AS is_multi_vessel_gap,
+                    s1.vessel_id != s2.vessel_id AS is_multi_vessel_gap,
                     s1.overlapping_and_short AS gap_start_overlapping_and_short,
                     s2.overlapping_and_short AS gap_end_overlapping_and_short,
                     s1.overlapping_and_short AND s2.overlapping_and_short AS gap_overlapping_and_short,
-                    LEAST(start_distance_from_port_m, end_distance_from_port_m) AS gap_min_distance_from_port_m,
-                    LEAST(start_distance_from_shore_m, end_distance_from_shore_m) AS gap_min_distance_from_shore_m
+                    LEAST(
+                      start_distance_from_port_m,
+                      COALESCE(end_distance_from_port_m, start_distance_from_port_m)
+                    ) AS gap_min_distance_from_port_m,
+                    LEAST(
+                      start_distance_from_shore_m,
+                      COALESCE(end_distance_from_shore_m, start_distance_from_shore_m)
+                    ) AS gap_min_distance_from_shore_m,
                 )
             ) AS event_info,
             TO_JSON_STRING([
@@ -169,8 +175,8 @@ WITH
             ]) AS event_vessels,
         FROM source_gaps AS gaps
             # Join with segments. 
-            JOIN segment_info s1 ON gaps.start_seg_id = s1.seg_id
-            JOIN segment_info s2 ON gaps.end_seg_id   = s2.seg_id
+            LEFT JOIN segment_info s1 ON gaps.start_seg_id = s1.seg_id
+            LEFT JOIN segment_info s2 ON gaps.end_seg_id   = s2.seg_id
 
             # Join source_gaps with vessels.
             JOIN source_all_vessels AS vessels 
