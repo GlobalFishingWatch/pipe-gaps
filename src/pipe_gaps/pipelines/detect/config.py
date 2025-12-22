@@ -33,14 +33,8 @@ class DetectGapsConfig(PipelineConfig):
     save_json: bool = False
     work_dir: str = "workdir"
 
-    name = "pipe-gaps"
-
     def __post_init__(self) -> None:
-        if (
-            self.json_input_messages is None
-            and (self.bq_input_messages is None or self.bq_input_segments is None)
-        ):
-            raise ValueError("You need to provide either a JSON inputs or BQ input.")
+        self.validate()
 
     @property
     def open_gaps_start(self) -> date:
@@ -106,3 +100,14 @@ class DetectGapsConfig(PipelineConfig):
                 )
             )
         return post_hooks
+
+    def validate(self):
+        if (
+            self.json_input_messages is None
+            and (self.bq_input_messages is None or self.bq_input_segments is None)
+        ):
+            raise ValueError("You need to provide either a JSON inputs or BQ input.")
+
+        if not self.end_date > self.start_date:
+            raise ValueError(
+                f"end_date ({self.end_date}) must be greater than start_date ({self.start_date})")

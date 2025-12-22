@@ -1,4 +1,5 @@
 from datetime import timedelta
+from dataclasses import replace
 
 from gfw.common.beam.transforms import WriteToBigQueryWrapper
 
@@ -63,10 +64,15 @@ def test_side_inputs_skipped_when_configured(base_config):
 
 
 def test_side_inputs_skipped_when_start_date_before_open_gaps(base_config):
-    base_config.skip_open_gaps = False
-    # Set start_date before open_gaps_start_date
-    base_config.date_range = ("2020-01-01", "2020-01-02")
-    base_config.open_gaps_start_date = "2021-01-01"
+
+    base_config = replace(
+        base_config,
+        skip_open_gaps=False,
+        # Set start_date before open_gaps_start_date
+        date_range=("2020-01-01", "2020-01-02"),
+        open_gaps_start_date="2021-01-01",
+    )
+
     factory = DetectGapsLinearDagFactory(base_config)
     side_inputs = factory.side_inputs
 
