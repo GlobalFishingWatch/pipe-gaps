@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from gfw.common.beam.pipeline.config import PipelineConfig
 
 
-@dataclass(kw_only=True)
+@dataclass(frozen=True, kw_only=True)
 class PublishGapsConfig(PipelineConfig):
     bq_input_gaps: str
     bq_input_segment_info: str
