@@ -9,7 +9,7 @@ from gfw.common.beam.pipeline.hooks import create_view_hook, delete_events_hook,
 from pipe_gaps.pipelines.detect.table_config import GapsTableConfig, GapsTableDescription
 
 
-@dataclass
+@dataclass(frozen=True)
 class DetectGapsConfig(PipelineConfig):
     filter_not_overlapping_and_short: bool = False
     filter_good_seg: bool = False

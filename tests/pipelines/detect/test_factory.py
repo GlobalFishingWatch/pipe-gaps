@@ -13,7 +13,7 @@ from pipe_gaps.pipelines.detect.transforms.detect_gaps import DetectGaps
 
 def test_sources_with_json_input_and_bq_input(base_config):
     # Test with both JSON and BigQuery inputs
-    base_config.json_input_messages = "path/to/json"
+    base_config = replace(base_config, json_input_messages="path/to/json")
     factory = DetectGapsLinearDagFactory(base_config)
 
     sources = factory.sources
@@ -25,7 +25,7 @@ def test_sources_with_json_input_and_bq_input(base_config):
 
 def test_sources_with_only_bq_input(base_config):
     # JSON input disabled
-    base_config.json_input_messages = None
+    base_config = replace(base_config, json_input_messages=None)
     factory = DetectGapsLinearDagFactory(base_config)
 
     sources = factory.sources
@@ -56,7 +56,7 @@ def test_side_inputs_with_open_gaps(base_config):
 
 
 def test_side_inputs_skipped_when_configured(base_config):
-    base_config.skip_open_gaps = True
+    base_config = replace(base_config, skip_open_gaps=True)
     factory = DetectGapsLinearDagFactory(base_config)
     side_inputs = factory.side_inputs
 
@@ -64,7 +64,6 @@ def test_side_inputs_skipped_when_configured(base_config):
 
 
 def test_side_inputs_skipped_when_start_date_before_open_gaps(base_config):
-
     base_config = replace(
         base_config,
         skip_open_gaps=False,
@@ -80,7 +79,7 @@ def test_side_inputs_skipped_when_start_date_before_open_gaps(base_config):
 
 
 def test_sinks_with_bq_and_json(base_config):
-    base_config.save_json = True
+    base_config = replace(base_config, save_json=True)
     factory = DetectGapsLinearDagFactory(base_config)
 
     sinks = factory.sinks
@@ -90,7 +89,7 @@ def test_sinks_with_bq_and_json(base_config):
 
 
 def test_sinks_with_only_bq(base_config):
-    base_config.save_json = False
+    base_config = replace(base_config, save_json=False)
     factory = DetectGapsLinearDagFactory(base_config)
 
     sinks = factory.sinks

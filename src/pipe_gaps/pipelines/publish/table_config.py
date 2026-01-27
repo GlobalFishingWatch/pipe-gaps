@@ -1,20 +1,23 @@
 from dataclasses import dataclass
 from typing import Any
 
-from pipe_gaps.assets import schemas
-
 from gfw.common.bigquery.table_config import TableConfig
 from gfw.common.bigquery.table_description import TableDescription
 
+from pipe_gaps.assets import schemas
+from pipe_gaps.pipelines.detect.table_config import CAVEATS
 
 SUMMARY = """\
-This is gap events table.
+We create an AIS gap event when the period of time between
+consecutive AIS positions from a single vessel exceeds a configured threshold in hours.
+The `start/end` position messages of the gap are called `OFF/ON` messages,
+respectively.
 
-For more information, see https://github.com/GlobalFishingWatch/pipe-gaps.
-"""  # noqa
-
-CAVEATS = """\
-⬖ TBC.
+When the period of time between last known position
+and the last time of the current day exceeds the threshold,
+we create an open gap event.
+In that case, the gap will not have an `ON` message (event_end and end_* fields),
+until it is closed in the future when new data arrives.
 """  # noqa
 
 
