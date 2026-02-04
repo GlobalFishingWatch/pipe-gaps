@@ -44,6 +44,11 @@ HELP_MIN_GAP_LENGTH = "Minimum time difference (hours) to start considering gaps
 HELP_WINDOW_PERIOD_D = "Period (in days) of time windows used to parallelize the process."
 HELP_EVAL_LAST = "If passed, evaluates last message of each SSVID to create an open gap."
 HELP_N_HOURS_BEFORE = "Count messages this amount of hours before each gap."
+HELP_GOOD_SEG_STABILIZATION = (
+    "Number of days the segments table needs to be ahead in order to filter messages with a "
+    "stable good_seg metric. If good_seg filter is ON and this validation fails, "
+    "the process will throw an error."
+)
 
 
 class DetectGaps(Command):
@@ -78,6 +83,7 @@ class DetectGaps(Command):
             Option("--window-period-d", type=float, help=HELP_WINDOW_PERIOD_D),
             Option("--eval-last", type=bool, help=HELP_EVAL_LAST),
             Option("--n-hours-before", type=float, help=HELP_N_HOURS_BEFORE),
+            Option("--good-seg-stabilization-days", type=int, help=HELP_GOOD_SEG_STABILIZATION)
         ]
 
     @classmethod
