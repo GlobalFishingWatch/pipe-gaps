@@ -67,7 +67,8 @@ def test_gaps_query():
         start_date=start_date,
         end_date=end_date,
         is_closed=False,
-        ssvids=["1234", "5678"]
+        ssvids=["1234", "5678"],
+        use_timestamp=True,
     )
     assert query.output_type == queries.Gap
 

@@ -1,7 +1,7 @@
 {   
     "bq_input_messages": "world-fishing-827.pipe_ais_v3_internal.research_messages",
     "bq_input_segments": "world-fishing-827.pipe_ais_v3_published.segs_activity",
-    "bq_output_gaps": "world-fishing-827.scratch_tomas_ttl30d.raw_gaps_test_table_creation",
+    "bq_output_gaps": "world-fishing-827.scratch_tomas_ttl30d.raw_gaps_test_view",
     "skip_open_gaps": true,
     "open_gaps_start_date": "2019-12-10",
     "ssvids": [
