@@ -84,7 +84,7 @@ class AISMessagesQuery(Query):
     def template_vars(self):
         """Prepares variables to pass to the Jinja2 template."""
         return {
-            "fields": self.get_select_fields(),
+            "fields": self.get_select_fields(convert_datetime_to_timestamp=True),
             "source_messages": self._source_messages,
             "source_segments": self._source_segments,
             "start_date": self._start_date.isoformat(),

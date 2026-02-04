@@ -86,13 +86,16 @@ class GapsQuery(Query):
         start_date: Optional[date] = None,
         end_date: Optional[date] = None,
         ssvids: Sequence[str] = (),
-        is_closed: Optional[bool] = None
+        is_closed: Optional[bool] = None,
+        use_timestamp: bool = False
     ) -> None:
         self._start_date = start_date
         self._end_date = end_date
         self._source_gaps = source_gaps
         self._ssvids = ssvids
         self._is_closed = is_closed
+        # TODO: consider another design: this is an external parameter not pass to the query.
+        self._use_timestamp = use_timestamp
 
     @cached_property
     def output_type(self):
@@ -113,7 +116,7 @@ class GapsQuery(Query):
             end_date = end_date.isoformat()
 
         return {
-            "fields": self.get_select_fields(),
+            "fields": self.get_select_fields(self._use_timestamp),
             "source_gaps": self._source_gaps,
             "ssvids": self.sql_strings(self._ssvids),
             "start_date": start_date,
