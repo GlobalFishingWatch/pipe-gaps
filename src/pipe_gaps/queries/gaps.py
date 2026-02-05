@@ -1,4 +1,4 @@
-"""This module encapsulates a SELECT query for AIS gaps."""
+"""This module encapsulates a SELECT query for gaps."""
 import logging
 from typing import Optional, NamedTuple, Sequence
 from functools import cached_property
@@ -7,8 +7,6 @@ from datetime import date, datetime
 from gfw.common.query import Query
 
 logger = logging.getLogger(__name__)
-
-DB_TABLE_GAPS = "world-fishing-827.pipe_ais_v3_internal.raw_gaps"
 
 
 class Gap(NamedTuple):
@@ -66,7 +64,7 @@ class GapsQuery(Query):
             Fetch gaps whose OFF message timetsamp is < end_date.
 
         source_gaps:
-            Table with AIS gaps.
+            Table with gaps.
 
         ssvids:
             List of ssvdis to filter.
@@ -82,7 +80,7 @@ class GapsQuery(Query):
 
     def __init__(
         self,
-        source_gaps: str = DB_TABLE_GAPS,
+        source_gaps: str,
         start_date: Optional[date] = None,
         end_date: Optional[date] = None,
         ssvids: Sequence[str] = (),

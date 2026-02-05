@@ -9,7 +9,7 @@ from gfw.common.iterables import binary_search_first_ge
 
 @dataclass(eq=True, frozen=True)
 class Boundary:
-    """Encapsulates first N and last M AIS position messages for an ssvid and time interval.
+    """Encapsulates first N and last M position messages for an ssvid and time interval.
 
     Args:
         ssvid:

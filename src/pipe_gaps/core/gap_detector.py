@@ -1,11 +1,11 @@
 """
-This module encapsulates the core algorithm for detecting time gaps in AIS position messages.
+This module encapsulates the core algorithm for detecting time gaps in vessel position messages.
 
 The main class, `GapDetector`, provides functionality to identify intervals
-where AIS data reception was interrupted or missing beyond a configurable threshold.
+where data reception was interrupted or missing beyond a configurable threshold.
 
 Features:
-- Detect gaps between consecutive AIS messages based on time thresholds.
+- Detect gaps between consecutive messages based on time thresholds.
 - Support for multiple receiver types: terrestrial, satellite, and dynamic.
 - Calculation of gap distance, duration, and implied vessel speed.
 - Optional output normalization for easier downstream processing.
@@ -16,7 +16,7 @@ Example usage:
     from datetime import datetime, timedelta
     from gap_detector import GapDetector
 
-    # Example list of AIS messages (each message is a dict with required keys)
+    # Example list of messages (each message is a dict with required keys)
     messages = [
         {
             "ssvid": "12345",
@@ -70,7 +70,7 @@ class GapDetectionError(Exception):
 
 
 class GapDetector:
-    """Detects time gaps between AIS position messages.
+    """Detects time gaps between vessel position messages.
 
     Args:
         threshold:
@@ -176,14 +176,14 @@ class GapDetector:
         return self._threshold_h
 
     def detect(self, messages: list[dict], start_time: datetime = None) -> list[dict]:
-        """Detect time gaps between AIS position messages from a single vessel.
+        """Detect time gaps between position messages from a single vessel.
 
             The method automatically sorts the input messages by timestamp before processing.
             Users do not need to provide pre-sorted messages.
 
             Args:
                 messages:
-                    List of AIS position messages. Each dict must
+                    List of position messages. Each dict must
                     contain mandatory keys as defined by `mandatory_keys()`.
 
                 start_time:
@@ -258,10 +258,10 @@ class GapDetector:
 
         Args:
             off_m:
-                OFF message. When the AIS reception went OFF.
+                OFF message. When the reception went OFF.
 
             on_m:
-                ON message. When the AIS reception went ON. If not provided,
+                ON message. When the reception went ON. If not provided,
                 an open gap will be created.
 
             gap_id:
@@ -295,8 +295,8 @@ class GapDetector:
             if the output is normalized.
 
             If not normalized, the ON/OFF messages properties will be on its own keys:
-                * "OFF": dict with AIS position message when the gap starts.
-                * "ON": dict AIS position message when the gap ends.
+                * "OFF": dict with position message when the gap starts.
+                * "ON": dict with position message when the gap ends.
         """
         ssvid = off_m[self.KEY_SSVID]
 

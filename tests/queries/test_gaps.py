@@ -4,6 +4,7 @@ from gfw.common.query import Query
 
 from pipe_gaps import queries
 
+DUMMY_TABLE = "project.dataset.table"
 
 EXPECTED = """
 SELECT gap_id,
@@ -38,7 +39,7 @@ SELECT gap_id,
 FROM
     (
         SELECT *
-        FROM `world-fishing-827.pipe_ais_v3_internal.raw_gaps` QUALIFY ROW_NUMBER() OVER (
+        FROM `{table}` QUALIFY ROW_NUMBER() OVER (
         PARTITION BY gap_id, start_timestamp ORDER BY VERSION DESC) = 1
     )
 WHERE 1 = 1
@@ -47,7 +48,7 @@ WHERE 1 = 1
   AND ssvid IN ('1234',
                 '5678')
   AND NOT is_closed
-"""
+""".format(table=DUMMY_TABLE)
 
 
 def test_gaps_query():
@@ -55,15 +56,16 @@ def test_gaps_query():
     end_date = datetime(2024, 1, 2).date()
 
     # Test without ssvids filter.
-    query = queries.GapsQuery(start_date=start_date)
+    query = queries.GapsQuery(source_gaps=DUMMY_TABLE, start_date=start_date)
     query.render()
 
     # Test with ssvids filter.
-    query = queries.GapsQuery(start_date=start_date, ssvids=["1234"])
+    query = queries.GapsQuery(source_gaps=DUMMY_TABLE, start_date=start_date, ssvids=["1234"])
     query.render()
 
     # Test with end_date filter.
     query = queries.GapsQuery(
+        source_gaps=DUMMY_TABLE,
         start_date=start_date,
         end_date=end_date,
         is_closed=False,

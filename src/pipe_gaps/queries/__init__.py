@@ -1,10 +1,10 @@
 from .gaps import GapsQuery, Gap
 from .gaps_delete import GapsDeleteQuery
-from .ais_messages import AISMessagesQuery, AISMessage
+from .messages import MessagesQuery, Message
 
 __all__ = [
-    AISMessagesQuery,
-    AISMessage,
+    MessagesQuery,
+    Message,
     Gap,
     GapsQuery,
     GapsDeleteQuery,
