@@ -8,8 +8,8 @@ from pipe_gaps.assets import schemas
 from pipe_gaps.pipelines.detect.table_config import CAVEATS
 
 SUMMARY = """\
-We create an AIS gap event when the period of time between
-consecutive AIS positions from a single vessel exceeds a configured threshold in hours.
+We create a gap event when the period of time between
+consecutive positions from a single vessel exceeds a configured threshold in hours.
 The `start/end` position messages of the gap are called `OFF/ON` messages,
 respectively.
 
@@ -24,8 +24,8 @@ until it is closed in the future when new data arrives.
 @dataclass
 class GapEventsTableDescription(TableDescription):
     repo_name: str = "pipe-gaps"
-    title: str = "AIS GAP EVENTS"
-    subtitle: str = "𝗧𝗶𝗺𝗲 𝗴𝗮𝗽𝘀 𝗯𝗲𝘁𝘄𝗲𝗲𝗻 𝗔𝗜𝗦 𝗽𝗼𝘀𝗶𝘁𝗶𝗼𝗻𝘀"
+    title: str = "GAP EVENTS"
+    subtitle: str = "𝗧𝗶𝗺𝗲 𝗴𝗮𝗽𝘀 𝗯𝗲𝘁𝘄𝗲𝗲𝗻 𝘃𝗲𝘀𝘀𝗲𝗹𝘀 𝗽𝗼𝘀𝗶𝘁𝗶𝗼𝗻𝘀"
     summary: str = SUMMARY
     caveats: str = CAVEATS
 

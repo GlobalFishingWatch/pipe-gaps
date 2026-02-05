@@ -30,7 +30,7 @@ class DetectGapsConfig(PipelineConfig):
     json_input_open_gaps: str = None
     bq_read_method: str = "EXPORT"
     bq_input_messages: str = None
-    bq_input_segments: str = "pipe_ais_v3_published.segs_activity"
+    bq_input_segments: str = None
     bq_input_open_gaps: str = None
     bq_output_gaps: str = None
     bq_write_disposition: str = "WRITE_APPEND"

@@ -24,8 +24,8 @@ CAVEATS = """\
 @dataclass
 class GapsTableDescription(TableDescription):
     repo_name: str = "pipe-gaps"
-    title: str = "RAW GAPS"
-    subtitle: str = "𝗧𝗶𝗺𝗲 𝗴𝗮𝗽𝘀 𝗯𝗲𝘁𝘄𝗲𝗲𝗻 𝗔𝗜𝗦 𝗽𝗼𝘀𝗶𝘁𝗶𝗼𝗻𝘀"
+    title: str = "GAPS"
+    subtitle: str = "𝗧𝗶𝗺𝗲 𝗴𝗮𝗽𝘀 𝗯𝗲𝘁𝘄𝗲𝗲𝗻 𝘃𝗲𝘀𝘀𝗲𝗹𝘀 𝗽𝗼𝘀𝗶𝘁𝗶𝗼𝗻𝘀"
     summary: str = SUMMARY
     caveats: str = CAVEATS
 

@@ -1,4 +1,4 @@
-"""This module encapsulates the AIS position messages query."""
+"""This module encapsulates the vessels position messages query."""
 import logging
 from typing import Sequence, NamedTuple
 from datetime import date, datetime
@@ -8,12 +8,9 @@ from gfw.common.query import Query
 
 logger = logging.getLogger(__name__)
 
-DB_TABLE_MESSAGES = "world-fishing-827.pipe_ais_v3_internal.research_messages"
-DB_TABLE_SEGMENTS = "world-fishing-827.pipe_ais_v3_published.segs_activity"
 
-
-class AISMessage(NamedTuple):
-    """Output type for AIS messages, matching the result of AISMessages Query."""
+class Message(NamedTuple):
+    """Output type for messages, matching the result of MessagesQuery."""
     ssvid: str
     msgid: str
     seg_id: str
@@ -25,8 +22,8 @@ class AISMessage(NamedTuple):
     distance_from_port_m: float
 
 
-class AISMessagesQuery(Query):
-    """Encapsulates a AIS messages query.
+class MessagesQuery(Query):
+    """Encapsulates a positions messages query.
 
     Args:
         start_date:
@@ -36,10 +33,10 @@ class AISMessagesQuery(Query):
             end date of query.
 
         source_messages:
-            Table with AIS messages.
+            Table with position messages.
 
         source_segments:
-            Table with AIS segments.
+            Table with segments.
 
         ssvids:
             List of ssvdis to filter.
@@ -51,15 +48,15 @@ class AISMessagesQuery(Query):
             'overlapping_and_short' segments.
     """
 
-    NAME = "ais_messages"
-    JINJA_TEMPLATE_FILENAME = "ais_messages.sql.j2"
+    NAME = "messages"
+    JINJA_TEMPLATE_FILENAME = "messages.sql.j2"
 
     def __init__(
         self,
         start_date: date,
         end_date: date,
-        source_messages: str = DB_TABLE_MESSAGES,
-        source_segments: str = DB_TABLE_SEGMENTS,
+        source_messages: str,
+        source_segments: str,
         ssvids: Sequence[str] = (),
         filter_good_seg: bool = False,
         filter_not_overlapping_and_short: bool = False
@@ -74,7 +71,7 @@ class AISMessagesQuery(Query):
 
     @cached_property
     def output_type(cls) -> type[NamedTuple]:
-        return AISMessage
+        return Message
 
     @cached_property
     def template_filename(cls) -> type[NamedTuple]:

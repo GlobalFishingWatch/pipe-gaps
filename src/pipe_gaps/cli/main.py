@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 NAME = "pipe-gaps"
-DESCRIPTION = "Tools for creating gap events (time gaps in AIS position messages)."
+DESCRIPTION = "Tools for detecting interruptions in vessel position reporting systems."
 HELP_LABELS = "Labels to audit costs over the queries."
 
 

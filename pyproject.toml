@@ -16,7 +16,7 @@ namespaces = false
 [project]
 name = "pipe-gaps"
 version = "0.9.2"
-description = "Time gap detector for AIS position messages."
+description = "Tools for detecting interruptions in vessel position reporting systems (e.g., AIS, VMS)."
 readme = "README.md"
 license = "Apache-2.0"
 authors = [

@@ -7,7 +7,7 @@ from pipe_gaps.cli.validations import date_range
 from pipe_gaps.pipelines.publish.main import run
 
 DESCRIPTION = """\
-Enrich gaps data and create publication events.
+Enriches gaps data and creates publication events.
 """
 
 HELP_BQ_INPUT_GAPS = "BigQuery table with gaps."

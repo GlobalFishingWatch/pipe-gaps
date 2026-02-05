@@ -6,7 +6,7 @@ from gfw.common.beam.pipeline.dag.factory import LinearDagFactory
 from gfw.common.beam.transforms.read_from_bigquery import ReadFromBigQuery
 
 from pipe_gaps.core import GapDetector
-from pipe_gaps.queries import GapsQuery, AISMessagesQuery
+from pipe_gaps.queries import GapsQuery, MessagesQuery
 from pipe_gaps.pipelines.detect.transforms.detect_gaps import DetectGaps
 from pipe_gaps.pipelines.detect.config import DetectGapsConfig
 
@@ -28,7 +28,7 @@ class DetectGapsLinearDagFactory(LinearDagFactory):
             )
 
         if self.config.bq_input_messages is not None:
-            query = AISMessagesQuery(
+            query = MessagesQuery(
                 source_messages=self.config.bq_input_messages,
                 source_segments=self.config.bq_input_segments,
                 start_date=self.config.messages_query_start_date,
@@ -43,7 +43,7 @@ class DetectGapsLinearDagFactory(LinearDagFactory):
                     query,
                     method=self.config.bq_read_method,
                     read_from_bigquery_factory=self.read_from_bigquery_factory,
-                    label="ReadAISMessages",
+                    label="ReadMessages",
                 ),
             )
 
@@ -51,7 +51,7 @@ class DetectGapsLinearDagFactory(LinearDagFactory):
 
     @property
     def core(self):
-        # Core PTransform: Detect gaps in the AIS data.
+        # Core PTransform: Detect gaps in the data.
         core_ptransform = DetectGaps(
             gap_detector=GapDetector(
                 threshold=self.config.min_gap_length,

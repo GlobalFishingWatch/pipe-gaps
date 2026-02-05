@@ -7,7 +7,7 @@ from pipe_gaps.pipelines.detect.main import run
 from pipe_gaps.cli.validations import date_range, ssvids
 
 DESCRIPTION = """\
-Detects time gaps in AIS position messages.
+Detects time gaps in position messages.
 
 The definition of a gap is configurable by a time threshold 'min-gap-length'.
 For more information, check the documentation at
