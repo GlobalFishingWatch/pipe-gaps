@@ -3,6 +3,7 @@ from typing import Any
 
 from gfw.common.bigquery.table_config import TableConfig
 from gfw.common.bigquery.table_description import TableDescription
+from gfw.common.strings import collapse_paragraphs
 
 from pipe_gaps.assets import schemas
 from pipe_gaps.pipelines.detect.table_config import CAVEATS
@@ -26,7 +27,7 @@ class GapEventsTableDescription(TableDescription):
     repo_name: str = "pipe-gaps"
     title: str = "GAP EVENTS"
     subtitle: str = "𝗧𝗶𝗺𝗲 𝗴𝗮𝗽𝘀 𝗯𝗲𝘁𝘄𝗲𝗲𝗻 𝘃𝗲𝘀𝘀𝗲𝗹𝘀 𝗽𝗼𝘀𝗶𝘁𝗶𝗼𝗻𝘀"
-    summary: str = SUMMARY
+    summary: str = collapse_paragraphs(SUMMARY)
     caveats: str = CAVEATS
 
 
