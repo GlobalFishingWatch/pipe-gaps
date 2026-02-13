@@ -62,3 +62,7 @@ workdir
 
 # images
 *.png
+
+# Terraform
+.terraform
+.terraform.lock.hcl
