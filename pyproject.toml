@@ -15,7 +15,7 @@ namespaces = false
 
 [project]
 name = "pipe-gaps"
-version = "0.9.3"
+version = "0.9.4"
 description = "Tools for detecting interruptions in vessel position reporting systems (e.g., AIS, VMS)."
 readme = "README.md"
 license = "Apache-2.0"
