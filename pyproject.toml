@@ -10,9 +10,6 @@ where = ["src"]
 exclude = ["tests*"]
 namespaces = false
 
-[tool.setuptools.package-data]
-"assets" = ["*"]
-
 [project]
 name = "pipe-gaps"
 version = "0.9.4"
@@ -28,6 +25,7 @@ maintainers = [
 classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 
 ]
 requires-python = ">= 3.10"
@@ -36,7 +34,6 @@ dependencies = [
     "importlib-resources~=6.0",
     "geopy~=2.4",
     "google-cloud-bigquery~=3.0",
-    "google-cloud-profiler~=4.1",
     "gfw-common[bq,beam]~=0.4",
     "pandas~=2.1",
     "py-cpuinfo~=9.0",

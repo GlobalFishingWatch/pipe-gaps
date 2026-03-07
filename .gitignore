@@ -66,3 +66,6 @@ workdir
 # Terraform
 .terraform
 .terraform.lock.hcl
+
+# UV
+.python-version

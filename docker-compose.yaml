@@ -18,6 +18,7 @@ services:
   test:
     # Runs tests using the production Docker image.
     # Intended to be executed in the GitHub CI environment.
+    image: gfw/pipe-gaps-test
     build:
       context: .
       target: test
