@@ -4,11 +4,17 @@ VENV_NAME:=.venv
 REQS_PROD:=requirements.txt
 DOCKER_DEV_SERVICE:=dev
 DOCKER_CI_TEST_SERVICE:=test
+DOCKER_ISOLATED_SERVICE:=isolated
 
 GCP_PROJECT:=world-fishing-827
 GCP_DOCKER_VOLUME:=gcp
 
-sources = src
+sources = python_app_template
+
+PYTHON_VERSION:=3.12
+
+VENV:=uv venv
+PIP:=uv pip
 
 # ---------------------
 # DOCKER
@@ -18,13 +24,12 @@ sources = src
 docker-build:
 	docker compose build
 
-.PHONY: docker-volume  ## Creates the docker volume for GCP. 
+.PHONY: docker-volume  ## Creates the docker volume for GCP.
 docker-volume:
 	docker volume create --name ${GCP_DOCKER_VOLUME}
 
 .PHONY: docker-gcp ## gcp: Authenticates to google cloud and configure the project.
-docker-gcp:
-	make docker-volume
+docker-gcp: docker-volume
 	docker compose run gcloud auth application-default login
 	docker compose run gcloud config set project ${GCP_PROJECT}
 	docker compose run gcloud auth application-default set-quota-project ${GCP_PROJECT}
@@ -34,38 +39,44 @@ docker-ci-test:
 	docker compose run --rm ${DOCKER_CI_TEST_SERVICE}
 
 .PHONY: docker-shell ## Enters to docker container shell.
-docker-shell:
+docker-shell: docker-volume
 	docker compose run --rm -it ${DOCKER_DEV_SERVICE}
 
 .PHONY: reqs  ## Compiles requirements.txt with pip-tools.
 reqs:
-	docker compose run --rm ${DOCKER_DEV_SERVICE} -c \
+	docker compose run --rm ${DOCKER_ISOLATED_SERVICE} -c \
 		'pip-compile -o ${REQS_PROD} -v'
 
 .PHONY: reqs-upgrade  ## Upgrades requirements.txt with pip-tools.
 reqs-upgrade:
-	docker compose run --rm ${DOCKER_DEV_SERVICE} -c \
+	docker compose run --rm ${DOCKER_ISOLATED_SERVICE} -c \
 		'pip-compile -o ${REQS_PROD} -U -v'
 
 # ---------------------
 # VIRTUAL ENVIRONMENT
 # ---------------------
 
+.PHONY: uv  ## Installs UV
+uv: 
+	curl -LsSf https://astral.sh/uv/install.sh | sh
+	uv python pin ${PYTHON_VERSION}
+
 .PHONY: venv  ## Creates virtual environment.
 venv:
-	python -m venv ${VENV_NAME}
+	${VENV} ${VENV_NAME}
 
 .PHONY: upgrade-pip  ## Upgrades pip.
 upgrade-pip:
-	python -m pip install -U pip
+	${PIP} install pip==25.2
 
 .PHONY: install-test  ## Install and only test dependencies.
 install-test: upgrade-pip
-	python -m pip install -r requirements-test.txt
+	${PIP} install -r requirements-test.txt
 
 .PHONY: install  ## Install the package in editable mode & all dependencies for local development.
 install: upgrade-pip
-	python -m pip install -e .[lint,dev,build,test]
+	${PIP} install -e .[lint,dev,build]
+	$(MAKE) install-test
 
 .PHONY: test  ## Run all unit tests exporting coverage.xml report.
 test:
@@ -94,7 +105,7 @@ lint:
 
 .PHONY: codespell  ## Use Codespell to do spell checking.
 codespell:
-	python -m codespell_lib
+	python -m codespell
 
 .PHONY: typecheck  ## Perform type-checking.
 typecheck:

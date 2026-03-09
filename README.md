@@ -220,9 +220,13 @@ We still don't have a package in PYPI.
 
 First, clone the repository.
 
+Install UV: 
+```shell
+make uv
+```
 Create virtual environment and activate it:
 ```shell
-python -m venv .venv
+make venv
 . ./.venv/bin/activate
 ```
 Install dependencies
