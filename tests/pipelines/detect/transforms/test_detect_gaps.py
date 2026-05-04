@@ -291,27 +291,26 @@ def test_detect_positions_hours_before(messages, threshold, date_range, expected
 
 
 @pytest.mark.parametrize(
-    "messages, open_gaps, threshold, dates, expected_gaps",
+    "messages, open_gaps, threshold, date_ranges, expected_gaps",
     [
         pytest.param(
             case["messages"],
             case["open_gaps"],
             case["threshold"],
-            case["dates"],
+            case["date_ranges"],
             case["expected_gaps"],
             id=case["id"]
         )
-        for case in TestCases.DAILY_MODE
+        for case in TestCases.INCREMENTAL_MODE
     ],
 )
-def test_daily_mode(tmp_path, messages, open_gaps, threshold, dates, expected_gaps):
+def test_incremental_mode(tmp_path, messages, open_gaps, threshold, date_ranges, expected_gaps):
     gap_detector = GapDetector(threshold=threshold, normalize_output=True)
 
     open_gaps_bag = {g["gap_id"]: g for g in open_gaps}
     all_gaps = []
 
-    for start_date in dates:
-        end_date = date.fromisoformat(start_date) + timedelta(days=1)
+    for start_date, end_date in date_ranges:
         yesterday_date = date.fromisoformat(start_date) - timedelta(days=1)
 
         current_messages = messages[yesterday_date.isoformat()] + messages[start_date]
@@ -326,7 +325,7 @@ def test_daily_mode(tmp_path, messages, open_gaps, threshold, dates, expected_ga
                 main_inputs
                 | "DetectGaps" >> DetectGaps(
                     gap_detector=gap_detector,
-                    date_range=[start_date, end_date.isoformat()],
+                    date_range=[start_date, end_date],
                     window_period_d=1,
                     eval_last=True,
                     side_inputs=side_inputs,

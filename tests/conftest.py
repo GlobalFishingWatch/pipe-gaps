@@ -446,7 +446,7 @@ class TestCases:
         },
     ]
 
-    DAILY_MODE = [
+    INCREMENTAL_MODE = [
         {
             # In this case we have a gap (2) that starts after 6 PM,
             # but there are no messages the next day.
@@ -469,7 +469,12 @@ class TestCases:
             },
             "open_gaps": [],
             "threshold": 6,
-            "dates": ["2024-01-01", "2024-01-02", "2024-01-03", "2024-01-04"],
+            "date_ranges": [
+                ("2024-01-01", "2024-01-02"),
+                ("2024-01-02", "2024-01-03"),
+                ("2024-01-03", "2024-01-04"),
+                ("2024-01-04", "2024-01-05"),
+            ],
             "expected_gaps": [
                 (utc_datetime(2023, 12, 31, 20), utc_datetime(2024, 1, 1, 20)),
                 (utc_datetime(2024, 1, 1, 22), None),
