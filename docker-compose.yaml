@@ -1,30 +1,44 @@
 services:
   gcloud:
     image: google/cloud-sdk:latest
+    platform: linux/amd64
     volumes:
-      - "gcp:/root/.config/"
+      - 'gcp:/root/.config/'
     entrypoint: gcloud
 
-  dev:
-    image: gfw/pipe-gaps-dev
+  dev: &dev
+    image: gfw/python-app-template-dev
+    platform: linux/amd64
     build:
-      context: .
       target: dev
     volumes:
+      - '.:/opt/project'
+      - 'gcp:/root/.config/'
+    entrypoint: /bin/bash
+
+  dev_no_gcp:
+    image: gfw/python-app-template-dev
+    # Dev container without GCP credentials.
+    <<: *dev
+    volumes:
       - ".:/opt/project"
-      - "gcp:/root/.config/"
+
+  prod:
+    image: gfw/python-app-template-prod
+    build:
+      target: prod
+    platform: linux/amd64
     entrypoint: /bin/bash
 
   test:
+    image: gfw/python-app-template-test
+    platform: linux/amd64
     # Runs tests using the production Docker image.
     # Intended to be executed in the GitHub CI environment.
-    image: gfw/pipe-gaps-test
     build:
-      context: .
       target: test
-    entrypoint: "pytest -v"
+    entrypoint: 'pytest -v'
 
-# Volume to hold GCP authentication
 volumes:
   gcp:
     external: true

@@ -80,4 +80,4 @@ jobs:
         run: make docker-build
     
       - name: Run tests
-        run: make docker-ci-test
+        run: make docker-test
