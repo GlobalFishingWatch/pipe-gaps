@@ -1,19 +1,22 @@
 import pytest
+import logging
 import json
 import apache_beam as beam
 from datetime import date, timedelta
-
 
 from apache_beam.testing.test_pipeline import TestPipeline as _TestPipeline
 from apache_beam.testing.util import assert_that
 
 from gfw.common.datetime import datetime_from_timestamp
+from gfw.common.io import json_load
 
 from pipe_gaps.core import GapDetector
-from gfw.common.io import json_load
 from pipe_gaps.pipelines.detect.transforms.detect_gaps import DetectGaps
 
 from tests.conftest import TestCases
+
+
+logger = logging.getLogger(__name__)
 
 
 POSITIONS_HOURS_BEFORE_KEYS = [
@@ -290,6 +293,45 @@ def test_detect_positions_hours_before(messages, threshold, date_range, expected
         assert_that(result, check_output)
 
 
+def _apply_delete(gaps_table: list[dict], start_date: date) -> list[dict]:
+    """Simulates the DELETE query that runs before each pipeline execution.
+
+    Closed gaps are deleted by end_timestamp: they will be recreated when the
+    pipeline reprocesses the range and finds the ON message again.
+
+    Open gaps are deleted by start_timestamp: they will be recreated when the
+    pipeline reprocesses the range and finds the OFF message again.
+    """
+    def should_delete(gap: dict) -> bool:
+        if gap["is_closed"]:
+            return datetime_from_timestamp(gap["end_timestamp"]).date() >= start_date
+        else:
+            return datetime_from_timestamp(gap["start_timestamp"]).date() >= start_date
+
+    return [g for g in gaps_table if not should_delete(g)]
+
+
+def _get_open_gaps(gaps_table: list[dict]) -> dict[str, dict]:
+    """Returns the latest open gaps from the table, excluding those that have
+    already been closed. Mirrors the production side input query:
+        WHERE is_closed = FALSE
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY gap_id ORDER BY version DESC) = 1
+    """
+    closed_gap_ids = {g["gap_id"] for g in gaps_table if g["is_closed"]}
+    return {
+        g["gap_id"]: g
+        for g in gaps_table
+        if not g["is_closed"] and g["gap_id"] not in closed_gap_ids
+    }
+
+
+def get_dates_in_range(start_date, end_date):
+    return [
+        (start_date + timedelta(days=i)).isoformat()
+        for i in range((end_date - start_date).days + 1)
+    ]
+
+
 @pytest.mark.parametrize(
     "messages, open_gaps, threshold, date_ranges, expected_gaps",
     [
@@ -307,64 +349,67 @@ def test_detect_positions_hours_before(messages, threshold, date_range, expected
 def test_incremental_mode(tmp_path, messages, open_gaps, threshold, date_ranges, expected_gaps):
     gap_detector = GapDetector(threshold=threshold, normalize_output=True)
 
-    open_gaps_bag = {g["gap_id"]: g for g in open_gaps}
-    all_gaps = []
+    # Mirrors the production gaps table - deleted from and appended to each run.
+    # Initialized with any pre-existing open gaps passed to the test.
+    gaps_table = list(open_gaps)
 
-    for start_date, end_date in date_ranges:
-        yesterday_date = date.fromisoformat(start_date) - timedelta(days=1)
+    for start_date_str, end_date_str in date_ranges:
+        logger.info(f"PROCESSING DATE RANGE: [{start_date_str}, {end_date_str}]")
+        start_date = date.fromisoformat(start_date_str)
+        end_date = date.fromisoformat(end_date_str)
 
-        current_messages = messages[yesterday_date.isoformat()] + messages[start_date]
+        # Simulate delete query and rebuild side inputs from surviving rows.
+        gaps_table = _apply_delete(gaps_table, start_date)
+        open_gaps = _get_open_gaps(gaps_table)
 
-        output_file = tmp_path / f"gaps-{start_date}.json"
+        logger.info(f"TABLE AFTER DELETE: {gaps_table}")
+        logger.info(f"OPEN GAPS AFTER DELETE: {list(open_gaps.values())}")
 
+        # Build input messages
+        yesterday_date = start_date - timedelta(days=1)
+        dates_in_range = get_dates_in_range(yesterday_date, end_date)
+        messages_in_range = [m for d in dates_in_range for m in messages.get(d, [])]
+
+        output_file = tmp_path / f"gaps-{start_date}--{end_date}.json"
         with _TestPipeline() as p:
-            main_inputs = p | "CreateMessages" >> beam.Create(current_messages)
-            side_inputs = p | "CreateOpenGaps" >> beam.Create(list(open_gaps_bag.values()))
+            main_inputs = p | "CreateMessages" >> beam.Create(messages_in_range)
+            side_inputs = p | "CreateOpenGaps" >> beam.Create(list(open_gaps.values()))
 
             detected_gaps = (
                 main_inputs
                 | "DetectGaps" >> DetectGaps(
                     gap_detector=gap_detector,
-                    date_range=[start_date, end_date],
-                    window_period_d=1,
+                    date_range=[start_date_str, end_date_str],
                     eval_last=True,
                     side_inputs=side_inputs,
                 )
             )
-
-            # Write the output to a file in JSON Lines format
             _ = (
                 detected_gaps
                 | "ToJSON" >> beam.Map(json.dumps)
                 | "WriteToFile" >> beam.io.WriteToText(
                     str(output_file).replace(".json", ""),
                     file_name_suffix=".json",
-                    shard_name_template="",  # single file
+                    shard_name_template="",
                 )
             )
 
-        # Load and accumulate results after the pipeline
-        day_gaps = json_load(output_file, lines=True)
+        # Append new gaps to the table, mirroring the production append-only write.
+        range_gaps = json_load(output_file, lines=True)
+        gaps_table.extend(range_gaps)
 
-        for g in day_gaps:
-            open_gaps_bag.pop(g["gap_id"], None)
-            if not g["is_closed"]:
-                open_gaps_bag[g["gap_id"]] = g
+        logger.info(f"TABLE AFTER RUN: {gaps_table}")
+        logger.info(f"OPEN GAPS AFTER RUN: {list(_get_open_gaps(gaps_table).values())}")
 
-        all_gaps.extend(day_gaps)
-
-    all_gaps = sorted(all_gaps, key=lambda g: g["start_timestamp"])
-    expected_gaps = sorted(expected_gaps, key=lambda g: g[0])
+    # Assert against full table contents, sorted by start_timestamp then is_closed
+    # so open version (v1) always comes before closed version (v2) for the same gap.
+    all_gaps = sorted(gaps_table, key=lambda g: (g["start_timestamp"], g["is_closed"]))
+    expected_gaps = sorted(expected_gaps, key=lambda g: (g[0], g[1] is not None))
 
     assert len(all_gaps) == len(expected_gaps)
-
     for gap, expected_gap in zip(all_gaps, expected_gaps):
         gap_start_dt = datetime_from_timestamp(gap["start_timestamp"])
         gap_end_ts = gap["end_timestamp"]
-        if gap_end_ts is not None:
-            gap_end_dt = datetime_from_timestamp(gap_end_ts)
-        else:
-            gap_end_dt = None
-
+        gap_end_dt = datetime_from_timestamp(gap_end_ts) if gap_end_ts is not None else None
         assert gap_start_dt == expected_gap[0]
         assert gap_end_dt == expected_gap[1]
