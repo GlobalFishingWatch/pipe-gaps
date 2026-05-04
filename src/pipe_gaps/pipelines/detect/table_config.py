@@ -1,5 +1,7 @@
 from dataclasses import dataclass
-from typing import Any
+from datetime import date
+
+from typing import Optional
 
 from pipe_gaps.assets import schemas
 from pipe_gaps.queries import GapsQuery, GapsDeleteQuery
@@ -46,7 +48,7 @@ class GapsTableConfig(TableConfig):
         """Returns a rendered query to create a view of this table."""
         return GapsQuery(source_gaps=self.table_id).render()
 
-    def delete_query(self, **kwargs: Any) -> str:
+    def delete_query(self, start_date: date, end_date: Optional[date] = None) -> str:
         """Returns a rendered query to truncate gaps from start_date."""
-        query = GapsDeleteQuery(source_gaps=self.table_id, **kwargs)
+        query = GapsDeleteQuery(source_gaps=self.table_id, start_date=start_date)
         return query.render()

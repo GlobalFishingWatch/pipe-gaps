@@ -62,8 +62,7 @@ def create_segments_n_days_ahead_hook(
             ]
         )
 
-        # TODO: improve query_result interface so tolist() method doesn't return dictionaries.
-        result = list(query_result.query_job.result())[0]
+        result = query_result.tolist()[0]
 
         if not result.is_ready:
             raise InssuficientSegmentsDataError(

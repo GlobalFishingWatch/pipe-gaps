@@ -74,14 +74,12 @@ def run(
     )
 
     logger.info(f'Executing events query for date range: {config.date_range}...')
-    query_result = bq.run_query(
+    bq.run_query(
         query_str=events_query.render(),
         destination=config.bq_output,
         labels=config.labels,
         write_disposition="WRITE_TRUNCATE"
     )
-
-    _ = query_result.query_job.result()
 
     # TODO: Move this to BigQueryHelper.
     logger.info("Updating table schema and description...")
