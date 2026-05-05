@@ -313,8 +313,10 @@ class GapDetector:
             distance_m = self._gap_distance_meters(off_m, on_m)
             duration_h = self._gap_duration_seconds(off_m, on_m) * FACTOR_SECONDS_TO_HOURS
             implied_speed_knots = self._gap_implied_speed_knots(distance_m, duration_h)
+            version = on_m[self.KEY_TIMESTAMP]
         else:
             on_m = {k: None for k in off_m}
+            version = off_m[self.KEY_TIMESTAMP]
 
         gap = {}
 
@@ -333,7 +335,7 @@ class GapDetector:
         gap.update({
             self.KEY_GAP_ID: gap_id,
             self.KEY_SSVID: ssvid,
-            self.KEY_VERSION: int(datetime.now(tz=timezone.utc).timestamp()),
+            self.KEY_VERSION: int(version),
             self.KEY_DISTANCE_M: distance_m,
             self.KEY_DURATION_H: duration_h,
             self.KEY_IMPLIED_SPEED_KNOTS: implied_speed_knots,

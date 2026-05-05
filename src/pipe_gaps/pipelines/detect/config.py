@@ -5,7 +5,7 @@ import logging
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 
-from gfw.common.beam.pipeline.config import PipelineConfig
+from gfw.common.config import PipelineConfig
 from gfw.common.beam.pipeline.hooks import create_view_hook, delete_events_hook, create_table_hook
 
 from pipe_gaps.pipelines.detect.table_config import GapsTableConfig, GapsTableDescription

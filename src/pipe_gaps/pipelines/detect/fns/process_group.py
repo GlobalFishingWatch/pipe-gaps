@@ -1,4 +1,5 @@
 import logging
+from math import ceil
 from typing import Iterable, Any
 from datetime import timedelta, date
 
@@ -70,6 +71,24 @@ class ProcessGroup(DoFn):
 
         for gap in gaps:
             self._debug_gap(gap)
+
+            # Emit open version if daily mode would have created one on any day between OFF and ON.
+            # This ensures range processing produces the same table state as daily processing,
+            # so that a subsequent reprocess can always reconstruct the gap from the open version.
+            off_m = self._gd.off_message_from_gap(gap)
+            off_date = datetime_from_timestamp(off_m[self.KEY_TIMESTAMP]).date()
+
+            should_emit_open = any(
+                self._gd.eval_open_gap(off_m, off_date + timedelta(days=i))
+                for i in range(ceil(gap["duration_h"] / 24) - 1)  # exclude the ON day
+            )
+
+            if should_emit_open:
+                logger.debug("Emitting open gap for recovery...")
+                open_gap = self._gd.create_gap(off_m=off_m, gap_id=gap[self.KEY_GAP_ID])
+                self._debug_gap(open_gap)
+                yield open_gap
+
             yield gap
 
     def _get_index_for_time(self, messages: list, time):

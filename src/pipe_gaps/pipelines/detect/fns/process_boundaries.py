@@ -1,4 +1,5 @@
 import logging
+from math import ceil
 from typing import Iterable, Optional, Any
 from datetime import timedelta
 
@@ -98,6 +99,24 @@ class ProcessBoundaries(DoFn):
             for g in self._gap_detector.detect(messages, start_time=start_dt):
                 gaps[g[self.KEY_GAP_ID]] = g
                 self._debug_gap(g)
+
+                # Emit open version if daily mode would have created one.
+                # This ensures range processing produces the same table state as daily processing,
+                # so that a subsequent reprocess can always reconstruct the gap from the open gap.
+                off_m = left.last_message()
+                off_date = datetime_from_timestamp(off_m[self.KEY_TIMESTAMP]).date()
+
+                should_emit_open = any(
+                    self._gap_detector.eval_open_gap(off_m, off_date + timedelta(days=i))
+                    for i in range(ceil(g["duration_h"] / 24) - 1)  # exclude the ON day)
+                )
+
+                if should_emit_open:
+                    logger.debug("Emitting open gap for recovery...")
+                    gap_id = g[self.KEY_GAP_ID]
+                    open_gap = self._gap_detector.create_gap(off_m=off_m, gap_id=gap_id)
+                    self._debug_gap(open_gap)
+                    gaps[f"{gap_id}_open"] = open_gap  # temporary key to avoid overwriting
 
         # Step three:
         # Create open gap if last message of last group met condition.
