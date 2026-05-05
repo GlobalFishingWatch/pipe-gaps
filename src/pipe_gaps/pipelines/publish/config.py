@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 
 # This command does not use beam but PipelineConfig has generic functionality.
 # TODO: move PipelineConfig to a more generic package inside gfw-common lib.
-from gfw.common.beam.pipeline.config import PipelineConfig
+from gfw.common.config import PipelineConfig
 
 
 @dataclass(frozen=True, kw_only=True)

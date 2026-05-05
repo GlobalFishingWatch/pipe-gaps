@@ -41,7 +41,7 @@ POSITIONS_HOURS_BEFORE_KEYS = [
 )
 def test_detect_gaps_between_years(messages, threshold, expected_gaps):
     # Setup
-    gap_detector = GapDetector(threshold=threshold)
+    gap_detector = GapDetector(threshold=threshold, normalize_output=True)
 
     # Run test pipeline
     with _TestPipeline() as p:
@@ -81,7 +81,7 @@ def test_detect_gaps_between_years(messages, threshold, expected_gaps):
 def test_detect_gaps_between_days(messages, open_gaps, threshold, date_range, expected_gaps):
     """Checks that DetectGaps correctly detects gaps between days including use of side inputs."""
 
-    gap_detector = GapDetector(threshold=threshold)
+    gap_detector = GapDetector(threshold=threshold, normalize_output=True)
 
     with _TestPipeline() as p:
         main_input = p | "CreateMessages" >> beam.Create(messages)
@@ -101,7 +101,7 @@ def test_detect_gaps_between_days(messages, open_gaps, threshold, date_range, ex
         def check_output(gaps):
             assert len(gaps) == len(expected_gaps)
 
-            gaps = sorted(gaps, key=lambda x: x["OFF"]["timestamp"])
+            gaps = sorted(gaps, key=lambda x: x["start_timestamp"])
             for gap, expected_gap in zip(gaps, expected_gaps):
                 for k in POSITIONS_HOURS_BEFORE_KEYS:
                     assert gap[k] == expected_gap[k]
@@ -130,7 +130,7 @@ def test_detect_gaps_arbitrary_period(
 ):
     """Checks that DetectGaps correctly detects gaps with arbitrary window periods."""
 
-    gap_detector = GapDetector(threshold=threshold)
+    gap_detector = GapDetector(threshold=threshold, normalize_output=True)
 
     with _TestPipeline() as p:
         main_input = p | "CreateMessages" >> beam.Create(messages)
@@ -149,7 +149,7 @@ def test_detect_gaps_arbitrary_period(
 
         def check_output(gaps):
             assert len(gaps) == expected_gaps
-            gaps = sorted(gaps, key=lambda x: x["OFF"]["timestamp"])
+            gaps = sorted(gaps, key=lambda x: x["start_timestamp"])
 
         assert_that(output, check_output)
 
@@ -265,7 +265,7 @@ def test_detect_closing_gaps(
 def test_detect_positions_hours_before(messages, threshold, date_range, expected_gaps):
     """Checks that the correct number of hours before a gap are computed."""
 
-    gap_detector = GapDetector(threshold=threshold)
+    gap_detector = GapDetector(threshold=threshold, normalize_output=True)
 
     with _TestPipeline() as p:
         main_input = p | "CreateMessages" >> beam.Create(messages)
@@ -274,7 +274,7 @@ def test_detect_positions_hours_before(messages, threshold, date_range, expected
             main_input
             | "DetectGaps" >> DetectGaps(
                 gap_detector=gap_detector,
-                eval_last=False,  # Matches original logic
+                eval_last=False,
                 window_period_d=1,
                 date_range=date_range,
                 side_inputs=None,
@@ -284,7 +284,7 @@ def test_detect_positions_hours_before(messages, threshold, date_range, expected
         def check_output(gaps):
             assert len(gaps) == len(expected_gaps)
 
-            gaps = sorted(gaps, key=lambda x: x["OFF"]["timestamp"])
+            gaps = sorted(gaps, key=lambda x: x["start_timestamp"])
 
             for gap, expected_gap in zip(gaps, expected_gaps):
                 for k in POSITIONS_HOURS_BEFORE_KEYS:
@@ -333,12 +333,13 @@ def get_dates_in_range(start_date, end_date):
 
 
 @pytest.mark.parametrize(
-    "messages, open_gaps, threshold, date_ranges, expected_gaps",
+    "messages, open_gaps, threshold, window_period_d, date_ranges, expected_gaps",
     [
         pytest.param(
             case["messages"],
             case["open_gaps"],
             case["threshold"],
+            case["window_period_d"],
             case["date_ranges"],
             case["expected_gaps"],
             id=case["id"]
@@ -346,7 +347,9 @@ def get_dates_in_range(start_date, end_date):
         for case in TestCases.INCREMENTAL_MODE
     ],
 )
-def test_incremental_mode(tmp_path, messages, open_gaps, threshold, date_ranges, expected_gaps):
+def test_incremental_mode(
+    tmp_path, messages, open_gaps, threshold, window_period_d, date_ranges, expected_gaps
+):
     gap_detector = GapDetector(threshold=threshold, normalize_output=True)
 
     # Mirrors the production gaps table - deleted from and appended to each run.
@@ -381,6 +384,7 @@ def test_incremental_mode(tmp_path, messages, open_gaps, threshold, date_ranges,
                     gap_detector=gap_detector,
                     date_range=[start_date_str, end_date_str],
                     eval_last=True,
+                    window_period_d=window_period_d,
                     side_inputs=side_inputs,
                 )
             )

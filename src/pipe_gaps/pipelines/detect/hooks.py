@@ -3,7 +3,7 @@ from typing import Callable
 
 from google.cloud import bigquery
 
-from gfw.common.beam.pipeline.config import PipelineConfig
+from gfw.common.config import PipelineConfig
 from gfw.common.beam.pipeline.base import Pipeline
 from gfw.common.bigquery.helper import BigQueryHelper
 
