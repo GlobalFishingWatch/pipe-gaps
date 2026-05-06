@@ -324,7 +324,7 @@ class TestCases:
             "messages": [
                 create_message(time=datetime(2024, 2, 1, 4)),
                 create_message(time=datetime(2024, 2, 1, 10)),
-                create_message(time=datetime(2024, 2, 1, 15)),  # gap 1
+                create_message(time=datetime(2024, 2, 1, 15)),  # gap 1 + open gap
                 create_message(time=datetime(2024, 2, 2, 5)),
                 create_message(time=datetime(2024, 2, 2, 11)),  # gap 2
                 create_message(time=datetime(2024, 2, 2, 20)),
@@ -336,7 +336,7 @@ class TestCases:
             "threshold": 6,
             "date_range": ("2024-02-01", "2024-02-04"),
             "window_period_d": 1,
-            "expected_gaps": 3,
+            "expected_gaps": 4,
             "eval_last": True,
             "id": "period_1_day_for_3_days"
         },
@@ -446,6 +446,13 @@ class TestCases:
                     "positions_hours_before": 4,
                     "positions_hours_before_ter": 2,
                     "positions_hours_before_sat": 1,
+                    "positions_hours_before_dyn": 1
+                },
+                # open v1 for gap 2 - same counts as gap 2
+                {
+                    "positions_hours_before": 5,
+                    "positions_hours_before_ter": 2,
+                    "positions_hours_before_sat": 2,
                     "positions_hours_before_dyn": 1
                 },
                 {
@@ -595,5 +602,29 @@ class TestCases:
                 (utc_datetime(2024, 1, 6, 10), None),
             ],
             "id": "recreate_gap_after_reprocess__group_off_close_to_midnight"
+        },
+        {
+            "messages": {
+                "2020-12-26": [
+                    create_message(time=datetime(2020, 12, 26, 17, 31, 37)),
+                ],
+                "2020-12-27": [
+                    create_message(time=datetime(2020, 12, 27, 0, 6, 1)),
+                ],
+            },
+            "open_gaps": [],
+            "threshold": 1,
+            "window_period_d": 2,
+            "date_ranges": [
+                ("2020-12-26", "2020-12-30"),
+                ("2020-12-27", "2020-12-31"),
+                ("2020-12-28", "2021-01-01"),
+            ],
+            "expected_gaps": [
+                (utc_datetime(2020, 12, 26, 17, 31, 37), None),
+                (utc_datetime(2020, 12, 26, 17, 31, 37), utc_datetime(2020, 12, 27, 0, 6, 1)),
+                (utc_datetime(2020, 12, 27, 0, 6, 1), None),
+            ],
+            "id": "recreate_gap_after_reprocess__boundaries_subday_gap"
         }
     ]

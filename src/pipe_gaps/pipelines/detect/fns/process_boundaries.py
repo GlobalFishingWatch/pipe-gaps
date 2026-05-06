@@ -1,5 +1,4 @@
 import logging
-from math import ceil
 from typing import Iterable, Optional, Any
 from datetime import timedelta
 
@@ -104,11 +103,14 @@ class ProcessBoundaries(DoFn):
                 # This ensures range processing produces the same table state as daily processing,
                 # so that a subsequent reprocess can always reconstruct the gap from the open gap.
                 off_m = left.last_message()
+
                 off_date = datetime_from_timestamp(off_m[self.KEY_TIMESTAMP]).date()
+                on_date = datetime_from_timestamp(g[f"end_{self.KEY_TIMESTAMP}"]).date()
+                days_spanned = (on_date - off_date).days  # excludes ON day naturally
 
                 should_emit_open = any(
                     self._gap_detector.eval_open_gap(off_m, off_date + timedelta(days=i))
-                    for i in range(ceil(g["duration_h"] / 24) - 1)  # exclude the ON day)
+                    for i in range(days_spanned)
                 )
 
                 if should_emit_open:

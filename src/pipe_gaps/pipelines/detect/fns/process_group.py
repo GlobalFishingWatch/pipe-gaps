@@ -1,5 +1,4 @@
 import logging
-from math import ceil
 from typing import Iterable, Any
 from datetime import timedelta, date
 
@@ -76,11 +75,14 @@ class ProcessGroup(DoFn):
             # This ensures range processing produces the same table state as daily processing,
             # so that a subsequent reprocess can always reconstruct the gap from the open version.
             off_m = self._gd.off_message_from_gap(gap)
+
             off_date = datetime_from_timestamp(off_m[self.KEY_TIMESTAMP]).date()
+            on_date = datetime_from_timestamp(gap[f"end_{self.KEY_TIMESTAMP}"]).date()
+            days_spanned = (on_date - off_date).days  # excludes ON day naturally
 
             should_emit_open = any(
                 self._gd.eval_open_gap(off_m, off_date + timedelta(days=i))
-                for i in range(ceil(gap["duration_h"] / 24) - 1)  # exclude the ON day
+                for i in range(days_spanned)
             )
 
             if should_emit_open:
