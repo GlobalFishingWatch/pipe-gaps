@@ -96,7 +96,6 @@ class GapDetector:
     KEY_DISTANCE_M = "distance_m"
     KEY_DURATION_H = "duration_h"
     KEY_IMPLIED_SPEED_KNOTS = "implied_speed_knots"
-    KEY_DISTANCE_FROM_SHORE = "distance_from_shore_m"
     KEY_LAT = "lat"
     KEY_LON = "lon"
     KEY_SSVID = "ssvid"
@@ -366,6 +365,19 @@ class GapDetector:
         off_message[self.KEY_SSVID] = gap[self.KEY_SSVID]
 
         return off_message
+
+    def previous_positions_from_gap(self, gap: dict) -> dict:
+        """Extracts position count fields from a gap to use as base for a new gap."""
+
+        # TODO: The code is screaming for a object oriented design.
+        # TODO: Create Gap class.
+
+        return {
+            self.KEY_HOURS_BEFORE: gap[self.KEY_HOURS_BEFORE],
+            self.KEY_HOURS_BEFORE_TER: gap[self.KEY_HOURS_BEFORE_TER],
+            self.KEY_HOURS_BEFORE_SAT: gap[self.KEY_HOURS_BEFORE_SAT],
+            self.KEY_HOURS_BEFORE_DYN: gap[self.KEY_HOURS_BEFORE_DYN],
+        }
 
     # @profile  # noqa  # Uncomment to run memory profiler
     def _sort_messages(self, messages: list) -> None:

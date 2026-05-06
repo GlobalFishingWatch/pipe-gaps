@@ -114,7 +114,11 @@ class ProcessBoundaries(DoFn):
                 if should_emit_open:
                     logger.debug("Emitting open gap for recovery...")
                     gap_id = g[self.KEY_GAP_ID]
-                    open_gap = self._gap_detector.create_gap(off_m=off_m, gap_id=gap_id)
+                    open_gap = self._gap_detector.create_gap(
+                        off_m=off_m,
+                        gap_id=gap_id,
+                        base_gap=self._gap_detector.previous_positions_from_gap(g))
+
                     self._debug_gap(open_gap)
                     gaps[f"{gap_id}_open"] = open_gap  # temporary key to avoid overwriting
 

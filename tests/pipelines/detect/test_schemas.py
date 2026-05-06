@@ -6,9 +6,7 @@ from pipe_gaps.core import GapDetector
 from pipe_gaps.assets import schemas
 from pipe_gaps.queries import Gap
 
-
-OUTPUT_GAPS_KEY_NOT_IN_SCHEMA = "Output gaps query contains key '{}' not present in output schema."
-SCHEMA_KEY_NOT_IN_OUTPUT_GAP = "Output schema contains key '{}' not present in output gaps."
+from tests.conftest import assert_gap_complies_schema
 
 GAPS_QUERY_KEY_NOT_IN_SCHEMA = "Gaps query contains key '{}' not present in output schema."
 SCHEMA_KEY_NOT_IN_GAPS_QUERY = "Output schema contains key '{}' not present in Gaps query."
@@ -16,18 +14,9 @@ SCHEMA_KEY_NOT_IN_GAPS_QUERY = "Output schema contains key '{}' not present in G
 
 def test_output_gaps_comply_schema(input_file):
     messages = json_load(input_file)
-    schema = schemas.get_schema("gaps.json")
-
     detector = GapDetector(threshold=1.2, normalize_output=True)
     gap = detector.create_gap(messages[20], messages[21], previous_positions=messages[0:20])
-
-    schema_keys = [f["name"] for f in schema]
-
-    for k in gap:
-        assert k in schema_keys, OUTPUT_GAPS_KEY_NOT_IN_SCHEMA.format(k)
-
-    for k in schema_keys:
-        assert k in gap, SCHEMA_KEY_NOT_IN_OUTPUT_GAP.format(k)
+    assert_gap_complies_schema(gap)
 
 
 def test_input_gaps_comply_schema(input_file):

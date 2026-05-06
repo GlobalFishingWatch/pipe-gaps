@@ -13,7 +13,7 @@ from gfw.common.io import json_load
 from pipe_gaps.core import GapDetector
 from pipe_gaps.pipelines.detect.transforms.detect_gaps import DetectGaps
 
-from tests.conftest import TestCases
+from tests.conftest import TestCases, assert_gap_complies_schema
 
 
 logger = logging.getLogger(__name__)
@@ -417,3 +417,5 @@ def test_incremental_mode(
         gap_end_dt = datetime_from_timestamp(gap_end_ts) if gap_end_ts is not None else None
         assert gap_start_dt == expected_gap[0]
         assert gap_end_dt == expected_gap[1]
+
+        assert_gap_complies_schema(gap)

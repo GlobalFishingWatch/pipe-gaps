@@ -85,7 +85,11 @@ class ProcessGroup(DoFn):
 
             if should_emit_open:
                 logger.debug("Emitting open gap for recovery...")
-                open_gap = self._gd.create_gap(off_m=off_m, gap_id=gap[self.KEY_GAP_ID])
+                open_gap = self._gd.create_gap(
+                    off_m=off_m,
+                    gap_id=gap[self.KEY_GAP_ID],
+                    base_gap=self._gd.previous_positions_from_gap(gap))
+
                 self._debug_gap(open_gap)
                 yield open_gap
 

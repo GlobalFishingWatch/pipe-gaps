@@ -4,10 +4,10 @@ from typing import Optional
 from datetime import datetime, timezone
 
 from gfw.common.logging import LoggerConfig
+from gfw.common.io import json_save
 
 from pipe_gaps.core import GapDetector
-from gfw.common.io import json_save
-from pipe_gaps.assets import get_sample_messages
+from pipe_gaps.assets import schemas, get_sample_messages
 
 
 LoggerConfig(
@@ -34,6 +34,21 @@ def utc_datetime(*args):
     return datetime(*args, tzinfo=timezone.utc)
 
 
+OUTPUT_GAPS_KEY_NOT_IN_SCHEMA = "Output gaps query contains key '{}' not present in output schema."
+SCHEMA_KEY_NOT_IN_OUTPUT_GAP = "Output schema contains key '{}' not present in output gaps."
+
+
+def assert_gap_complies_schema(gap: dict):
+    """Asserts that a gap dict matches the expected schema keys exactly."""
+    schema = schemas.get_schema("gaps.json")
+
+    schema_keys = [f["name"] for f in schema]
+    for k in gap:
+        assert k in schema_keys, OUTPUT_GAPS_KEY_NOT_IN_SCHEMA.format(k)
+    for k in schema_keys:
+        assert k in gap, SCHEMA_KEY_NOT_IN_OUTPUT_GAP.format(k)
+
+
 def create_message(
     time: datetime,
     ssvid: str = "446013750",
@@ -43,6 +58,8 @@ def create_message(
     lon: Optional[float] = None,
     ais_class: str = "A",
     receiver_type: str = "terrestrial",
+    distance_from_shore_m: int = 50,
+    distance_from_port_m: int = 50,
     **kwargs
 ):
     return {
@@ -54,6 +71,8 @@ def create_message(
         "lat": lat,
         "lon": lon,
         "ais_class": ais_class,
+        "distance_from_shore_m": distance_from_shore_m,
+        "distance_from_port_m": distance_from_port_m,
         **kwargs
     }
 
