@@ -4,10 +4,10 @@ from typing import Optional
 from datetime import datetime, timezone
 
 from gfw.common.logging import LoggerConfig
+from gfw.common.io import json_save
 
 from pipe_gaps.core import GapDetector
-from gfw.common.io import json_save
-from pipe_gaps.assets import get_sample_messages
+from pipe_gaps.assets import schemas, get_sample_messages
 
 
 LoggerConfig(
@@ -34,6 +34,21 @@ def utc_datetime(*args):
     return datetime(*args, tzinfo=timezone.utc)
 
 
+OUTPUT_GAPS_KEY_NOT_IN_SCHEMA = "Output gaps query contains key '{}' not present in output schema."
+SCHEMA_KEY_NOT_IN_OUTPUT_GAP = "Output schema contains key '{}' not present in output gaps."
+
+
+def assert_gap_complies_schema(gap: dict):
+    """Asserts that a gap dict matches the expected schema keys exactly."""
+    schema = schemas.get_schema("gaps.json")
+
+    schema_keys = [f["name"] for f in schema]
+    for k in gap:
+        assert k in schema_keys, OUTPUT_GAPS_KEY_NOT_IN_SCHEMA.format(k)
+    for k in schema_keys:
+        assert k in gap, SCHEMA_KEY_NOT_IN_OUTPUT_GAP.format(k)
+
+
 def create_message(
     time: datetime,
     ssvid: str = "446013750",
@@ -43,6 +58,8 @@ def create_message(
     lon: Optional[float] = None,
     ais_class: str = "A",
     receiver_type: str = "terrestrial",
+    distance_from_shore_m: int = 50,
+    distance_from_port_m: int = 50,
     **kwargs
 ):
     return {
@@ -54,6 +71,8 @@ def create_message(
         "lat": lat,
         "lon": lon,
         "ais_class": ais_class,
+        "distance_from_shore_m": distance_from_shore_m,
+        "distance_from_port_m": distance_from_port_m,
         **kwargs
     }
 
@@ -89,8 +108,8 @@ class TestCases:
                 create_message(ssvid="226013750", time=datetime(2024, 1, 1, 1)),
             ],
             "threshold": 1,
-            "expected_gaps": 2,
-            "id": "same_ssvid_two_gaps"
+            "expected_gaps": 4,
+            "id": "same_ssvid_two_closed_gaps_two_open_gaps"
         },
         {
             "messages": [
@@ -289,15 +308,15 @@ class TestCases:
             "messages": [
                 create_message(time=datetime(2024, 1, 31, 8)),   # This shouldn´t be detected.
                 create_message(time=datetime(2024, 1, 31, 16)),  # gap 1
-                create_message(time=datetime(2024, 2, 1, 20)),   # gap 2.
-                create_message(time=datetime(2024, 2, 10, 1)),   # gap 3.
+                create_message(time=datetime(2024, 2, 1, 20)),   # gap 2 + open gap.
+                create_message(time=datetime(2024, 2, 10, 1)),   # gap 3 + open gap.
                 create_message(time=datetime(2024, 2, 28, 23)),  # gap 4 (2024 is leap year).
             ],
             "open_gaps": [],
             "threshold": 10,
             "date_range": ("2024-02-01", "2024-03-01"),  # We want to process february.
             "window_period_d": 1,
-            "expected_gaps": 4,
+            "expected_gaps": 6,
             "eval_last": True,
             "id": "period_1_day"
         },
@@ -305,7 +324,7 @@ class TestCases:
             "messages": [
                 create_message(time=datetime(2024, 2, 1, 4)),
                 create_message(time=datetime(2024, 2, 1, 10)),
-                create_message(time=datetime(2024, 2, 1, 15)),  # gap 1
+                create_message(time=datetime(2024, 2, 1, 15)),  # gap 1 + open gap
                 create_message(time=datetime(2024, 2, 2, 5)),
                 create_message(time=datetime(2024, 2, 2, 11)),  # gap 2
                 create_message(time=datetime(2024, 2, 2, 20)),
@@ -317,7 +336,7 @@ class TestCases:
             "threshold": 6,
             "date_range": ("2024-02-01", "2024-02-04"),
             "window_period_d": 1,
-            "expected_gaps": 3,
+            "expected_gaps": 4,
             "eval_last": True,
             "id": "period_1_day_for_3_days"
         },
@@ -375,7 +394,7 @@ class TestCases:
             "date_range": ("2024-02-01", "2024-03-01"),  # We want to process february.
             "window_period_d": 30,
             "eval_last": True,
-            "expected_gaps": 4,
+            "expected_gaps": 6,
             "id": "period_30_days"
         },
         {
@@ -429,6 +448,13 @@ class TestCases:
                     "positions_hours_before_sat": 1,
                     "positions_hours_before_dyn": 1
                 },
+                # open v1 for gap 2 - same counts as gap 2
+                {
+                    "positions_hours_before": 5,
+                    "positions_hours_before_ter": 2,
+                    "positions_hours_before_sat": 2,
+                    "positions_hours_before_dyn": 1
+                },
                 {
                     "positions_hours_before": 5,
                     "positions_hours_before_ter": 2,
@@ -468,6 +494,7 @@ class TestCases:
                 ]
             },
             "open_gaps": [],
+            "window_period_d": 1,
             "threshold": 6,
             "date_ranges": [
                 ("2024-01-01", "2024-01-02"),
@@ -483,4 +510,169 @@ class TestCases:
             ],
             "id": "gap_after_6_pm_with_end_after_tomorrow"
         },
+        {
+            "messages": {
+                "2024-01-01": [
+                    create_message(time=datetime(2024, 1, 1, 1)),  # gap OFF
+                ],
+                "2024-01-03": [
+                    create_message(time=datetime(2024, 1, 3, 20)),  # gap ON
+                ],
+            },
+            "open_gaps": [],
+            "threshold": 6,
+            "window_period_d": 4,
+            "date_ranges": [
+                ("2024-01-01", "2024-01-05"),
+                ("2024-01-02", "2024-01-06"),
+            ],
+            "expected_gaps": [
+                (utc_datetime(2024, 1, 1, 1), None),
+                (utc_datetime(2024, 1, 1, 1), utc_datetime(2024, 1, 3, 20)),
+                (utc_datetime(2024, 1, 3, 20), None),
+
+            ],
+            "id": "recreate_gap_after_reprocess__boundaries_off_far_from_midnight"
+        },
+        {
+            "messages": {
+                "2024-01-02": [
+                    create_message(time=datetime(2024, 1, 2, 22)),
+                ],
+                "2024-01-05": [
+                    create_message(time=datetime(2024, 1, 5, 10)),
+                ],
+            },
+            "open_gaps": [],
+            "threshold": 6,
+            "window_period_d": 4,
+            "date_ranges": [
+                ("2024-01-01", "2024-01-05"),
+                ("2024-01-04", "2024-01-08"),
+            ],
+            "expected_gaps": [
+                (utc_datetime(2024, 1, 2, 22), None),
+                (utc_datetime(2024, 1, 2, 22), utc_datetime(2024, 1, 5, 10)),
+                (utc_datetime(2024, 1, 5, 10), None),
+            ],
+            "id": "recreate_gap_after_reprocess__boundaries_off_close_to_midnight"
+        },
+        {
+            "messages": {
+                "2024-01-03": [
+                    create_message(time=datetime(2024, 1, 3, 1)),
+                ],
+                "2024-01-06": [
+                    create_message(time=datetime(2024, 1, 6, 23)),
+                ],
+            },
+            "open_gaps": [],
+            "threshold": 6,
+            "window_period_d": 4,
+            "date_ranges": [
+                ("2024-01-03", "2024-01-07"),
+                ("2024-01-05", "2024-01-09"),
+            ],
+            "expected_gaps": [
+                (utc_datetime(2024, 1, 3, 1), None),
+                (utc_datetime(2024, 1, 3, 1), utc_datetime(2024, 1, 6, 23)),
+                (utc_datetime(2024, 1, 6, 23), None),
+            ],
+            "id": "recreate_gap_after_reprocess__group_off_far_from_midnight"
+        },
+        {
+            "messages": {
+                "2024-01-03": [
+                    create_message(time=datetime(2024, 1, 3, 22)),
+                ],
+                "2024-01-06": [
+                    create_message(time=datetime(2024, 1, 6, 10)),
+                ],
+            },
+            "open_gaps": [],
+            "threshold": 6,
+            "window_period_d": 4,
+            "date_ranges": [
+                ("2024-01-03", "2024-01-07"),
+                ("2024-01-05", "2024-01-09"),
+            ],
+            "expected_gaps": [
+                (utc_datetime(2024, 1, 3, 22), None),
+                (utc_datetime(2024, 1, 3, 22), utc_datetime(2024, 1, 6, 10)),
+                (utc_datetime(2024, 1, 6, 10), None),
+            ],
+            "id": "recreate_gap_after_reprocess__group_off_close_to_midnight"
+        },
+        {
+            "messages": {
+                "2020-12-26": [
+                    create_message(time=datetime(2020, 12, 26, 17, 31, 37)),
+                ],
+                "2020-12-27": [
+                    create_message(time=datetime(2020, 12, 27, 0, 6, 1)),
+                ],
+            },
+            "open_gaps": [],
+            "threshold": 1,
+            "window_period_d": 2,
+            "date_ranges": [
+                ("2020-12-26", "2020-12-30"),
+                ("2020-12-27", "2020-12-31"),
+                ("2020-12-28", "2021-01-01"),
+            ],
+            "expected_gaps": [
+                (utc_datetime(2020, 12, 26, 17, 31, 37), None),
+                (utc_datetime(2020, 12, 26, 17, 31, 37), utc_datetime(2020, 12, 27, 0, 6, 1)),
+                (utc_datetime(2020, 12, 27, 0, 6, 1), None),
+            ],
+            "id": "recreate_gap_after_reprocess__boundaries_subday_gap"
+        },
+        {
+            "messages": {
+                "2020-12-27": [
+                    create_message(time=datetime(2020, 12, 27, 0, 31)),
+                ],
+                "2020-12-28": [
+                    create_message(time=datetime(2020, 12, 28, 0, 4)),
+                ],
+            },
+            "open_gaps": [],
+            "threshold": 1,
+            "window_period_d": 2,
+            "date_ranges": [
+                ("2020-12-27", "2020-12-31"),
+                ("2020-12-28", "2021-01-01"),
+            ],
+            "expected_gaps": [
+                (utc_datetime(2020, 12, 27, 0, 31), None),
+                (utc_datetime(2020, 12, 27, 0, 31), utc_datetime(2020, 12, 28, 0, 4)),
+                (utc_datetime(2020, 12, 28, 0, 4), None),
+            ],
+            "id": "recreate_gap_after_reprocess__boundaries_correct_end_timestamp"
+        },
+        {
+            "messages": {
+                "2020-12-27": [
+                    create_message(time=datetime(2020, 12, 27, 0, 31)),
+                ],
+                "2020-12-28": [
+                    create_message(time=datetime(2020, 12, 28, 0, 4)),
+                    create_message(time=datetime(2020, 12, 28, 10, 0)),
+                ],
+            },
+            "open_gaps": [],
+            "threshold": 1,
+            "window_period_d": 2,
+            "date_ranges": [
+                ("2020-12-27", "2020-12-31"),
+                ("2020-12-28", "2021-01-01"),
+            ],
+            "expected_gaps": [
+                (utc_datetime(2020, 12, 27, 0, 31), None),
+                (utc_datetime(2020, 12, 27, 0, 31), utc_datetime(2020, 12, 28, 0, 4)),
+                (utc_datetime(2020, 12, 28, 0, 4), utc_datetime(2020, 12, 28, 10, 0)),
+                (utc_datetime(2020, 12, 28, 10, 0), None),
+            ],
+            "id": "recreate_gap_after_reprocess__boundaries_on_in_interior"
+        }
     ]

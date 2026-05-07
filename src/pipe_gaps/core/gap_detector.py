@@ -96,7 +96,6 @@ class GapDetector:
     KEY_DISTANCE_M = "distance_m"
     KEY_DURATION_H = "duration_h"
     KEY_IMPLIED_SPEED_KNOTS = "implied_speed_knots"
-    KEY_DISTANCE_FROM_SHORE = "distance_from_shore_m"
     KEY_LAT = "lat"
     KEY_LON = "lon"
     KEY_SSVID = "ssvid"
@@ -313,8 +312,10 @@ class GapDetector:
             distance_m = self._gap_distance_meters(off_m, on_m)
             duration_h = self._gap_duration_seconds(off_m, on_m) * FACTOR_SECONDS_TO_HOURS
             implied_speed_knots = self._gap_implied_speed_knots(distance_m, duration_h)
+            version = on_m[self.KEY_TIMESTAMP]
         else:
             on_m = {k: None for k in off_m}
+            version = off_m[self.KEY_TIMESTAMP]
 
         gap = {}
 
@@ -333,7 +334,7 @@ class GapDetector:
         gap.update({
             self.KEY_GAP_ID: gap_id,
             self.KEY_SSVID: ssvid,
-            self.KEY_VERSION: int(datetime.now(tz=timezone.utc).timestamp()),
+            self.KEY_VERSION: int(version),
             self.KEY_DISTANCE_M: distance_m,
             self.KEY_DURATION_H: duration_h,
             self.KEY_IMPLIED_SPEED_KNOTS: implied_speed_knots,
@@ -364,6 +365,19 @@ class GapDetector:
         off_message[self.KEY_SSVID] = gap[self.KEY_SSVID]
 
         return off_message
+
+    def previous_positions_from_gap(self, gap: dict) -> dict:
+        """Extracts position count fields from a gap to use as base for a new gap."""
+
+        # TODO: The code is screaming for a object oriented design.
+        # TODO: Create Gap class.
+
+        return {
+            self.KEY_HOURS_BEFORE: gap[self.KEY_HOURS_BEFORE],
+            self.KEY_HOURS_BEFORE_TER: gap[self.KEY_HOURS_BEFORE_TER],
+            self.KEY_HOURS_BEFORE_SAT: gap[self.KEY_HOURS_BEFORE_SAT],
+            self.KEY_HOURS_BEFORE_DYN: gap[self.KEY_HOURS_BEFORE_DYN],
+        }
 
     # @profile  # noqa  # Uncomment to run memory profiler
     def _sort_messages(self, messages: list) -> None:

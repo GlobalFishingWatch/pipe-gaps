@@ -48,13 +48,13 @@ class ProcessGroup(DoFn):
         if self._date_range is not None:
             range_start_time = datetime_from_date(self._date_range[0])
 
-            start_index = self._get_index_for_time(messages, range_start_time)
-            if start_index > 0:
+            start_idx = self._get_index_for_time(messages, range_start_time)
+            if start_idx > 0:
                 # To also evaluate first message with previous one
-                start_index = start_index - 1
+                start_idx = start_idx - 1
 
-            range_start_time = datetime_from_timestamp(messages[start_index][self.KEY_TIMESTAMP])
-            start_time = max(start_time, range_start_time)
+            effective_start_time = datetime_from_timestamp(messages[start_idx][self.KEY_TIMESTAMP])
+            start_time = max(start_time, effective_start_time)
 
         gaps = self._gd.detect(messages=messages, start_time=start_time)
 
@@ -70,6 +70,35 @@ class ProcessGroup(DoFn):
 
         for gap in gaps:
             self._debug_gap(gap)
+
+            # Emit open version if daily mode would have created one on any day between OFF and ON.
+            # This ensures range processing produces the same table state as daily processing,
+            # so that a subsequent reprocess can always reconstruct the gap from the open version.
+            off_m = self._gd.off_message_from_gap(gap)
+            off_m_ts = datetime_from_timestamp(off_m[self.KEY_TIMESTAMP])
+
+            off_date = off_m_ts.date()
+            on_date = datetime_from_timestamp(gap[f"end_{self.KEY_TIMESTAMP}"]).date()
+            days_spanned = (on_date - off_date).days  # excludes ON day naturally
+
+            should_emit_open = any(
+                self._gd.eval_open_gap(off_m, off_date + timedelta(days=i))
+                for i in range(days_spanned)
+            )
+
+            # Don't emit open v1 if OFF is before range start - it's handled via side inputs.
+            is_before_range = self._date_range is not None and off_m_ts < range_start_time
+
+            if should_emit_open and not is_before_range:
+                logger.debug("Emitting open gap for recovery...")
+                open_gap = self._gd.create_gap(
+                    off_m=off_m,
+                    gap_id=gap[self.KEY_GAP_ID],
+                    base_gap=self._gd.previous_positions_from_gap(gap))
+
+                self._debug_gap(open_gap)
+                yield open_gap
+
             yield gap
 
     def _get_index_for_time(self, messages: list, time):

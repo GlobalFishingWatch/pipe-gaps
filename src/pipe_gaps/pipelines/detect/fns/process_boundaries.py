@@ -70,21 +70,7 @@ class ProcessBoundaries(DoFn):
 
         gaps = {}
 
-        # Step one.
-        # If open gap exists, close it.
-        open_gap = self._load_open_gap(side_inputs, key_value)
-        open_gap_on_m = boundaries.get_first_message_inside_range(self._date_range)
-
-        if open_gap is not None and open_gap_on_m is not None:
-            open_gap_id = open_gap[self.KEY_GAP_ID]
-            logger.debug(f"Closing existing open gap for {formatted_key}")
-            logger.debug(f"{self.KEY_GAP_ID}={open_gap_id}")
-
-            closed_gap = self._close_open_gap(open_gap, open_gap_on_m)
-            gaps[closed_gap[self.KEY_GAP_ID]] = closed_gap
-            self._debug_gap(closed_gap)
-
-        # Step two:
+        # Step one:
         # detect potential gap between last message of a group and first message of next group.
         for left, right in boundaries.consecutive_boundaries():
             messages = left.end + right.start
@@ -92,12 +78,55 @@ class ProcessBoundaries(DoFn):
             start_dt = datetime_from_timestamp(left.last_message()[self.KEY_TIMESTAMP])
 
             if not self._is_message_in_range(left.last_message()):
-                # Otherwise should be an open gap and we handle those in step one.
+                # Otherwise should be an open gap and we handle those in step two.
                 continue
 
             for g in self._gap_detector.detect(messages, start_time=start_dt):
-                gaps[g[self.KEY_GAP_ID]] = g
+                gap_id = g[self.KEY_GAP_ID]
+
+                gaps.setdefault(gap_id, []).append(g)
                 self._debug_gap(g)
+
+                # Emit open version if daily mode would have created one.
+                # This ensures range processing produces the same table state as daily processing,
+                # so that a subsequent reprocess can always reconstruct the gap from the open gap.
+                off_m = left.last_message()
+
+                off_date = datetime_from_timestamp(off_m[self.KEY_TIMESTAMP]).date()
+                on_date = datetime_from_timestamp(g[f"end_{self.KEY_TIMESTAMP}"]).date()
+                days_spanned = (on_date - off_date).days  # excludes ON day naturally
+
+                should_emit_open = any(
+                    self._gap_detector.eval_open_gap(off_m, off_date + timedelta(days=i))
+                    for i in range(days_spanned)
+                )
+
+                if should_emit_open:
+                    logger.debug("Emitting open gap for recovery...")
+                    gap_id = g[self.KEY_GAP_ID]
+                    open_gap = self._gap_detector.create_gap(
+                        off_m=off_m,
+                        gap_id=gap_id,
+                        base_gap=self._gap_detector.previous_positions_from_gap(g))
+
+                    self._debug_gap(open_gap)
+                    gaps[gap_id].append(open_gap)
+
+        # Step two.
+        # If open gap exists, close it unless it was already detected in step one.
+        open_gap = self._load_open_gap(side_inputs, key_value)
+        open_gap_on_m = boundaries.get_first_message_inside_range(self._date_range)
+
+        if open_gap is not None and open_gap_on_m is not None:
+            open_gap_id = open_gap[self.KEY_GAP_ID]
+
+            if open_gap_id not in gaps:
+                logger.debug(f"Closing existing open gap for {formatted_key}")
+                logger.debug(f"{self.KEY_GAP_ID}={open_gap_id}")
+
+                closed_gap = self._close_open_gap(open_gap, open_gap_on_m)
+                gaps[open_gap_id] = [closed_gap]
+                self._debug_gap(closed_gap)
 
         # Step three:
         # Create open gap if last message of last group met condition.
@@ -126,13 +155,15 @@ class ProcessBoundaries(DoFn):
                     off_m=last_message,
                     previous_positions=last_boundary.end[:-1]
                 )
-                gaps[new_open_gap[self.KEY_GAP_ID]] = new_open_gap
+                gaps[new_open_gap[self.KEY_GAP_ID]] = [new_open_gap]
                 self._debug_gap(new_open_gap)
 
-        logger.debug(f"Found {len(gaps)} gap(s) for boundaries {formatted_key}...")
+        total = sum(len(versions) for versions in gaps.values())
+        logger.debug(f"Found {total} gap(s) for boundaries {formatted_key}...")
 
-        for g in gaps.values():
-            yield g
+        for versions in gaps.values():
+            for g in versions:
+                yield g
 
     def _load_open_gap(self, side_inputs, key):
         side_inputs_list = self._load_side_inputs(side_inputs, key)
