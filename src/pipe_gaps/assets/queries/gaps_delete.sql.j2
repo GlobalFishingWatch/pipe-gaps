@@ -1,4 +1,4 @@
-DELETE FROM {{ source_gaps }}
+DELETE FROM `{{ source_gaps }}`
 WHERE
   (is_closed = TRUE AND DATE(end_timestamp) >= '{{ start_date }}')
   OR
