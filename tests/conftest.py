@@ -674,5 +674,43 @@ class TestCases:
                 (utc_datetime(2020, 12, 28, 10, 0), None),
             ],
             "id": "recreate_gap_after_reprocess__boundaries_on_in_interior"
+        },
+        # Production-style scenario where the close path could pick a wrong ON.
+        # OFF (12-27 00:31) is in the gap-detection zone of window A
+        # ([12-26 12, 12-29 00), offset=12h). The correct ON (12-28 00:04) is
+        # inside window A's `end` list. A later message (12-28 13:00) lands in
+        # window B ([12-28 12, 12-31 00)). On daily-tail iter 2 with
+        # date_range=[12-28, 01-01) and the v1 seed surviving from iter 1,
+        # ProcessGroup correctly detects (OFF, ON) via step-back. If the
+        # close path also fires it would iterate boundaries by their
+        # ``first_message()``: B_A.first_message=12-27 00:05 (out of range,
+        # skip), B_B.first_message=12-28 13:00 (in range, return) -- wrong.
+        # The wrong closed gap then wins in _last_versions because its
+        # version (=on_m.timestamp) is later. ``get_first_message_inside_range``
+        # must return None here so the close path is suppressed.
+        {
+            "messages": {
+                "2020-12-27": [
+                    create_message(time=datetime(2020, 12, 27, 0, 5)),
+                    create_message(time=datetime(2020, 12, 27, 0, 31)),
+                ],
+                "2020-12-28": [
+                    create_message(time=datetime(2020, 12, 28, 0, 4)),
+                    create_message(time=datetime(2020, 12, 28, 13, 0)),
+                ],
+            },
+            "open_gaps": [],
+            "threshold": 14,
+            "window_period_d": 2,
+            "date_ranges": [
+                ("2020-12-27", "2020-12-31"),
+                ("2020-12-28", "2021-01-01"),
+            ],
+            "expected_gaps": [
+                (utc_datetime(2020, 12, 27, 0, 31), None),
+                (utc_datetime(2020, 12, 27, 0, 31), utc_datetime(2020, 12, 28, 0, 4)),
+                (utc_datetime(2020, 12, 28, 13, 0), None),
+            ],
+            "id": "recreate_gap_after_reprocess__boundaries_close_path_must_not_pick_later_window_message"
         }
     ]

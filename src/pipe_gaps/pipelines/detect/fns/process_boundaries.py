@@ -17,15 +17,58 @@ class Boundaries:
     def __init__(self, boundaries):
         self._boundaries = sorted(boundaries, key=lambda x: x.first_message()["timestamp"])
 
-    def get_first_message_inside_range(self, date_range):
-        if date_range is not None:
-            start_ds = datetime_from_date(date_range[0]).timestamp()
-            for b in self._boundaries:
-                fm = b.first_message()
-                if fm["timestamp"] >= start_ds:
-                    return fm
+    def get_first_message_inside_range(self, date_range, off_ts=None):
+        """Returns the earliest boundary message at or after ``date_range[0]``.
 
-        return None
+        Used by the close path as the ON for an open precursor.
+
+        Two constraints decide what to return:
+
+        1. **Suppress when ProcessGroup will detect the gap directly.** If
+           ``off_ts`` is provided and there's a boundary whose
+           gap-detection zone (i.e. ``b.start[0].timestamp`` onwards)
+           includes ``off_ts`` *and* whose messages include something
+           at-or-after ``date_range[0]``, ProcessGroup will detect the
+           closed gap via its step-back path. Returning a message here
+           would let the close path emit a duplicate, and with the
+           ``version = on_m.timestamp`` scheme the wrong (later) end could
+           win in ``_last_versions``.
+        2. **Otherwise, return the earliest in-range message across ALL
+           boundary messages** (``b.start + b.end``), not just each
+           boundary's ``first_message()``. The original implementation only
+           inspected ``first_message()`` -- but the correct ON often lives
+           in an earlier boundary's ``end`` list while a later boundary's
+           ``first_message`` is much later, causing the close path to
+           produce a gap with a wrong ``end_timestamp``.
+
+        Args:
+            date_range: Run's ``[start, end)`` date range.
+            off_ts: ``open_gap.start_timestamp`` (the OFF). Optional; when
+                provided, enables the suppression in (1) and filters out
+                candidates at or before ``off_ts``.
+        """
+        if date_range is None:
+            return None
+        start_ds = datetime_from_date(date_range[0]).timestamp()
+
+        if off_ts is not None:
+            for b in self._boundaries:
+                if not b.start:
+                    continue
+                detection_zone_start = b.start[0][GapDetector.KEY_TIMESTAMP]
+                msgs = b.start + b.end
+                has_after = any(m[GapDetector.KEY_TIMESTAMP] >= start_ds for m in msgs)
+                if has_after and off_ts >= detection_zone_start:
+                    return None
+
+        candidates = (
+            m
+            for b in self._boundaries
+            for m in (b.start + b.end)
+            if m[GapDetector.KEY_TIMESTAMP] >= start_ds
+            and (off_ts is None or m[GapDetector.KEY_TIMESTAMP] > off_ts)
+        )
+        return min(candidates, key=lambda m: m[GapDetector.KEY_TIMESTAMP], default=None)
 
     def consecutive_boundaries(self):
         return list(zip(self._boundaries[:-1], self._boundaries[1:]))
@@ -115,7 +158,12 @@ class ProcessBoundaries(DoFn):
         # Step two.
         # If open gap exists, close it unless it was already detected in step one.
         open_gap = self._load_open_gap(side_inputs, key_value)
-        open_gap_on_m = boundaries.get_first_message_inside_range(self._date_range)
+        off_ts = (
+            open_gap[f"start_{self.KEY_TIMESTAMP}"] if open_gap is not None else None
+        )
+        open_gap_on_m = boundaries.get_first_message_inside_range(
+            self._date_range, off_ts=off_ts,
+        )
 
         if open_gap is not None and open_gap_on_m is not None:
             open_gap_id = open_gap[self.KEY_GAP_ID]
