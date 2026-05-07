@@ -14,18 +14,31 @@ logger = logging.getLogger(__name__)
 
 class Boundaries:
     """Container for Boundary objects."""
-    def __init__(self, boundaries):
+    def __init__(self, boundaries: list[Boundary]) -> None:
         self._boundaries = sorted(boundaries, key=lambda x: x.first_message()["timestamp"])
 
-    def get_first_message_inside_range(self, date_range):
-        if date_range is not None:
-            start_ds = datetime_from_date(date_range[0]).timestamp()
-            for b in self._boundaries:
-                fm = b.first_message()
-                if fm["timestamp"] >= start_ds:
-                    return fm
+    def get_first_message_inside_range(self, date_range: tuple = None) -> dict:
+        """Returns the first message across all boundaries that falls within date_range.
 
-        return None
+        Searches start, end and first_message_in_range of each boundary and returns
+        the chronologically earliest message at or after date_range[0].
+
+        Args:
+            date_range:
+                Tuple of (start_date, end_date). If None, returns None.
+        """
+        if date_range is None:
+            # TODO: should we make date_range mandatory for the pipeline?
+            return None
+
+        start_ds = datetime_from_date(date_range[0]).timestamp()
+        candidates = (
+            m
+            for b in self._boundaries
+            for m in [b.start] + b.end + [b.first_message_in_range]
+            if m["timestamp"] >= start_ds
+        )
+        return min(candidates, key=lambda m: m["timestamp"], default=None)
 
     def consecutive_boundaries(self):
         return list(zip(self._boundaries[:-1], self._boundaries[1:]))
@@ -73,7 +86,7 @@ class ProcessBoundaries(DoFn):
         # Step one:
         # detect potential gap between last message of a group and first message of next group.
         for left, right in boundaries.consecutive_boundaries():
-            messages = left.end + right.start
+            messages = left.end + [right.start]
 
             start_dt = datetime_from_timestamp(left.last_message()[self.KEY_TIMESTAMP])
 
@@ -138,6 +151,7 @@ class ProcessBoundaries(DoFn):
 
             comparison_date = last_message_dt.date()
             if self._date_range is not None:
+                # TODO: should we make the date_range mandatory for the pipeline?
                 comparison_date = self._date_range[1] - timedelta(days=1)
 
             last_message_in_range = self._is_message_in_range(last_message)
@@ -209,6 +223,7 @@ class ProcessBoundaries(DoFn):
         message_dt = datetime_from_timestamp(message_ts)
 
         if self._date_range is not None:
+            # TODO: should we make the date_range mandatory for the pipeline?
             start_dt = datetime_from_date(self._date_range[0])
             if buffer:
                 start_dt -= self._gap_detector.min_gap_length

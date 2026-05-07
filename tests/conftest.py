@@ -646,6 +646,7 @@ class TestCases:
             "expected_gaps": [
                 (utc_datetime(2020, 12, 27, 0, 31), None),
                 (utc_datetime(2020, 12, 27, 0, 31), utc_datetime(2020, 12, 28, 0, 4)),
+                (utc_datetime(2020, 12, 27, 0, 31), utc_datetime(2020, 12, 28, 0, 4)),  # duplicate
                 (utc_datetime(2020, 12, 28, 0, 4), None),
             ],
             "id": "recreate_gap_after_reprocess__boundaries_correct_end_timestamp"
@@ -668,11 +669,38 @@ class TestCases:
                 ("2020-12-28", "2021-01-01"),
             ],
             "expected_gaps": [
-                (utc_datetime(2020, 12, 27, 0, 31), None),
-                (utc_datetime(2020, 12, 27, 0, 31), utc_datetime(2020, 12, 28, 0, 4)),
-                (utc_datetime(2020, 12, 28, 0, 4), utc_datetime(2020, 12, 28, 10, 0)),
-                (utc_datetime(2020, 12, 28, 10, 0), None),
+                (utc_datetime(2020, 12, 27, 0, 31), None),                              # gap 1 v1
+                (utc_datetime(2020, 12, 27, 0, 31), utc_datetime(2020, 12, 28, 0, 4)),  # gap 1 v2
+                (utc_datetime(2020, 12, 27, 0, 31), utc_datetime(2020, 12, 28, 0, 4)),  # gap 1 v2 (duplicate)  # noqa
+                (utc_datetime(2020, 12, 28, 0, 4), utc_datetime(2020, 12, 28, 10, 0)),  # gap 2 v1
+                (utc_datetime(2020, 12, 28, 10, 0), None),                              # gap 3 v1
             ],
             "id": "recreate_gap_after_reprocess__boundaries_on_in_interior"
+        },
+        {  # Production-style scenario where the close path could pick a wrong ON message.
+            "messages": {
+                "2020-12-27": [
+                    create_message(time=datetime(2020, 12, 27, 0, 5)),
+                    create_message(time=datetime(2020, 12, 27, 0, 31)),
+                ],
+                "2020-12-28": [
+                    create_message(time=datetime(2020, 12, 28, 0, 4)),
+                    create_message(time=datetime(2020, 12, 28, 13, 0)),
+                ],
+            },
+            "open_gaps": [],
+            "threshold": 14,
+            "window_period_d": 2,
+            "date_ranges": [
+                ("2020-12-27", "2020-12-31"),
+                ("2020-12-28", "2021-01-01"),
+            ],
+            "expected_gaps": [
+                (utc_datetime(2020, 12, 27, 0, 31), None),
+                (utc_datetime(2020, 12, 27, 0, 31), utc_datetime(2020, 12, 28, 0, 4)),
+                (utc_datetime(2020, 12, 27, 0, 31), utc_datetime(2020, 12, 28, 0, 4)),  # duplicate.  # noqa
+                (utc_datetime(2020, 12, 28, 13, 0), None),
+            ],
+            "id": "recreate_gap_after_reprocess__boundaries_correct_on_message"
         }
     ]

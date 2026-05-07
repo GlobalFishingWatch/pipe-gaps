@@ -103,6 +103,7 @@ class DetectGaps(beam.PTransform):
     def date_range(self):
         date_range = None
         if self._date_range is not None:
+            # TODO: should we make the date_range mandatory for the pipeline?
             date_range = [date.fromisoformat(x) for x in self._date_range]
 
         return date_range
@@ -152,7 +153,9 @@ class DetectGaps(beam.PTransform):
             date_range=self.date_range
         )
 
-        extract_group_boundary = ExtractGroupBoundary(window_offset_s=self.offset_s)
+        extract_group_boundary = ExtractGroupBoundary(
+            window_offset_s=self.offset_s, date_range=self.date_range
+        )
 
         # Group pcollection by a configured key and time window.
         groups = (
