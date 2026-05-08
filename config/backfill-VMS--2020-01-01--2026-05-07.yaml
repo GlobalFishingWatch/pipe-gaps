@@ -22,5 +22,5 @@ staging_location: gs://pipe-temp-us-central-ttl7/dataflow_staging
 region: us-central1
 subnetwork: regions/us-central1/subnetworks/gfw-internal-us-central1
 sdk_container_image: gcr.io/world-fishing-827/github.com/globalfishingwatch/pipe-gaps:v0.9.5
-# service_account_email: pipeline-ais-v3@gfw-research.iam.gserviceaccount.com
-job_name: detect-gaps-VMS-backfill--2012-01-01--2026-05-07
+service_account_email: pipeline-vms-v3@gfw-int-vms-v3.iam.gserviceaccount.com
+job_name: detect-gaps-vms-backfill--2012-01-01--2026-05-07
