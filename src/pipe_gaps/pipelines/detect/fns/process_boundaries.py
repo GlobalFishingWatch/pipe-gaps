@@ -7,6 +7,7 @@ from gfw.common.datetime import datetime_from_timestamp, datetime_from_date
 
 from pipe_gaps.core import GapDetector
 from pipe_gaps.common.key import Key
+from pipe_gaps.common.beam.side_inputs import SideInputs
 from pipe_gaps.pipelines.detect.fns.extract_group_boundary import Boundary
 
 logger = logging.getLogger(__name__)
@@ -74,7 +75,7 @@ class ProcessBoundaries(DoFn):
     def process(
         self,
         group: tuple[Any, Iterable[Boundary]],
-        side_inputs: Optional[dict[Any, Iterable]] = None
+        side_inputs: Optional[SideInputs] = None
     ) -> Iterable[dict]:
         key_value, boundaries_it = group
 
@@ -127,7 +128,7 @@ class ProcessBoundaries(DoFn):
 
         # Step two.
         # If open gap exists, close it unless it was already detected in step one.
-        open_gap = self._load_open_gap(side_inputs, key_value)
+        open_gap = SideInputs(side_inputs).get_first(key_value) if side_inputs else None
         open_gap_on_m = boundaries.get_first_message_inside_range(self._date_range)
 
         if open_gap is not None and open_gap_on_m is not None:
@@ -178,32 +179,6 @@ class ProcessBoundaries(DoFn):
         for versions in gaps.values():
             for g in versions:
                 yield g
-
-    def _load_open_gap(self, side_inputs, key):
-        side_inputs_list = self._load_side_inputs(side_inputs, key)
-
-        if len(side_inputs_list) > 0:
-            open_gap = side_inputs_list[0]
-
-            if not isinstance(open_gap, dict):
-                # beam.MultiMap encapsulates value in an iterable of iterables (wtf?).
-                open_gap = [x for x in open_gap][0]
-
-            return open_gap
-        else:
-            logger.debug("Open gap was not found for key {}.".format(key))
-
-        return None
-
-    def _load_side_inputs(self, side_inputs, key):
-        side_inputs_list = []
-        if side_inputs is not None:
-            try:
-                side_inputs_list = list(side_inputs[key])
-            except KeyError:
-                logger.debug("Key {} was not found in side inputs.".format(key))
-
-        return side_inputs_list
 
     def _close_open_gap(self, open_gap, on_m):
         off_m = self._gap_detector.off_message_from_gap(open_gap)

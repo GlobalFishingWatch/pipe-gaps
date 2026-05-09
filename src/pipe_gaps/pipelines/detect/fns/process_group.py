@@ -10,6 +10,7 @@ from gfw.common.iterables import binary_search_first_ge
 
 from pipe_gaps.core import GapDetector
 from pipe_gaps.common.key import Key
+from pipe_gaps.common.beam.side_inputs import SideInputs
 
 logger = logging.getLogger(__name__)
 
@@ -108,11 +109,10 @@ class ProcessGroup(DoFn):
             # Don't yield gap if OFF is before range start AND an open gap exists
             # in side inputs — ProcessBoundaries Step 2 will close it.
             # This avoids dupicates.
-            open_gap_for_key = self._load_open_gap(side_inputs, key)
+            open_gap = SideInputs(side_inputs).get_first(key) if side_inputs else None
             is_handled_by_process_boundaries = (
-                is_before_range and
-                open_gap_for_key is not None and
-                open_gap_for_key[self.KEY_GAP_ID] == gap[self.KEY_GAP_ID]
+                is_before_range and open_gap is not None and
+                open_gap[self.KEY_GAP_ID] == gap[self.KEY_GAP_ID]
             )
 
             if not is_handled_by_process_boundaries:
@@ -124,32 +124,6 @@ class ProcessGroup(DoFn):
             time.timestamp(),
             key=lambda m: m[self.KEY_TIMESTAMP]
         )
-
-    def _load_open_gap(self, side_inputs, key):
-        side_inputs_list = self._load_side_inputs(side_inputs, key)
-
-        if len(side_inputs_list) > 0:
-            open_gap = side_inputs_list[0]
-
-            if not isinstance(open_gap, dict):
-                # beam.MultiMap encapsulates value in an iterable of iterables (wtf?).
-                open_gap = [x for x in open_gap][0]
-
-            return open_gap
-        else:
-            logger.debug("Open gap was not found for key {}.".format(key))
-
-        return None
-
-    def _load_side_inputs(self, side_inputs, key):
-        side_inputs_list = []
-        if side_inputs is not None:
-            try:
-                side_inputs_list = list(side_inputs[key])
-            except KeyError:
-                logger.debug("Key {} was not found in side inputs.".format(key))
-
-        return side_inputs_list
 
     def _debug_gap(self, g: dict):
         # TODO: move this elsewhere. It is duplicated.
