@@ -99,7 +99,7 @@ class ProcessBoundaries(DoFn):
                 gap_id = g[self.KEY_GAP_ID]
 
                 gaps.setdefault(gap_id, []).append(g)
-                self._debug_gap(g)
+                self._gap_detector.debug_gap(g)
 
                 # Emit open version if daily mode would have created one.
                 # This ensures range processing produces the same table state as daily processing,
@@ -123,7 +123,7 @@ class ProcessBoundaries(DoFn):
                         gap_id=gap_id,
                         base_gap=self._gap_detector.previous_positions_from_gap(g))
 
-                    self._debug_gap(open_gap)
+                    self._gap_detector.debug_gap(open_gap)
                     gaps[gap_id].append(open_gap)
 
         # Step two.
@@ -140,7 +140,7 @@ class ProcessBoundaries(DoFn):
 
                 closed_gap = self._close_open_gap(open_gap, open_gap_on_m)
                 gaps[open_gap_id] = [closed_gap]
-                self._debug_gap(closed_gap)
+                self._gap_detector.debug_gap(closed_gap)
 
         # Step three:
         # Create open gap if last message of last group met condition.
@@ -171,7 +171,7 @@ class ProcessBoundaries(DoFn):
                     previous_positions=last_boundary.end[:-1]
                 )
                 gaps[new_open_gap[self.KEY_GAP_ID]] = [new_open_gap]
-                self._debug_gap(new_open_gap)
+                self._gap_detector.debug_gap(new_open_gap)
 
         total = sum(len(versions) for versions in gaps.values())
         logger.debug(f"Found {total} gap(s) for boundaries {formatted_key}...")
@@ -206,23 +206,3 @@ class ProcessBoundaries(DoFn):
             return message_dt >= start_dt
 
         return True
-
-    def _debug_gap(self, g: dict):
-        # TODO: move this elsewhere. It is duplicated.
-        end_dt = None
-
-        try:
-            start_ts = g["OFF"][self.KEY_TIMESTAMP]
-            end_ts = g["ON"][self.KEY_TIMESTAMP]
-        except KeyError:
-            start_ts = g[f"start_{self.KEY_TIMESTAMP}"]
-            end_ts = g[f"end_{self.KEY_TIMESTAMP}"]
-
-        start_dt = datetime_from_timestamp(start_ts)
-        if end_ts is not None:
-            end_dt = datetime_from_timestamp(end_ts)
-
-        logger.debug("----------------------------------")
-        logger.debug("Gap OFF: {}".format(start_dt))
-        logger.debug("Gap  ON: {}".format(end_dt))
-        logger.debug("----------------------------------")

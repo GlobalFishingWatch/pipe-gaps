@@ -11,10 +11,7 @@ from apache_beam.pvalue import PCollection
 from pipe_gaps.core import GapDetector
 from pipe_gaps.common.key import Key
 
-from gfw.common.beam.transforms import (
-    ApplySlidingWindows,
-    GroupBy,
-)
+from gfw.common.beam.transforms import ApplySlidingWindows, GroupBy
 
 from pipe_gaps.common.beam.transforms import FilterWindowsByDateRange
 from pipe_gaps.pipelines.detect.fns.process_group import ProcessGroup

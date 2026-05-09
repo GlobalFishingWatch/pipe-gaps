@@ -76,7 +76,7 @@ class ProcessGroup(DoFn):
         )
 
         for gap in gaps:
-            self._debug_gap(gap)
+            self._gd.debug_gap(gap)
 
             # Emit open version if daily mode would have created one on any day between OFF and ON.
             # This ensures range processing produces the same table state as daily processing,
@@ -103,7 +103,7 @@ class ProcessGroup(DoFn):
                     gap_id=gap[self.KEY_GAP_ID],
                     base_gap=self._gd.previous_positions_from_gap(gap))
 
-                self._debug_gap(open_gap)
+                self._gd.debug_gap(open_gap)
                 yield open_gap
 
             # Don't yield gap if OFF is before range start AND an open gap exists
@@ -124,20 +124,3 @@ class ProcessGroup(DoFn):
             time.timestamp(),
             key=lambda m: m[self.KEY_TIMESTAMP]
         )
-
-    def _debug_gap(self, g: dict):
-        # TODO: move this elsewhere. It is duplicated.
-        try:
-            start_ts = g["OFF"][self.KEY_TIMESTAMP]
-            end_ts = g["ON"][self.KEY_TIMESTAMP]
-        except KeyError:
-            start_ts = g[f"start_{self.KEY_TIMESTAMP}"]
-            end_ts = g.get(f"end_{self.KEY_TIMESTAMP}")
-
-        start_dt = datetime_from_timestamp(start_ts)
-        end_dt = datetime_from_timestamp(end_ts) if end_ts is not None else None
-
-        logger.debug("----------------------------------")
-        logger.debug("Gap OFF: {}".format(start_dt))
-        logger.debug("Gap  ON: {}".format(end_dt))
-        logger.debug("----------------------------------")
