@@ -50,7 +50,10 @@ class ProcessGroup(DoFn):
 
             start_idx = self._get_index_for_time(messages, range_start_time)
             if start_idx > 0:
-                # To also evaluate first message with previous one
+                # Step back one message to include context from before the range boundary.
+                # This only applies to the first window, which has no previous boundary.
+                # Subsequent windows will evaluate this previous message in ProcessBoundaries.
+                # So no duplicate should appear from this.
                 start_idx = start_idx - 1
 
             effective_start_time = datetime_from_timestamp(messages[start_idx][self.KEY_TIMESTAMP])

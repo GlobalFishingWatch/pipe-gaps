@@ -326,6 +326,8 @@ class GapDetector:
             previous_positions = chain(previous_positions, [off_m])
 
             count = self._count_messages_before_gap(previous_positions)
+            logger.debug(f"COUNT OF PREVIOUS POSSITIONS: {count}")
+
             gap[self.KEY_HOURS_BEFORE] = count[self.KEY_TOTAL]
             gap[self.KEY_HOURS_BEFORE_TER] = count[self.KEY_TERRESTRIAL]
             gap[self.KEY_HOURS_BEFORE_SAT] = count[self.KEY_SATELLITE]
