@@ -21,6 +21,6 @@ temp_location: gs://pipe-temp-us-central-ttl7/dataflow_temp
 staging_location: gs://pipe-temp-us-central-ttl7/dataflow_staging
 region: us-central1
 subnetwork: regions/us-central1/subnetworks/gfw-internal-us-central1
-sdk_container_image: us-central1-docker.pkg.dev/gfw-int-infrastructure/core/pipe-gaps:v0.9.5
+# sdk_container_image: us-central1-docker.pkg.dev/gfw-int-infrastructure/core/pipe-gaps:v0.9.5
 service_account_email: pipeline-vms-v3@gfw-int-vms-v3.iam.gserviceaccount.com
-job_name: detect-gaps-vms-backfill--2012-01-01--2026-05-07
+job_name: detect-gaps-vms-backfill--2012-01-01--2026-05-08
