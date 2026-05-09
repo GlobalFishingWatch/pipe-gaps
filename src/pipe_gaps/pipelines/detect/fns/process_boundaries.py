@@ -75,7 +75,7 @@ class ProcessBoundaries(DoFn):
     def process(
         self,
         group: tuple[Any, Iterable[Boundary]],
-        side_inputs: Optional[SideInputs] = None
+        side_inputs: Optional[dict[Any, Iterable]] = None
     ) -> Iterable[dict]:
         key_value, boundaries_it = group
 

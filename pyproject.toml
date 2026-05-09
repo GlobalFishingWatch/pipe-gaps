@@ -17,7 +17,7 @@ description = "Tools for detecting interruptions in vessel position reporting sy
 readme = "README.md"
 license = "Apache-2.0"
 authors = [
-    { name = "Tomás J. Link", email = "tomas.link@globalfishingwatch.org" },
+    { name = "GFW Engineering Team", email = "engineering-team@globalfishingwatch.org" },
 ]
 maintainers = [
     { name = "Tomás J. Link", email = "tomas.link@globalfishingwatch.org" },
