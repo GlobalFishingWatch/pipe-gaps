@@ -646,7 +646,6 @@ class TestCases:
             "expected_gaps": [
                 (utc_datetime(2020, 12, 27, 0, 31), None),
                 (utc_datetime(2020, 12, 27, 0, 31), utc_datetime(2020, 12, 28, 0, 4)),
-                (utc_datetime(2020, 12, 27, 0, 31), utc_datetime(2020, 12, 28, 0, 4)),  # duplicate
                 (utc_datetime(2020, 12, 28, 0, 4), None),
             ],
             "id": "recreate_gap_after_reprocess__boundaries_correct_end_timestamp"
@@ -671,7 +670,6 @@ class TestCases:
             "expected_gaps": [
                 (utc_datetime(2020, 12, 27, 0, 31), None),                              # gap 1 v1
                 (utc_datetime(2020, 12, 27, 0, 31), utc_datetime(2020, 12, 28, 0, 4)),  # gap 1 v2
-                (utc_datetime(2020, 12, 27, 0, 31), utc_datetime(2020, 12, 28, 0, 4)),  # gap 1 v2 (duplicate)  # noqa
                 (utc_datetime(2020, 12, 28, 0, 4), utc_datetime(2020, 12, 28, 10, 0)),  # gap 2 v1
                 (utc_datetime(2020, 12, 28, 10, 0), None),                              # gap 3 v1
             ],
@@ -698,7 +696,6 @@ class TestCases:
             "expected_gaps": [
                 (utc_datetime(2020, 12, 27, 0, 31), None),
                 (utc_datetime(2020, 12, 27, 0, 31), utc_datetime(2020, 12, 28, 0, 4)),
-                (utc_datetime(2020, 12, 27, 0, 31), utc_datetime(2020, 12, 28, 0, 4)),  # duplicate.  # noqa
                 (utc_datetime(2020, 12, 28, 13, 0), None),
             ],
             "id": "recreate_gap_after_reprocess__boundaries_correct_on_message"

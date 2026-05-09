@@ -185,7 +185,7 @@ class DetectGaps(beam.PTransform):
 
         # Process the interior the groups
         output_in_groups = groups | "ProcessGroups" >> (
-            beam.ParDo(process_group)
+            beam.ParDo(process_group, side_inputs=side_inputs)
             | "GlobalWindow" >> beam.WindowInto(beam.window.GlobalWindows())
         )
 

@@ -1,5 +1,5 @@
 import logging
-from typing import Iterable, Any
+from typing import Iterable, Any, Optional
 from datetime import timedelta, date
 
 from apache_beam import DoFn
@@ -32,7 +32,10 @@ class ProcessGroup(DoFn):
         self._date_range = date_range
 
     def process(
-        self, group: tuple[Any, Iterable[dict]], window: IntervalWindow = DoFn.WindowParam
+        self,
+        group: tuple[Any, Iterable[dict]],
+        window: IntervalWindow = DoFn.WindowParam,
+        side_inputs: Optional[dict[Any, Iterable]] = None
     ):
         key, messages = group
 
@@ -89,7 +92,7 @@ class ProcessGroup(DoFn):
                 for i in range(days_spanned)
             )
 
-            # Don't emit open v1 if OFF is before range start - it's handled via side inputs.
+            # Don't emit open v1 if OFF is before range start - it's handled via ProcessBoundaries.
             is_before_range = self._date_range is not None and off_m_ts < range_start_time
 
             if should_emit_open and not is_before_range:
@@ -102,7 +105,18 @@ class ProcessGroup(DoFn):
                 self._debug_gap(open_gap)
                 yield open_gap
 
-            yield gap
+            # Don't yield gap if OFF is before range start AND an open gap exists
+            # in side inputs — ProcessBoundaries Step 2 will close it.
+            # This avoids dupicates.
+            open_gap_for_key = self._load_open_gap(side_inputs, key)
+            is_handled_by_process_boundaries = (
+                is_before_range and
+                open_gap_for_key is not None and
+                open_gap_for_key[self.KEY_GAP_ID] == gap[self.KEY_GAP_ID]
+            )
+
+            if not is_handled_by_process_boundaries:
+                yield gap
 
     def _get_index_for_time(self, messages: list, time):
         return binary_search_first_ge(
@@ -110,6 +124,32 @@ class ProcessGroup(DoFn):
             time.timestamp(),
             key=lambda m: m[self.KEY_TIMESTAMP]
         )
+
+    def _load_open_gap(self, side_inputs, key):
+        side_inputs_list = self._load_side_inputs(side_inputs, key)
+
+        if len(side_inputs_list) > 0:
+            open_gap = side_inputs_list[0]
+
+            if not isinstance(open_gap, dict):
+                # beam.MultiMap encapsulates value in an iterable of iterables (wtf?).
+                open_gap = [x for x in open_gap][0]
+
+            return open_gap
+        else:
+            logger.debug("Open gap was not found for key {}.".format(key))
+
+        return None
+
+    def _load_side_inputs(self, side_inputs, key):
+        side_inputs_list = []
+        if side_inputs is not None:
+            try:
+                side_inputs_list = list(side_inputs[key])
+            except KeyError:
+                logger.debug("Key {} was not found in side inputs.".format(key))
+
+        return side_inputs_list
 
     def _debug_gap(self, g: dict):
         # TODO: move this elsewhere. It is duplicated.
