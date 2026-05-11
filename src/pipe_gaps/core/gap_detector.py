@@ -58,6 +58,7 @@ from geopy.distance import geodesic
 
 from gfw.common.dictionaries import copy_dict_without
 from gfw.common.iterables import binary_search_first_ge
+from gfw.common.datetime import datetime_from_timestamp
 
 logger = logging.getLogger(__name__)
 
@@ -326,6 +327,8 @@ class GapDetector:
             previous_positions = chain(previous_positions, [off_m])
 
             count = self._count_messages_before_gap(previous_positions)
+            logger.debug(f"COUNT OF PREVIOUS POSSITIONS: {count}")
+
             gap[self.KEY_HOURS_BEFORE] = count[self.KEY_TOTAL]
             gap[self.KEY_HOURS_BEFORE_TER] = count[self.KEY_TERRESTRIAL]
             gap[self.KEY_HOURS_BEFORE_SAT] = count[self.KEY_SATELLITE]
@@ -458,3 +461,20 @@ class GapDetector:
         }
 
         return off_on_messages
+
+    @classmethod
+    def debug_gap(cls, g: dict):
+        try:
+            start_ts = g["OFF"][cls.KEY_TIMESTAMP]
+            end_ts = g["ON"][cls.KEY_TIMESTAMP]
+        except KeyError:
+            start_ts = g[f"start_{cls.KEY_TIMESTAMP}"]
+            end_ts = g.get(f"end_{cls.KEY_TIMESTAMP}")
+
+        start_dt = datetime_from_timestamp(start_ts)
+        end_dt = datetime_from_timestamp(end_ts) if end_ts is not None else None
+
+        logger.debug("----------------------------------")
+        logger.debug("Gap OFF: {}".format(start_dt))
+        logger.debug("Gap  ON: {}".format(end_dt))
+        logger.debug("----------------------------------")

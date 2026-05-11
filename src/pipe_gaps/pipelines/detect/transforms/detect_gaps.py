@@ -11,10 +11,7 @@ from apache_beam.pvalue import PCollection
 from pipe_gaps.core import GapDetector
 from pipe_gaps.common.key import Key
 
-from gfw.common.beam.transforms import (
-    ApplySlidingWindows,
-    GroupBy,
-)
+from gfw.common.beam.transforms import ApplySlidingWindows, GroupBy
 
 from pipe_gaps.common.beam.transforms import FilterWindowsByDateRange
 from pipe_gaps.pipelines.detect.fns.process_group import ProcessGroup
@@ -185,7 +182,7 @@ class DetectGaps(beam.PTransform):
 
         # Process the interior the groups
         output_in_groups = groups | "ProcessGroups" >> (
-            beam.ParDo(process_group)
+            beam.ParDo(process_group, side_inputs=side_inputs)
             | "GlobalWindow" >> beam.WindowInto(beam.window.GlobalWindows())
         )
 

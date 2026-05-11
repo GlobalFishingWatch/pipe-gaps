@@ -1,5 +1,5 @@
 import logging
-from typing import Iterable, Any
+from typing import Iterable, Any, Optional
 from datetime import timedelta, date
 
 from apache_beam import DoFn
@@ -10,6 +10,7 @@ from gfw.common.iterables import binary_search_first_ge
 
 from pipe_gaps.core import GapDetector
 from pipe_gaps.common.key import Key
+from pipe_gaps.common.beam.side_inputs import SideInputs
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,10 @@ class ProcessGroup(DoFn):
         self._date_range = date_range
 
     def process(
-        self, group: tuple[Any, Iterable[dict]], window: IntervalWindow = DoFn.WindowParam
+        self,
+        group: tuple[Any, Iterable[dict]],
+        window: IntervalWindow = DoFn.WindowParam,
+        side_inputs: Optional[dict[Any, Iterable]] = None
     ):
         key, messages = group
 
@@ -50,7 +54,10 @@ class ProcessGroup(DoFn):
 
             start_idx = self._get_index_for_time(messages, range_start_time)
             if start_idx > 0:
-                # To also evaluate first message with previous one
+                # Step back one message to include context from before the range boundary.
+                # This only applies to the first window, which has no previous boundary.
+                # Subsequent windows will evaluate this previous message in ProcessBoundaries.
+                # So no duplicate should appear from this.
                 start_idx = start_idx - 1
 
             effective_start_time = datetime_from_timestamp(messages[start_idx][self.KEY_TIMESTAMP])
@@ -69,7 +76,7 @@ class ProcessGroup(DoFn):
         )
 
         for gap in gaps:
-            self._debug_gap(gap)
+            self._gd.debug_gap(gap)
 
             # Emit open version if daily mode would have created one on any day between OFF and ON.
             # This ensures range processing produces the same table state as daily processing,
@@ -86,7 +93,7 @@ class ProcessGroup(DoFn):
                 for i in range(days_spanned)
             )
 
-            # Don't emit open v1 if OFF is before range start - it's handled via side inputs.
+            # Don't emit open v1 if OFF is before range start - it's handled via ProcessBoundaries.
             is_before_range = self._date_range is not None and off_m_ts < range_start_time
 
             if should_emit_open and not is_before_range:
@@ -96,10 +103,20 @@ class ProcessGroup(DoFn):
                     gap_id=gap[self.KEY_GAP_ID],
                     base_gap=self._gd.previous_positions_from_gap(gap))
 
-                self._debug_gap(open_gap)
+                self._gd.debug_gap(open_gap)
                 yield open_gap
 
-            yield gap
+            # Don't yield gap if OFF is before range start AND an open gap exists
+            # in side inputs — ProcessBoundaries Step 2 will close it.
+            # This avoids dupicates.
+            open_gap = SideInputs(side_inputs).get_first(key) if side_inputs else None
+            is_handled_by_process_boundaries = (
+                is_before_range and open_gap is not None and
+                open_gap[self.KEY_GAP_ID] == gap[self.KEY_GAP_ID]
+            )
+
+            if not is_handled_by_process_boundaries:
+                yield gap
 
     def _get_index_for_time(self, messages: list, time):
         return binary_search_first_ge(
@@ -107,20 +124,3 @@ class ProcessGroup(DoFn):
             time.timestamp(),
             key=lambda m: m[self.KEY_TIMESTAMP]
         )
-
-    def _debug_gap(self, g: dict):
-        # TODO: move this elsewhere. It is duplicated.
-        try:
-            start_ts = g["OFF"][self.KEY_TIMESTAMP]
-            end_ts = g["ON"][self.KEY_TIMESTAMP]
-        except KeyError:
-            start_ts = g[f"start_{self.KEY_TIMESTAMP}"]
-            end_ts = g.get(f"end_{self.KEY_TIMESTAMP}")
-
-        start_dt = datetime_from_timestamp(start_ts)
-        end_dt = datetime_from_timestamp(end_ts) if end_ts is not None else None
-
-        logger.debug("----------------------------------")
-        logger.debug("Gap OFF: {}".format(start_dt))
-        logger.debug("Gap  ON: {}".format(end_dt))
-        logger.debug("----------------------------------")
