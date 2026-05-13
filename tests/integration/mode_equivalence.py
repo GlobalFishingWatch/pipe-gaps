@@ -332,6 +332,68 @@ def _run_docker(cfg: SimpleNamespace) -> None:
 _DATAFLOW_SUBMIT_LOCK = threading.Lock()
 
 
+# Set of Dataflow job names known to have completed successfully -- populated
+# at run start when --resume is passed. _run_dataflow checks against this set
+# and skips re-submission of any unit whose canonical job name matches a
+# completed run.
+_COMPLETED_UNITS: set[str] = set()
+
+
+def _dataflow_job_name(cfg: SimpleNamespace) -> str:
+    """Canonical Dataflow job name for a pipeline unit.
+
+    The name deterministically encodes the unit's identity: ``(suffix,
+    pipeline_part, start, end)`` -- all derivable from
+    ``cfg.bq_output_gaps`` (which embeds suffix + pipeline_part) and
+    ``cfg.date_range``. Both the submission code path (``_run_dataflow``)
+    and the resume probe (``_list_completed_units``) call this helper, so
+    the encoding stays in lock-step. Treat any change here as breaking the
+    resume contract.
+
+    Underscores become hyphens to satisfy GCE label rules (Dataflow itself
+    truncates+normalises for monitoring labels, but the *job name* it
+    accepts and we query against is what this function returns).
+    """
+    output_basename = cfg.bq_output_gaps.rsplit(".", 1)[-1]
+    start, end = cfg.date_range
+    return f"three-way-eq-{output_basename}-{start}-{end}".replace("_", "-")
+
+
+def _list_completed_units(
+    suffix: str,
+    *,
+    project: str = PROJECT,
+    region: str = DEFAULT_DATAFLOW_REGION,
+) -> set[str]:
+    """One-shot fetch of all Dataflow job names matching ``suffix`` in state Done.
+
+    Used at startup when --resume is passed. Shells out to ``gcloud dataflow
+    jobs list`` rather than depending on the dataflow_v1beta3 client library.
+    Returns a set so the per-unit check in ``_run_dataflow`` is O(1).
+    """
+    # Suffix in the job name is dash-separated, so filter on the dashed form.
+    filter_prefix = f"three-way-eq-three-way-{suffix.replace('_', '-')}"
+    result = subprocess.run(
+        [
+            "gcloud", "dataflow", "jobs", "list",
+            f"--region={region}",
+            f"--project={project}",
+            "--status=terminated",
+            "--format=value(name,state)",
+            f"--filter=name:{filter_prefix}",
+        ],
+        check=False, capture_output=True, text=True,
+    )
+    completed: set[str] = set()
+    for line in result.stdout.splitlines():
+        parts = line.split()
+        # gcloud's value(name,state) format emits TSV-style "name<tab>state";
+        # split() handles either whitespace.
+        if len(parts) >= 2 and parts[-1] == "Done":
+            completed.add(parts[0])
+    return completed
+
+
 def _run_dataflow(cfg: SimpleNamespace) -> None:
     """Invoke the pipeline via the in-process orchestrator with DataflowRunner.
 
@@ -347,6 +409,16 @@ def _run_dataflow(cfg: SimpleNamespace) -> None:
     ``wait_until_finish`` parameter; we need to split submission from
     waiting to drop the lock between the two.
     """
+    # Resume short-circuit: if a previous run completed this exact unit
+    # (canonical job name), skip re-submission entirely. The set is
+    # populated at main() start when --resume is passed; an empty set
+    # (the default) means no-op. We check this BEFORE the Beam imports
+    # below so a skipped unit pays no import cost either.
+    job_name = _dataflow_job_name(cfg)
+    if job_name in _COMPLETED_UNITS:
+        logger.info("Resume: skipping completed Dataflow unit %s", job_name)
+        return
+
     # Late imports so the local-runner code path doesn't pay the cost.
     import apache_beam as beam
     from apache_beam.io.gcp.internal.clients import bigquery as bq_clients
@@ -360,10 +432,10 @@ def _run_dataflow(cfg: SimpleNamespace) -> None:
 
     parsed = dict(cfg.unknown_parsed_args)
     parsed.setdefault("runner", "DataflowRunner")
-    # Make the Dataflow job easy to find in the console.
-    output_basename = cfg.bq_output_gaps.rsplit(".", 1)[-1]
-    start, end = cfg.date_range
-    parsed.setdefault("job_name", f"three-way-eq-{output_basename}-{start}-{end}".replace("_", "-"))
+    # Make the Dataflow job easy to find in the console AND give --resume
+    # a stable key to recognise this unit. The canonical name is computed
+    # via _dataflow_job_name so submission and resume-probing stay in sync.
+    parsed.setdefault("job_name", job_name)
     if getattr(cfg, "service_account", None):
         parsed.setdefault("service_account_email", cfg.service_account)
     # Override gfw-common's hardcoded us-east1 defaults so workers run in
@@ -954,6 +1026,13 @@ def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
                    help="Cap Dataflow autoscaling at this many workers per job. "
                         "Ignored by local/docker. When unset, falls back to gfw-common's "
                         "default (100).")
+    p.add_argument("--resume", action="store_true",
+                   help="Skip any pipeline unit (single Dataflow job, identified by its "
+                        "canonical job name) that already completed successfully in a prior "
+                        "run with the same --suffix. Only takes effect with --runner=dataflow. "
+                        "Pairs well with --source-snapshot-ts so that re-runs see the same "
+                        "source state -- otherwise iters from the original and resumed runs "
+                        "may disagree on data that changed between them.")
     p.add_argument("--source-snapshot-ts", default=None,
                    help="Pin the source messages/segments reads to a BigQuery time-travel "
                         "snapshot via FOR SYSTEM_TIME AS OF TIMESTAMP(<ts>). Eliminates "
@@ -975,6 +1054,19 @@ def main(argv: Optional[list[str]] = None) -> int:
     repo_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     suffix = _resolve_suffix(args, repo_dir)
     logger.info("Run suffix: %s", suffix)
+
+    # If --resume is set, fetch the set of already-completed Dataflow units
+    # for this suffix once. _run_dataflow then short-circuits any unit whose
+    # canonical job name appears here. Empty set on a fresh run -> no-op.
+    if args.resume:
+        if args.runner != "dataflow":
+            raise SystemExit("--resume is only supported with --runner=dataflow")
+        region = args.dataflow_region or DEFAULT_DATAFLOW_REGION
+        _COMPLETED_UNITS.update(_list_completed_units(suffix, region=region))
+        logger.info(
+            "Resume mode active: %d completed Dataflow units found for suffix %s",
+            len(_COMPLETED_UNITS), suffix,
+        )
 
     source_messages = args.source_messages or f"{args.source_dataset}.messages"
     source_segments = args.source_segments or f"{args.source_dataset}.segs_activity"
