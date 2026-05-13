@@ -38,6 +38,14 @@ class DetectGapsConfig(PipelineConfig):
     save_json: bool = False
     work_dir: str = "workdir"
     good_seg_stabilization_days: int = 0
+    # Optional BigQuery time-travel snapshot for source reads. When set, the
+    # ``messages.sql.j2`` template wraps both ``source_messages`` and
+    # ``source_segments`` references with ``FOR SYSTEM_TIME AS OF
+    # TIMESTAMP(<as_of_timestamp>)``. Useful for reproducibility on
+    # continuously-updated sources (e.g. ``research_messages``). BQ supports
+    # up to 7 days back; timestamps older than that fail at query time.
+    # Format: a BQ-parseable timestamp literal, e.g. "2026-05-13 00:00:00 UTC".
+    as_of_timestamp: str = None
 
     def __post_init__(self) -> None:
         self.validate()

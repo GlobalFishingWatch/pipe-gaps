@@ -36,6 +36,7 @@ class DetectGapsLinearDagFactory(LinearDagFactory):
                 ssvids=self.config.ssvids,
                 filter_not_overlapping_and_short=self.config.filter_not_overlapping_and_short,
                 filter_good_seg=self.config.filter_good_seg,
+                as_of_timestamp=self.config.as_of_timestamp,
             ).with_env(self.config.jinja_env)
 
             sources.append(

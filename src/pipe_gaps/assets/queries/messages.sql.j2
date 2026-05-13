@@ -8,25 +8,25 @@ SELECT
     END
   ) as ais_class
 FROM
-  `{{ source_messages }}`
+  `{{ source_messages }}`{% if as_of_timestamp %} FOR SYSTEM_TIME AS OF TIMESTAMP('{{ as_of_timestamp }}'){% endif %}
 WHERE DATE(timestamp) >= '{{ start_date }}'
   AND DATE(timestamp) < '{{ end_date }}'
-  
+
   {% if ssvids %}
     AND ssvid IN ({{ ssvids | join(', ') }})
   {% endif %}
-  
+
   AND seg_id IN (
     SELECT
       seg_id
     FROM
-      `{{ source_segments }}`
+      `{{ source_segments }}`{% if as_of_timestamp %} FOR SYSTEM_TIME AS OF TIMESTAMP('{{ as_of_timestamp }}'){% endif %}
     WHERE 1=1
-    
+
     {%- if filter_good_seg %}
       AND good_seg2
     {% endif -%}
-    
+
     {%- if filter_not_overlapping_and_short %}
       AND not overlapping_and_short
     {% endif -%}

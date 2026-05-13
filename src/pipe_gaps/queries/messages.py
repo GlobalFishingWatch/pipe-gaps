@@ -1,6 +1,6 @@
 """This module encapsulates the vessels position messages query."""
 import logging
-from typing import Sequence, NamedTuple
+from typing import Sequence, NamedTuple, Optional
 from datetime import date, datetime
 from functools import cached_property
 
@@ -59,7 +59,8 @@ class MessagesQuery(Query):
         source_segments: str,
         ssvids: Sequence[str] = (),
         filter_good_seg: bool = False,
-        filter_not_overlapping_and_short: bool = False
+        filter_not_overlapping_and_short: bool = False,
+        as_of_timestamp: Optional[str] = None,
     ):
         self._start_date = start_date
         self._end_date = end_date
@@ -68,6 +69,10 @@ class MessagesQuery(Query):
         self._ssvids = ssvids
         self._filter_good_seg = filter_good_seg
         self._filter_not_overlapping_and_short = filter_not_overlapping_and_short
+        # When set, both source_messages and source_segments reads are pinned via
+        # ``FOR SYSTEM_TIME AS OF TIMESTAMP(<as_of_timestamp>)``. BQ time travel
+        # supports up to 7 days back; anything older fails at query time.
+        self._as_of_timestamp = as_of_timestamp
 
     @cached_property
     def output_type(cls) -> type[NamedTuple]:
@@ -89,4 +94,5 @@ class MessagesQuery(Query):
             "ssvids": self.sql_strings(self._ssvids),
             "filter_not_overlapping_and_short": self._filter_not_overlapping_and_short,
             "filter_good_seg": self._filter_good_seg,
+            "as_of_timestamp": self._as_of_timestamp,
         }
