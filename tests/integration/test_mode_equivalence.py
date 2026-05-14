@@ -18,8 +18,9 @@ that the --resume mechanism depends on:
 """
 from __future__ import annotations
 
+from datetime import date
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from tests.integration import mode_equivalence as me
 
@@ -220,6 +221,75 @@ def test_resume_probe_recognises_a_previously_completed_unit():
         completed = me._list_completed_units("d83164e_a23bd2")
 
     assert me._dataflow_job_name(cfg) in completed
+
+
+def _captured_ctas(as_of_timestamp):
+    """Run materialise_restricted_messages_table with a fully-mocked BQ client
+    and return the CTAS query string that would have been submitted.
+
+    Used by the time-travel-pinning tests below.
+    """
+    client = MagicMock()
+    captured: dict = {}
+
+    def _capture_query(sql):
+        captured["sql"] = sql
+        return MagicMock()  # the .result() call inside materialise won't blow up
+
+    client.query.side_effect = _capture_query
+    client.load_table_from_json.return_value = MagicMock()
+
+    me.materialise_restricted_messages_table(
+        client,
+        source_messages="gfw-int-vms-v3.pipe_vms_v3_internal.research_messages",
+        ssvids=("ssvid-a", "ssvid-b"),
+        suffix="abc123_def456",
+        temp_dataset="world-fishing-827.tech_great_expectations",
+        start_date=date(2012, 1, 1),
+        end_date=date(2026, 5, 11),
+        as_of_timestamp=as_of_timestamp,
+    )
+    return captured["sql"]
+
+
+def test_materialise_injects_for_system_time_when_pinned():
+    """When as_of_timestamp is set, the CTAS reads source_messages
+    ``FOR SYSTEM_TIME AS OF TIMESTAMP(<ts>)`` so the temp table content
+    reflects the same snapshot the rest of the run uses. Without this,
+    the downstream pipeline (which sets as_of_timestamp=None on the temp
+    table -- see test_execute_mutate_recover_clears_as_of_on_temp_table)
+    sees a "live" temp table snapshot whose state may have drifted from
+    the rest of the run's pinning."""
+    sql = _captured_ctas(as_of_timestamp="2026-05-13 00:00:00 UTC")
+    assert "FOR SYSTEM_TIME AS OF TIMESTAMP('2026-05-13 00:00:00 UTC')" in sql
+
+
+def test_materialise_omits_for_system_time_by_default():
+    """No time-travel clause when as_of_timestamp is None -- preserves
+    the original behaviour for runs that don't pin sources."""
+    sql = _captured_ctas(as_of_timestamp=None)
+    assert "FOR SYSTEM_TIME" not in sql
+
+
+def test_execute_mutate_recover_clears_as_of_on_temp_table():
+    """Resume invariant: the freshly-created temp messages table cannot
+    be time-travelled to before its own creation time. After the
+    materialise call, restricted_cfg.as_of_timestamp must be set to
+    None so downstream reads of the temp table don't trip BQ's
+    "Cannot read before <creation_micros>" error.
+
+    We assert this via static source inspection rather than running the
+    whole function (which would need a mocked Dataflow runner).
+    """
+    import inspect
+    src = inspect.getsource(me.execute_mutate_recover)
+    # The override must appear in the temp-table branch -- look for the
+    # specific dict-merge pattern.
+    assert '"as_of_timestamp": None' in src, (
+        "Resume invariant broken: execute_mutate_recover's temp-table "
+        "restricted_cfg must set as_of_timestamp=None, otherwise BQ "
+        "rejects the read with 'Cannot read before <creation_micros>'."
+    )
 
 
 def test_resume_probe_does_not_recognise_a_failed_unit():

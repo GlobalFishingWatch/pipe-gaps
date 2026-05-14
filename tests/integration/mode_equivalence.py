@@ -626,6 +626,7 @@ def materialise_restricted_messages_table(
     temp_dataset: str,
     start_date: date,
     end_date: date,
+    as_of_timestamp: Optional[str] = None,
 ) -> str:
     """Materialise a filtered messages table for use in pipeline 4 step 2.
 
@@ -660,6 +661,13 @@ def materialise_restricted_messages_table(
         temp_dataset: ``project.dataset`` to hold the temp tables.
         start_date: inclusive lower bound on ``DATE(timestamp)``.
         end_date: exclusive upper bound on ``DATE(timestamp)``.
+        as_of_timestamp: if set, the source_messages read inside the CTAS
+            uses ``FOR SYSTEM_TIME AS OF TIMESTAMP(<as_of_timestamp>)`` so
+            the temp table content is pinned to that snapshot. Required
+            whenever the downstream pipeline run also uses time-travel,
+            since the freshly-created temp table itself cannot be
+            time-travelled to before its own creation time (BQ rejects
+            with "Cannot read before <creation_micros>").
 
     Returns:
         FQN (``project.dataset.table``) of the filtered messages temp table.
@@ -697,19 +705,32 @@ def materialise_restricted_messages_table(
     #   gives ~12*N_years partitions (well within the cap) and is still
     #   fine for downstream daily-tail reads that filter on a small date
     #   range -- they prune to at most 2 monthly partitions per 4-day window.
+    # If as_of_timestamp is set, pin the source read to that snapshot so
+    # the temp table content reflects the same point-in-time view the
+    # downstream pipeline (with --source-snapshot-ts) expects. The temp
+    # table itself cannot be time-travelled to before its own creation,
+    # so the caller must pass as_of_timestamp=None when reading FROM the
+    # temp table downstream -- the snapshot is "baked into" the temp
+    # table's content here and once.
+    as_of_clause = (
+        f"FOR SYSTEM_TIME AS OF TIMESTAMP('{as_of_timestamp}')"
+        if as_of_timestamp else ""
+    )
     ctas_sql = f"""
         CREATE OR REPLACE TABLE `{msgs_table}`
         PARTITION BY TIMESTAMP_TRUNC(timestamp, MONTH) AS
         SELECT *
-        FROM `{source_messages}`
+        FROM `{source_messages}` {as_of_clause}
         WHERE ssvid IN (SELECT ssvid FROM `{ssvids_table}`)
           AND DATE(timestamp) >= '{start_date.isoformat()}'
           AND DATE(timestamp) <  '{end_date.isoformat()}'
     """
     logger.info(
-        "Materialising filtered messages %s <- %s WHERE ssvid IN <%d ssvids> "
+        "Materialising filtered messages %s <- %s%s WHERE ssvid IN <%d ssvids> "
         "AND DATE(timestamp) IN [%s, %s)",
-        msgs_table, source_messages, len(rows), start_date, end_date,
+        msgs_table, source_messages,
+        f" @ {as_of_timestamp}" if as_of_timestamp else "",
+        len(rows), start_date, end_date,
     )
     client.query(ctas_sql).result()
 
@@ -793,6 +814,10 @@ def execute_mutate_recover(
             temp_dataset=temp_dataset,
             start_date=start,
             end_date=end,
+            # Pin the source read inside the CTAS to the global snapshot
+            # so the temp table reflects the same point-in-time view the
+            # rest of the run uses.
+            as_of_timestamp=base_cfg.get("as_of_timestamp"),
         )
         logger.info(
             "Pipeline 4 step 2: routing through filtered messages table %s "
@@ -800,10 +825,16 @@ def execute_mutate_recover(
             filtered_msgs_table, len(restricted_ssvids),
             RESTRICTED_SSVIDS_INLINE_THRESHOLD,
         )
+        # The temp table is a fresh, point-in-time snapshot baked in by
+        # materialise_restricted_messages_table. Downstream reads MUST NOT
+        # apply FOR SYSTEM_TIME again -- the temp table cannot be
+        # time-travelled to before its own creation, so BQ would reject
+        # with "Cannot read before <creation_micros>".
         restricted_cfg = {
             **base_cfg,
             "bq_input_messages": filtered_msgs_table,
             "ssvids": (),
+            "as_of_timestamp": None,
         }
     else:
         restricted_cfg = {**base_cfg, "ssvids": restricted_ssvids}
