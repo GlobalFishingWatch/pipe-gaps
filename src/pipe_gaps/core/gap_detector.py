@@ -99,6 +99,8 @@ class GapDetector:
     KEY_IMPLIED_SPEED_KNOTS = "implied_speed_knots"
     KEY_LAT = "lat"
     KEY_LON = "lon"
+    KEY_MSGID = "msgid"
+    KEY_SEG_ID = "seg_id"
     KEY_SSVID = "ssvid"
     KEY_TIMESTAMP = "timestamp"
     KEY_HOURS_BEFORE = "positions_hours_before"
@@ -384,8 +386,29 @@ class GapDetector:
 
     # @profile  # noqa  # Uncomment to run memory profiler
     def _sort_messages(self, messages: list) -> None:
-        key = operator.itemgetter(self.KEY_TIMESTAMP)
-        messages.sort(key=key)
+        # Primary sort key is timestamp. Secondary keys deterministically
+        # break ties when multiple messages share the same timestamp for
+        # the same ssvid -- which happens in practice when one ssvid has
+        # multiple concurrent segments (a known VMS data-quality
+        # phenomenon). Without these tiebreakers, the OFF candidate
+        # picked depends on the upstream order (Beam multimap iteration,
+        # BQ row order, etc.), and the resulting gap_id (which encodes
+        # the OFF's lat/lon) differs across pipeline modes -- breaking
+        # mode-equivalence comparisons.
+        #
+        # Order: (timestamp, seg_id, msgid, lat, lon). seg_id alone
+        # uniquely identifies the segment a message belongs to; msgid /
+        # lat / lon are belt-and-braces for the rare case of true
+        # duplicates within a segment.
+        def _key(m):
+            return (
+                m[self.KEY_TIMESTAMP],
+                m.get(self.KEY_SEG_ID) or "",
+                m.get(self.KEY_MSGID) or "",
+                m.get(self.KEY_LAT) or 0.0,
+                m.get(self.KEY_LON) or 0.0,
+            )
+        messages.sort(key=_key)
 
     def _get_index_for_start_time(self, messages: list, start_time: datetime) -> Union[int, None]:
         return binary_search_first_ge(

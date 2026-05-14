@@ -233,6 +233,54 @@ def test_sort_messages_sorts_unsorted():
     assert timestamps == [1, 2, 3]
 
 
+def test_sort_messages_deterministic_tiebreak_on_same_timestamp():
+    """When multiple messages share the same (ssvid, timestamp) -- the
+    "one ssvid, multiple concurrent segments" VMS pattern -- the sort
+    falls through to (seg_id, msgid, lat, lon) in that order so the
+    OFF picked is deterministic across pipeline runs.
+
+    Without this, pipeline 1 (single backfill) and pipeline 4 (mutate-
+    recover) silently pick different OFFs for the same vessel-moment,
+    producing different gap_ids and breaking mode-equivalence.
+    """
+    detector = GapDetector()
+    # Six messages all at timestamp=5; the lexicographically lowest
+    # (seg_id, msgid, lat, lon) tuple must end up first.
+    messages = [
+        {"timestamp": 5, "ssvid": "a", "seg_id": "seg-Z", "msgid": "m1", "lat": 0, "lon": 0, "receiver_type": "terrestrial"},
+        {"timestamp": 5, "ssvid": "a", "seg_id": "seg-A", "msgid": "m9", "lat": 9, "lon": 9, "receiver_type": "terrestrial"},
+        {"timestamp": 5, "ssvid": "a", "seg_id": "seg-A", "msgid": "m1", "lat": 0, "lon": 0, "receiver_type": "terrestrial"},
+        {"timestamp": 5, "ssvid": "a", "seg_id": "seg-A", "msgid": "m1", "lat": 9, "lon": 0, "receiver_type": "terrestrial"},
+        {"timestamp": 5, "ssvid": "a", "seg_id": "seg-A", "msgid": "m1", "lat": 0, "lon": 9, "receiver_type": "terrestrial"},
+        {"timestamp": 5, "ssvid": "a", "seg_id": "seg-A", "msgid": "m1", "lat": 9, "lon": 9, "receiver_type": "terrestrial"},
+    ]
+    detector._sort_messages(messages)
+    keys_after = [(m["seg_id"], m["msgid"], m["lat"], m["lon"]) for m in messages]
+    # seg-A messages come first (alphabetical < seg-Z), then within seg-A
+    # msgid m1 < m9, then lat 0 < 9, then lon 0 < 9.
+    assert keys_after == [
+        ("seg-A", "m1", 0, 0),
+        ("seg-A", "m1", 0, 9),
+        ("seg-A", "m1", 9, 0),
+        ("seg-A", "m1", 9, 9),
+        ("seg-A", "m9", 9, 9),
+        ("seg-Z", "m1", 0, 0),
+    ]
+
+
+def test_sort_messages_tolerates_missing_tiebreak_fields():
+    """Defensive: seg_id/msgid may be absent in some test fixtures.
+    The sort key falls back to "" / 0.0 in that case rather than
+    raising on None comparisons."""
+    detector = GapDetector()
+    messages = [
+        {"timestamp": 2, "ssvid": "a", "lat": 0, "lon": 0, "receiver_type": "terrestrial"},
+        {"timestamp": 1, "ssvid": "a", "lat": 0, "lon": 0, "receiver_type": "terrestrial"},
+    ]
+    detector._sort_messages(messages)  # must not raise
+    assert [m["timestamp"] for m in messages] == [1, 2]
+
+
 def test_min_gap_length_returns_threshold_as_timedelta():
     detector = GapDetector(threshold=5)  # 5 hours
     assert isinstance(detector.min_gap_length, timedelta)
