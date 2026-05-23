@@ -13,8 +13,6 @@ DOCKER_TEST_SERVICE:=test
 GCP_PROJECT:=world-fishing-827
 GCP_DOCKER_VOLUME:=gcp
 
-sources = python_app_template
-
 PYTHON_VERSION:=3.12
 UV_VERSION := 0.10.9
 
@@ -99,15 +97,15 @@ hooks:
 
 .PHONY: format  ## Auto-format python source files according with PEP8.
 format:
-	python -m black $(sources)
-	python -m ruff check --fix $(sources)
-	python -m ruff format $(sources)
+	python -m black $(SOURCES)
+	python -m ruff check --fix $(SOURCES)
+	python -m ruff format $(SOURCES)
 
 .PHONY: lint  ## Lint python source files.
 lint:
-	python -m ruff check $(sources)
-	python -m ruff format --check $(sources)
-	python -m black $(sources) --check --diff
+	python -m ruff check $(SOURCES)
+	python -m ruff format --check $(SOURCES)
+	python -m black $(SOURCES) --check --diff
 
 .PHONY: codespell  ## Use Codespell to do spell checking.
 codespell:

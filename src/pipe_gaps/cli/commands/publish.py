@@ -17,6 +17,7 @@ HELP_BQ_INPUT_VOYAGES = "BigQuery table with voyages."
 HELP_BQ_INPUT_PORT_VISITS = "BigQuery table with port visits."
 HELP_BQ_INPUT_REGIONS = "BigQuery table with regions."
 HELP_BQ_INPUT_VESSELS_BYYEAR = "BigQuery table with vessels by year."
+HELP_BQ_INPUT_VESSELS_BYYEAR_FIELD_PREFIX = "Field prefix for fields in bq-input-vessels-by-year."
 
 HELP_BQ_OUTPUT = "BigQuery table in which to store the gap events."
 
@@ -48,6 +49,8 @@ class PublishGaps(Command):
             Option("--bq-input-port-visits", type=str, help=HELP_BQ_INPUT_PORT_VISITS),
             Option("--bq-input-regions", type=str, help=HELP_BQ_INPUT_REGIONS),
             Option("--bq-input-vessels-byyear", type=str, help=HELP_BQ_INPUT_VESSELS_BYYEAR),
+            Option("--bq-input-vessels-byyear-field-prefix", type=str,
+                   help=HELP_BQ_INPUT_VESSELS_BYYEAR_FIELD_PREFIX, default=""),
             Option("--bq-output", type=str, help=HELP_BQ_OUTPUT),
             Option("--mock-bq-clients", type=bool, help=HELP_MOCK_BQ_CLIENTS),
         ]

@@ -15,6 +15,7 @@ def basic_config_kwargs():
         "bq_input_voyages": "project.dataset.table",
         "bq_input_port_visits": "project.dataset.table",
         "bq_input_vessels_byyear": "project.dataset.table",
+        "bq_input_vessels_byyear_field_prefix": "ais_",
         "bq_output": "project.dataset.table",
         "unknown_unparsed_args": [],
         "project": "test-project",
