@@ -169,9 +169,9 @@ WITH
                   STRUCT(
                     gaps.ssvid AS ssvid,
                     vessel_start.vessel_id AS id,
-                    vessel_start.shipname AS name,
+                    vessel_start.{{ vessel_info_field_prefix }}shipname AS name,
                     vessel_start.prod_shiptype AS type,
-                    vessel_start.mmsi_flag AS flag,
+                    vessel_start.{{ vessel_info_field_prefix }}mmsi_flag AS flag,
                     s1.seg_id AS seg_id
                   )
                 ],
@@ -182,9 +182,9 @@ WITH
                     STRUCT(
                       gaps.ssvid AS ssvid,
                       vessel_end.vessel_id AS id,
-                      vessel_end.shipname AS name,
+                      vessel_end.{{ vessel_info_field_prefix }}shipname AS name,
                       vessel_end.prod_shiptype AS type,
-                      vessel_end.mmsi_flag AS flag,
+                      vessel_end.{{ vessel_info_field_prefix }}mmsi_flag AS flag,
                       s2.seg_id AS seg_id
                     )
                   ],

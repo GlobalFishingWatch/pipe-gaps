@@ -15,6 +15,7 @@ class PublishGapsConfig(PipelineConfig):
     bq_input_port_visits: str
     bq_input_regions: str
     bq_input_vessels_byyear: str
+    bq_input_vessels_byyear_field_prefix: str
     bq_output: str
     project: str
     labels: dict = field(default_factory=dict)

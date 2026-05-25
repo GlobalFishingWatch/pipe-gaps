@@ -7,7 +7,7 @@ services:
     entrypoint: gcloud
 
   dev: &dev
-    image: gfw/python-app-template-dev
+    image: gfw/pipe-gaps-dev
     platform: linux/amd64
     build:
       target: dev
@@ -17,21 +17,21 @@ services:
     entrypoint: /bin/bash
 
   dev_no_gcp:
-    image: gfw/python-app-template-dev
+    image: gfw/pipe-gaps-dev
     # Dev container without GCP credentials.
     <<: *dev
     volumes:
       - ".:/opt/project"
 
   prod:
-    image: gfw/python-app-template-prod
+    image: gfw/pipe-gaps-prod
     build:
       target: prod
     platform: linux/amd64
     entrypoint: /bin/bash
 
   test:
-    image: gfw/python-app-template-test
+    image: gfw/pipe-gaps-test
     platform: linux/amd64
     # Runs tests using the production Docker image.
     # Intended to be executed in the GitHub CI environment.
