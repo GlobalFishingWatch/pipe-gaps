@@ -40,6 +40,10 @@ WORKDIR /opt/project
 # ---------------------------------------------------------------------------------------
 FROM builder AS dev
 
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends make && \
+    rm -rf /var/lib/apt/lists/*
+
 WORKDIR /opt/project
 
 COPY . .
