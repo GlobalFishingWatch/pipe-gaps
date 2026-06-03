@@ -7,13 +7,13 @@ this repo.
 
 **Default to the dit staging cohort.** When writing or running any
 BigQuery-touching code in this repo or via the sibling
-[data_integration_tests](../data_integration_tests) framework — ad-hoc
+[data-integration-tests][ditrepo] framework — ad-hoc
 `bq query`, pipe-gaps invocations against BQ, dit workflows, smoke
 tests, forensic queries — the source-data CLI flags (`--source-messages`,
 `--source-segments`, `--bq-input-messages`, `--bq-input-segments`, etc.)
 **must default to the `pipe_ais_test_202408290000` staging cohort** in
 project `world-fishing-827`. The canonical table inventory lives in
-[data_integration_tests/README.md § "Staging data sources"][stagedoc].
+[data-integration-tests README § "Staging data sources"][stagedoc].
 
 Production datasets — `gfw-int-vms-v3.*`, `gfw-int-ais-v3.*`,
 `global-fishing-watch.pipe_*_published.*`, etc. — are **opt-in per
@@ -48,4 +48,5 @@ explicitly. Before issuing such a command, the LLM:
   can produce real writes to user-facing datasets. Staging defaults
   scope the blast radius to a scratch project.
 
-[stagedoc]: ../data_integration_tests/README.md
+[ditrepo]: https://github.com/GlobalFishingWatch/data-integration-tests
+[stagedoc]: https://github.com/GlobalFishingWatch/data-integration-tests/blob/main/README.md#staging-data-sources
