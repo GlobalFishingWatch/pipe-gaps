@@ -40,13 +40,19 @@ class GapsTableConfig(TableConfig):
     partition_field: str = "start_timestamp"
     clustering_fields: tuple = ("is_closed", "version", "ssvid")
 
+    # View parameter: gaps below this threshold are filtered from the last_versions view
+    # to exclude invalid gaps produced during reprocessing with new data.
+    # TODO: Consider accepting kwargs in create_view_hook so we can pass this parameter there
+    # instead of making it an instance variable of this config.
+    min_gap_length: Optional[float] = None
+
     @property
     def schema(self):
         return schemas.get_schema(self.schema_file)
 
     def view_query(self):
         """Returns a rendered query to create a view of this table."""
-        return GapsQuery(source_gaps=self.table_id).render()
+        return GapsQuery(source_gaps=self.table_id, min_gap_length=self.min_gap_length).render()
 
     def delete_query(self, start_date: date, end_date: Optional[date] = None) -> str:
         """Returns a rendered query to truncate gaps from start_date."""

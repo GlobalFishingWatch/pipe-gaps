@@ -74,6 +74,9 @@ class GapsQuery(Query):
                 - only closed gaps (True),
                 - only open gaps (False)
                 - both (None).
+
+        min_gap_length:
+            If provided, filter out gaps whose duration_h is <= this threshold (in hours).
     """
 
     NAME = "gaps"
@@ -85,13 +88,15 @@ class GapsQuery(Query):
         end_date: Optional[date] = None,
         ssvids: Sequence[str] = (),
         is_closed: Optional[bool] = None,
-        use_timestamp: bool = False
+        use_timestamp: bool = False,
+        min_gap_length: Optional[float] = None,
     ) -> None:
         self._start_date = start_date
         self._end_date = end_date
         self._source_gaps = source_gaps
         self._ssvids = ssvids
         self._is_closed = is_closed
+        self._min_gap_length = min_gap_length
         # TODO: consider another design: this is an external parameter not pass to the query.
         self._use_timestamp = use_timestamp
 
@@ -120,4 +125,5 @@ class GapsQuery(Query):
             "start_date": start_date,
             "end_date": end_date,
             "is_closed": self._is_closed,
+            "min_gap_length": self._min_gap_length,
         }

@@ -60,6 +60,7 @@ class DetectGapsConfig(PipelineConfig):
                 version=self.version,
                 relevant_params=self.bq_output_gaps_description_params
             ),
+            min_gap_length=self.min_gap_length,
         )
 
     @property
