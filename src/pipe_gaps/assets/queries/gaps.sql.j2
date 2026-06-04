@@ -29,3 +29,7 @@ WHERE
       AND NOT is_closed
     {% endif %}
   {% endif %}
+
+  {% if min_gap_length is not none %}
+    AND duration_h > {{ min_gap_length }}
+  {% endif %}
