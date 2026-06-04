@@ -31,5 +31,5 @@ WHERE
   {% endif %}
 
   {% if min_gap_length is not none %}
-    AND duration_h > {{ min_gap_length }}
+    AND (NOT is_closed OR duration_h > {{ min_gap_length }})
   {% endif %}
