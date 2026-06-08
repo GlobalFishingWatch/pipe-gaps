@@ -30,7 +30,7 @@ HELP_BQ_OUTPUT_GAPS = "BigQuery table in which to store the gap events."
 HELP_JSON_INPUT_MESSAGES = "JSON file with input messages [Useful for development]."
 HELP_JSON_INPUT_OPEN_GAPS = "JSON file with open gaps [Useful for development]."
 
-HELP_OPEN_GAPS_START_DATE = "Fetch open gaps starting from this date range e.g., '2012-01-01'."
+HELP_OPEN_GAPS_START = "Fetch open gaps starting from this date range e.g., '2012-01-01'."
 HELP_SKIP_OPEN_GAPS = "If passed, pipeline will not fetch open gaps [Useful for development]. "
 HELP_OVERL = "Fetch messages that do not belong to 'overlapping_and_short' segments."
 HELP_GOOD_SEG = "Fetch messages that belong to 'good_seg2' segments."
@@ -44,7 +44,7 @@ HELP_MIN_GAP_LENGTH = "Minimum time difference (hours) to start considering gaps
 HELP_WINDOW_PERIOD_D = "Period (in days) of time windows used to parallelize the process."
 HELP_EVAL_LAST = "If passed, evaluates last message of each SSVID to create an open gap."
 HELP_N_HOURS_BEFORE = "Count messages this amount of hours before each gap."
-HELP_GOOD_SEG_STABILIZATION = (
+HELP_STABILIZATION = (
     "Number of days the segments table needs to be ahead in order to filter messages with a "
     "stable good_seg metric. If good_seg filter is ON and this validation fails, "
     "the process will throw an error."
@@ -65,25 +65,25 @@ class DetectGaps(Command):
         return [
             Option("-i", "--json-input-messages", type=str, help=HELP_JSON_INPUT_MESSAGES),
             Option("-s", "--json-input-open-gaps", type=str, help=HELP_JSON_INPUT_OPEN_GAPS),
-            Option("--bq-read-method", type=str, help=HELP_BQ_READ_METHOD),
+            Option("--bq-read-method", type=str, default="EXPORT", help=HELP_BQ_READ_METHOD),
             Option("--bq-input-messages", type=str, help=HELP_BQ_INPUT_MESSAGES),
             Option("--bq-input-segments", type=str, help=HELP_BQ_INPUT_SEGMENTS),
             Option("--bq-input-open-gaps", type=str, help=HELP_BQ_INPUT_OPEN_GAPS),
             Option("--bq-output-gaps", type=str, help=HELP_BQ_OUTPUT_GAPS),
-            Option("--open-gaps-start-date", type=str, help=HELP_OPEN_GAPS_START_DATE),
+            Option("--open-gaps-start-date", type=str, required=True, help=HELP_OPEN_GAPS_START),
             Option("--filter-not-overlapping-and-short", type=bool, help=HELP_OVERL),
             Option("--filter-good-seg", type=bool, help=HELP_GOOD_SEG),
             Option("--skip-open-gaps", type=bool, help=HELP_SKIP_OPEN_GAPS),
             Option("--mock-bq-clients", type=bool, help=HELP_MOCK_BQ_CLIENTS),
             Option("--save-json", type=bool, help=HELP_SAVE_JSON),
-            Option("--work-dir", type=str, help=HELP_WORK_DIR),
-            Option("--ssvids", type=ssvids, help=HELP_SSVIDS),
+            Option("--work-dir", type=str, default="workdir", help=HELP_WORK_DIR),
+            Option("--ssvids", type=ssvids, default=tuple(), help=HELP_SSVIDS),
             Option("--date-range", type=date_range, help=HELP_DATE_RANGE),
-            Option("--min-gap-length", type=float, help=HELP_MIN_GAP_LENGTH),
+            Option("--min-gap-length", type=float, required=True, help=HELP_MIN_GAP_LENGTH),
             Option("--window-period-d", type=float, help=HELP_WINDOW_PERIOD_D),
             Option("--eval-last", type=bool, help=HELP_EVAL_LAST),
-            Option("--n-hours-before", type=float, help=HELP_N_HOURS_BEFORE),
-            Option("--good-seg-stabilization-days", type=int, help=HELP_GOOD_SEG_STABILIZATION)
+            Option("--n-hours-before", default=12, type=float, help=HELP_N_HOURS_BEFORE),
+            Option("--good-seg-stabilization-days", default=0, type=int, help=HELP_STABILIZATION)
         ]
 
     @classmethod
