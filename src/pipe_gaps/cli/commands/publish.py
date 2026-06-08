@@ -2,6 +2,7 @@ from typing import Any
 from types import SimpleNamespace
 
 from gfw.common.cli import Command, Option
+from gfw.common.cli.actions import NestedKeyValueAction
 
 from pipe_gaps.cli.validations import date_range
 from pipe_gaps.pipelines.publish.main import run
@@ -18,6 +19,7 @@ HELP_BQ_INPUT_PORT_VISITS = "BigQuery table with port visits."
 HELP_BQ_INPUT_REGIONS = "BigQuery table with regions."
 HELP_BQ_INPUT_VESSELS_BYYEAR = "BigQuery table with vessels by year."
 HELP_BQ_INPUT_VESSELS_BYYEAR_FIELD_PREFIX = "Field prefix for fields in bq-input-vessels-by-year."
+HELP_LABELS = "Labels to audit costs over the queries."
 
 HELP_BQ_OUTPUT = "BigQuery table in which to store the gap events."
 
@@ -53,6 +55,7 @@ class PublishGaps(Command):
                    help=HELP_BQ_INPUT_VESSELS_BYYEAR_FIELD_PREFIX, default=""),
             Option("--bq-output", type=str, help=HELP_BQ_OUTPUT),
             Option("--mock-bq-clients", type=bool, help=HELP_MOCK_BQ_CLIENTS),
+            Option("--labels", type=str, nargs="*", action=NestedKeyValueAction, help=HELP_LABELS),
         ]
 
     @classmethod

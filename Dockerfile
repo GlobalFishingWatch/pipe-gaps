@@ -10,15 +10,16 @@ COPY --from=ghcr.io/astral-sh/uv:0.10.9 /uv /usr/local/bin/uv
 
 ENV UV_COMPILE_BYTECODE=1
 
+# Install dependencies BEFORE copying source so an edit under src/
+# doesn't invalidate the cache of the (expensive) requirements-install layer. 
 COPY pyproject.toml requirements.txt README.md MANIFEST.in ./
-COPY src ./src
-
 RUN uv pip install --system --upgrade pip && \
     uv pip install --system build && \
-    uv pip install --system --prefix=/install -r requirements.txt && \
-    uv pip install --system --prefix=/install --no-deps .
+    uv pip install --system --prefix=/install -r requirements.txt
 
-RUN uv pip install --system --prefix=/install .
+COPY src ./src
+RUN uv pip install --system --prefix=/install --no-deps .
+
 # ---------------------------------------------------------------------------------------
 # PRODUCTION IMAGE
 # ---------------------------------------------------------------------------------------
