@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 NAME = "pipe-gaps"
 DESCRIPTION = "Tools for detecting interruptions in vessel position reporting systems."
 
+
 def run(args):
     gaps_cli = CLI(
         name=NAME,
