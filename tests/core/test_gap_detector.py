@@ -291,3 +291,33 @@ def test_gap_implied_speed_knots_handles_exceptions():
     # Case 2: gap_duration_h is zero (ZeroDivisionError)
     result_zero_duration = detector._gap_implied_speed_knots(1000.0, 0.0)
     assert result_zero_duration is None
+
+
+def test_detect_is_order_independent_on_timestamp_ties():
+    """Messages tied on timestamp must sort deterministically ((timestamp,
+    msgid) total order); otherwise which message becomes a gap's OFF/ON --
+    and hence gap_id and all end_* fields -- depends on the input order,
+    which is non-deterministic for messages read from BigQuery."""
+    base = datetime(2024, 1, 1, 0, tzinfo=timezone.utc).timestamp()
+
+    def msg(ts, msgid, lat):
+        return {
+            "ssvid": "12345",
+            "msgid": msgid,
+            "timestamp": ts,
+            "lat": lat,
+            "lon": -122.0,
+            "receiver_type": "terrestrial",
+        }
+
+    earlier = msg(base, "m0", 37.0)
+    # Two messages tied on the OFF-candidate timestamp, then a long gap.
+    tied_a = msg(base + 3600, "a", 38.0)
+    tied_b = msg(base + 3600, "b", 39.0)
+    later = msg(base + 3600 + 13 * 3600, "m3", 40.0)  # 13h > default threshold
+
+    detector = GapDetector()
+    gaps_forward = detector.detect([earlier, tied_a, tied_b, later])
+    gaps_reverse = detector.detect([earlier, tied_b, tied_a, later])
+
+    assert gaps_forward == gaps_reverse

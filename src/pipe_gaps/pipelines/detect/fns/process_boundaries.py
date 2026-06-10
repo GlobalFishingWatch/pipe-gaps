@@ -8,6 +8,7 @@ from gfw.common.datetime import datetime_from_timestamp, datetime_from_date
 from pipe_gaps.core import GapDetector
 from pipe_gaps.common.key import Key
 from pipe_gaps.common.beam.side_inputs import SideInputs
+from pipe_gaps.common.sorting import message_sort_key
 from pipe_gaps.pipelines.detect.fns.extract_group_boundary import Boundary
 
 logger = logging.getLogger(__name__)
@@ -16,7 +17,13 @@ logger = logging.getLogger(__name__)
 class Boundaries:
     """Container for Boundary objects."""
     def __init__(self, boundaries: list[Boundary]) -> None:
-        self._boundaries = sorted(boundaries, key=lambda x: x.first_message()["timestamp"])
+        # (timestamp, msgid) total order on the first message: boundaries
+        # whose first messages tie on timestamp (e.g. different seg_ids of
+        # the same vessel) would otherwise keep their (non-deterministic)
+        # input order, making first/last/consecutive picks vary across runs.
+        self._boundaries = sorted(
+            boundaries, key=lambda x: message_sort_key(x.first_message())
+        )
 
     def get_first_message_inside_range(self, date_range: tuple = None) -> dict:
         """Returns the first message across all boundaries that falls within date_range.
@@ -39,7 +46,10 @@ class Boundaries:
             for m in [b.start] + b.end + [b.first_message_in_range]
             if m["timestamp"] >= start_ds
         )
-        return min(candidates, key=lambda m: m["timestamp"], default=None)
+        # min over (timestamp, msgid): with timestamp alone, tied candidates
+        # resolve to encounter order (non-deterministic across runs), and the
+        # pick becomes a closed gap's ON message -- end_* fields would drift.
+        return min(candidates, key=message_sort_key, default=None)
 
     def consecutive_boundaries(self):
         return list(zip(self._boundaries[:-1], self._boundaries[1:]))
