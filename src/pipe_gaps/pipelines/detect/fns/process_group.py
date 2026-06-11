@@ -42,7 +42,7 @@ class ProcessGroup(DoFn):
         key, messages = group
 
         messages = list(messages)  # On dataflow, this is a _ConcatSequence object.
-        messages.sort(key=lambda x: timestamp_msgid_key(x, self.KEY_TIMESTAMP))
+        messages.sort(key=timestamp_msgid_key(self.KEY_TIMESTAMP))
 
         window_start_time = window.start.to_utc_datetime(has_tz=True)
         window_end_time = window.end.to_utc_datetime(has_tz=True)

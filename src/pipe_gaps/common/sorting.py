@@ -1,8 +1,12 @@
 """Canonical ordering helpers."""
+from __future__ import annotations
+
+from operator import itemgetter
+from typing import Any
 
 
-def timestamp_msgid_key(message: dict, timestamp_key: str = "timestamp") -> tuple:
-    """Total-order sort key for position messages: ``(timestamp, msgid)``.
+def timestamp_msgid_key(timestamp_key: str = "timestamp") -> itemgetter[tuple[Any, ...]]:
+    """Return a key callable for the total order ``(timestamp, msgid)``.
 
     Position messages are sorted and selected (first-at-or-after, min-in-range,
     boundary ordering) in several places across the detect pipeline. Sorting by
@@ -22,13 +26,10 @@ def timestamp_msgid_key(message: dict, timestamp_key: str = "timestamp") -> tupl
     on every run and on every code path that picks from the same candidates.
 
     Args:
-        message:
-            Position message dictionary.
-
         timestamp_key:
             Key under which the message stores its unix timestamp.
 
     Returns:
-        Tuple usable as a ``key`` for ``sort``/``sorted``/``min``/``max``.
+        Callable usable as a ``key`` for ``sort``/``sorted``/``min``/``max``.
     """
-    return (message[timestamp_key], message["msgid"])
+    return itemgetter(timestamp_key, "msgid")

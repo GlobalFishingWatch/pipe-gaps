@@ -27,7 +27,7 @@ class Messages:
         Sorting is done in-place to avoid creating a new list — messages can be large.
         Result is cached so subsequent calls do not re-sort.
         """
-        self._messages.sort(key=lambda m: timestamp_msgid_key(m, self._timestamp_key))
+        self._messages.sort(key=timestamp_msgid_key(self._timestamp_key))
         return self._messages
 
     def first_message_at_or_after(self, timestamp: float) -> dict:

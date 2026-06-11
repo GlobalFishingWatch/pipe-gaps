@@ -17,9 +17,8 @@ logger = logging.getLogger(__name__)
 class Boundaries:
     """Container for Boundary objects."""
     def __init__(self, boundaries: list[Boundary]) -> None:
-        self._boundaries = sorted(
-            boundaries, key=lambda x: timestamp_msgid_key(x.first_message())
-        )
+        _key = timestamp_msgid_key()
+        self._boundaries = sorted(boundaries, key=lambda x: _key(x.first_message()))
 
     def get_first_message_inside_range(self, date_range: tuple = None) -> dict:
         """Returns the first message across all boundaries that falls within date_range.
@@ -42,7 +41,7 @@ class Boundaries:
             for m in [b.start] + b.end + [b.first_message_in_range]
             if m["timestamp"] >= start_ds
         )
-        return min(candidates, key=timestamp_msgid_key, default=None)
+        return min(candidates, key=timestamp_msgid_key(), default=None)
 
     def consecutive_boundaries(self):
         return list(zip(self._boundaries[:-1], self._boundaries[1:]))
@@ -151,7 +150,7 @@ class ProcessBoundaries(DoFn):
             last_boundary = boundaries.last_boundary()
             last_message = last_boundary.last_message()
 
-            last_message_dt = datetime_from_timestamp(last_message["timestamp"])
+            last_message_dt = datetime_from_timestamp(last_message[self.KEY_TIMESTAMP])
 
             comparison_date = last_message_dt.date()
             if self._date_range is not None:

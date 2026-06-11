@@ -385,7 +385,7 @@ class GapDetector:
 
     # @profile  # noqa  # Uncomment to run memory profiler
     def _sort_messages(self, messages: list) -> None:
-        messages.sort(key=lambda m: timestamp_msgid_key(m, self.KEY_TIMESTAMP))
+        messages.sort(key=timestamp_msgid_key(self.KEY_TIMESTAMP))
 
     def _get_index_for_start_time(self, messages: list, start_time: datetime) -> Union[int, None]:
         return binary_search_first_ge(
