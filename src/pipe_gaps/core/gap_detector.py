@@ -46,7 +46,6 @@ Raises:
 """
 import logging
 import hashlib
-import operator
 from itertools import chain, pairwise
 from collections import defaultdict
 
@@ -59,6 +58,8 @@ from geopy.distance import geodesic
 from gfw.common.dictionaries import copy_dict_without
 from gfw.common.iterables import binary_search_first_ge
 from gfw.common.datetime import datetime_from_timestamp
+
+from pipe_gaps.common.sorting import timestamp_msgid_key
 
 logger = logging.getLogger(__name__)
 
@@ -384,8 +385,7 @@ class GapDetector:
 
     # @profile  # noqa  # Uncomment to run memory profiler
     def _sort_messages(self, messages: list) -> None:
-        key = operator.itemgetter(self.KEY_TIMESTAMP)
-        messages.sort(key=key)
+        messages.sort(key=timestamp_msgid_key(self.KEY_TIMESTAMP))
 
     def _get_index_for_start_time(self, messages: list, start_time: datetime) -> Union[int, None]:
         return binary_search_first_ge(

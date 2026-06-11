@@ -2,6 +2,8 @@ from functools import cached_property
 
 from gfw.common.iterables import binary_search_first_ge
 
+from pipe_gaps.common.sorting import timestamp_msgid_key
+
 
 class Messages:
     """Sorted collection of position messages with time-based retrieval methods.
@@ -20,12 +22,12 @@ class Messages:
 
     @cached_property
     def sorted(self) -> list[dict]:
-        """Returns messages sorted by timestamp.
+        """Returns messages sorted by ``(timestamp, msgid)``.
 
         Sorting is done in-place to avoid creating a new list — messages can be large.
         Result is cached so subsequent calls do not re-sort.
         """
-        self._messages.sort(key=lambda m: m[self._timestamp_key])
+        self._messages.sort(key=timestamp_msgid_key(self._timestamp_key))
         return self._messages
 
     def first_message_at_or_after(self, timestamp: float) -> dict:

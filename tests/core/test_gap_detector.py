@@ -10,6 +10,7 @@ def example_messages():
     return [
         {
             "ssvid": "12345",
+            "msgid": "msg-0",
             "timestamp": base_time,
             "lat": 37.7749,
             "lon": -122.4194,
@@ -17,6 +18,7 @@ def example_messages():
         },
         {
             "ssvid": "12345",
+            "msgid": "msg-1",
             "timestamp": base_time + 3600,  # 1 hour later
             "lat": 37.7750,
             "lon": -122.4195,
@@ -24,6 +26,7 @@ def example_messages():
         },
         {
             "ssvid": "12345",
+            "msgid": "msg-2",
             "timestamp": base_time + 7200,  # 2 hours later
             "lat": 37.7751,
             "lon": -122.4196,
@@ -31,6 +34,7 @@ def example_messages():
         },
         {
             "ssvid": "12345",
+            "msgid": "msg-3",
             "timestamp": base_time + 43200,  # 12 hours later
             "lat": 37.7800,
             "lon": -122.4200,
@@ -223,10 +227,11 @@ def test_normalize_off_on_messages(example_messages):
 # Optional: test internal sort method actually sorts
 def test_sort_messages_sorts_unsorted():
     detector = GapDetector()
+    TER = "terrestrial"
     messages = [
-        {"timestamp": 3, "ssvid": "a", "lat": 0, "lon": 0, "receiver_type": "terrestrial"},
-        {"timestamp": 1, "ssvid": "a", "lat": 0, "lon": 0, "receiver_type": "terrestrial"},
-        {"timestamp": 2, "ssvid": "a", "lat": 0, "lon": 0, "receiver_type": "terrestrial"},
+        {"timestamp": 3, "msgid": "c", "ssvid": "a", "lat": 0, "lon": 0, "receiver_type": TER},
+        {"timestamp": 1, "msgid": "a", "ssvid": "a", "lat": 0, "lon": 0, "receiver_type": TER},
+        {"timestamp": 2, "msgid": "b", "ssvid": "a", "lat": 0, "lon": 0, "receiver_type": TER},
     ]
     detector._sort_messages(messages)
     timestamps = [m["timestamp"] for m in messages]
@@ -291,3 +296,33 @@ def test_gap_implied_speed_knots_handles_exceptions():
     # Case 2: gap_duration_h is zero (ZeroDivisionError)
     result_zero_duration = detector._gap_implied_speed_knots(1000.0, 0.0)
     assert result_zero_duration is None
+
+
+def test_detect_is_order_independent_on_timestamp_ties():
+    """Messages tied on timestamp must sort deterministically ((timestamp,
+    msgid) total order); otherwise which message becomes a gap's OFF/ON --
+    and hence gap_id and all end_* fields -- depends on the input order,
+    which is non-deterministic for messages read from BigQuery."""
+    base = datetime(2024, 1, 1, 0, tzinfo=timezone.utc).timestamp()
+
+    def msg(ts, msgid, lat):
+        return {
+            "ssvid": "12345",
+            "msgid": msgid,
+            "timestamp": ts,
+            "lat": lat,
+            "lon": -122.0,
+            "receiver_type": "terrestrial",
+        }
+
+    earlier = msg(base, "m0", 37.0)
+    # Two messages tied on the OFF-candidate timestamp, then a long gap.
+    tied_a = msg(base + 3600, "a", 38.0)
+    tied_b = msg(base + 3600, "b", 39.0)
+    later = msg(base + 3600 + 13 * 3600, "m3", 40.0)  # 13h > default threshold
+
+    detector = GapDetector()
+    gaps_forward = detector.detect([earlier, tied_a, tied_b, later])
+    gaps_reverse = detector.detect([earlier, tied_b, tied_a, later])
+
+    assert gaps_forward == gaps_reverse
