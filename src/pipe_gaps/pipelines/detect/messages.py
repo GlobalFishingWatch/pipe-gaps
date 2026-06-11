@@ -2,7 +2,7 @@ from functools import cached_property
 
 from gfw.common.iterables import binary_search_first_ge
 
-from pipe_gaps.common.sorting import message_sort_key
+from pipe_gaps.common.sorting import timestamp_msgid_key
 
 
 class Messages:
@@ -24,14 +24,10 @@ class Messages:
     def sorted(self) -> list[dict]:
         """Returns messages sorted by ``(timestamp, msgid)``.
 
-        The msgid tiebreaker makes the order a total one: messages with tied
-        timestamps would otherwise keep their (non-deterministic) input
-        order, making first/last picks vary across runs on identical data.
-
         Sorting is done in-place to avoid creating a new list — messages can be large.
         Result is cached so subsequent calls do not re-sort.
         """
-        self._messages.sort(key=lambda m: message_sort_key(m, self._timestamp_key))
+        self._messages.sort(key=lambda m: timestamp_msgid_key(m, self._timestamp_key))
         return self._messages
 
     def first_message_at_or_after(self, timestamp: float) -> dict:

@@ -11,7 +11,7 @@ from gfw.common.iterables import binary_search_first_ge
 from pipe_gaps.core import GapDetector
 from pipe_gaps.common.key import Key
 from pipe_gaps.common.beam.side_inputs import SideInputs
-from pipe_gaps.common.sorting import message_sort_key
+from pipe_gaps.common.sorting import timestamp_msgid_key
 
 logger = logging.getLogger(__name__)
 
@@ -42,8 +42,7 @@ class ProcessGroup(DoFn):
         key, messages = group
 
         messages = list(messages)  # On dataflow, this is a _ConcatSequence object.
-        # (timestamp, msgid) total order -- see pipe_gaps.common.sorting.
-        messages.sort(key=lambda x: message_sort_key(x, self.KEY_TIMESTAMP))
+        messages.sort(key=lambda x: timestamp_msgid_key(x, self.KEY_TIMESTAMP))
 
         window_start_time = window.start.to_utc_datetime(has_tz=True)
         window_end_time = window.end.to_utc_datetime(has_tz=True)

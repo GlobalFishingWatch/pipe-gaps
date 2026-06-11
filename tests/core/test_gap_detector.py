@@ -10,6 +10,7 @@ def example_messages():
     return [
         {
             "ssvid": "12345",
+            "msgid": "msg-0",
             "timestamp": base_time,
             "lat": 37.7749,
             "lon": -122.4194,
@@ -17,6 +18,7 @@ def example_messages():
         },
         {
             "ssvid": "12345",
+            "msgid": "msg-1",
             "timestamp": base_time + 3600,  # 1 hour later
             "lat": 37.7750,
             "lon": -122.4195,
@@ -24,6 +26,7 @@ def example_messages():
         },
         {
             "ssvid": "12345",
+            "msgid": "msg-2",
             "timestamp": base_time + 7200,  # 2 hours later
             "lat": 37.7751,
             "lon": -122.4196,
@@ -31,6 +34,7 @@ def example_messages():
         },
         {
             "ssvid": "12345",
+            "msgid": "msg-3",
             "timestamp": base_time + 43200,  # 12 hours later
             "lat": 37.7800,
             "lon": -122.4200,
@@ -223,10 +227,11 @@ def test_normalize_off_on_messages(example_messages):
 # Optional: test internal sort method actually sorts
 def test_sort_messages_sorts_unsorted():
     detector = GapDetector()
+    TER = "terrestrial"
     messages = [
-        {"timestamp": 3, "ssvid": "a", "lat": 0, "lon": 0, "receiver_type": "terrestrial"},
-        {"timestamp": 1, "ssvid": "a", "lat": 0, "lon": 0, "receiver_type": "terrestrial"},
-        {"timestamp": 2, "ssvid": "a", "lat": 0, "lon": 0, "receiver_type": "terrestrial"},
+        {"timestamp": 3, "msgid": "c", "ssvid": "a", "lat": 0, "lon": 0, "receiver_type": TER},
+        {"timestamp": 1, "msgid": "a", "ssvid": "a", "lat": 0, "lon": 0, "receiver_type": TER},
+        {"timestamp": 2, "msgid": "b", "ssvid": "a", "lat": 0, "lon": 0, "receiver_type": TER},
     ]
     detector._sort_messages(messages)
     timestamps = [m["timestamp"] for m in messages]
