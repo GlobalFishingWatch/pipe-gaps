@@ -18,9 +18,10 @@ class Boundaries:
     """Container for Boundary objects."""
     def __init__(self, boundaries: list[Boundary]) -> None:
         _key = timestamp_msgid_key()
-        self._boundaries = sorted(boundaries, key=lambda x: _key(x.first_message()))
+        self._boundaries = filter(lambda boundary: boundary.start is not None, boundaries)
+        self._boundaries = sorted(self._boundaries, key=lambda x: _key(x.first_message()))
 
-    def get_first_message_inside_range(self, date_range: tuple = None) -> dict:
+    def get_first_message_inside_range(self, date_range: tuple = None) -> dict | None:
         """Returns the first message across all boundaries that falls within date_range.
 
         Searches start, end and first_message_in_range of each boundary and returns
@@ -32,6 +33,10 @@ class Boundaries:
         """
         if date_range is None:
             # TODO: should we make date_range mandatory for the pipeline?
+
+            return None
+
+        if len(self._boundaries) == 0:
             return None
 
         start_ds = datetime_from_date(date_range[0]).timestamp()
@@ -39,7 +44,7 @@ class Boundaries:
             m
             for b in self._boundaries
             for m in [b.start] + b.end + [b.first_message_in_range]
-            if m["timestamp"] >= start_ds
+            if m is not None and m["timestamp"] >= start_ds
         )
         return min(candidates, key=timestamp_msgid_key(), default=None)
 
