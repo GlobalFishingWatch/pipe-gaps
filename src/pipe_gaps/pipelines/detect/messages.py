@@ -30,16 +30,20 @@ class Messages:
         self._messages.sort(key=timestamp_msgid_key(self._timestamp_key))
         return self._messages
 
-    def first_message_at_or_after(self, timestamp: float) -> dict:
-        """Returns first message at or after the given timestamp.
+    def first_message_at_or_after(self, timestamp: float) -> dict | None:
+        """Returns first message at or after the given timestamp, or ``None`` if no messages were found at or after the given timestamp.
 
         Args:
             timestamp:
                 Unix timestamp to search from.
+        Returns:
+            The first message at or after the given ``timestamp``
+             or ``None`` if no such message exists.
         """
         idx = binary_search_first_ge(self.sorted, timestamp, key=lambda m: m[self._timestamp_key])
 
-        return self.sorted[max(idx, 0)]
+        # Covers binary search returning below 0 and also avoids index error on empty list.
+        return self.sorted[idx] if 0 <= idx < len(self.sorted) else None
 
     def last_messages(self, offset: int = 0) -> list[dict]:
         """Returns all messages within offset seconds before the last message.
