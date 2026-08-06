@@ -51,10 +51,10 @@ HELP_STABILIZATION = (
 )
 
 
-class DetectGaps(Command):
+class RawGaps(Command):
     @property
     def name(cls):
-        return "detect"
+        return "raw-gaps"
 
     @property
     def description(self):

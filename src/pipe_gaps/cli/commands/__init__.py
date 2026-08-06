@@ -1,7 +1,7 @@
-from .detect import DetectGaps
+from .raw_gaps import RawGaps
 from .publish import PublishGaps
 
 __all__ = [
-    "DetectGaps",
+    "RawGaps",
     "PublishGaps",
 ]

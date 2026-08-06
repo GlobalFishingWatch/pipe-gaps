@@ -3,7 +3,7 @@ from pipe_gaps.cli import main
 
 def test_cli_executes_run(tmp_path):
     args = [
-        "detect",
+        "raw-gaps",
         "--bq-input-messages", "project.dataset.table",
         "--bq-input-segments", "project.dataset.segments",
         "--bq-output-gaps", "project.dataset.output",

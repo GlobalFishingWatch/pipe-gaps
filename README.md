@@ -404,7 +404,7 @@ options:
 
 Available subcommands:
   <command>
-    detect    Detects time gaps in position messages.
+    raw-gaps  Detects time gaps in position messages.
               
               The definition of a gap is configurable by a time threshold 'min-gap-length'.
               For more information, check the documentation at
@@ -421,7 +421,7 @@ Available subcommands:
     publish   Enrich gaps data and create publication events.
 
 Examples:
-    pipe-gaps detect -c config/sample-from-file-to-file.json --min-gap-length 1.3
+    pipe-gaps raw-gaps -c config/sample-from-file-to-file.json --min-gap-length 1.3
 ```
 
 > [!CAUTION]
@@ -438,7 +438,7 @@ Examples:
   as words separator.
 
 
-This is an example of a JSON config file for `detect` command:
+This is an example of a JSON config file for `raw-gaps` command:
 ```json
 {   
     "bq_input_messages": "pipe_ais_v3_published.messages",

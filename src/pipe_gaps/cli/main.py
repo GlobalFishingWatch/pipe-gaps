@@ -8,7 +8,7 @@ from gfw.common.logging import LoggerConfig
 from gfw.common.cli.formatting import default_formatter
 
 from pipe_gaps.version import __version__
-from pipe_gaps.cli.commands import DetectGaps, PublishGaps
+from pipe_gaps.cli.commands import RawGaps, PublishGaps
 
 
 logger = logging.getLogger(__name__)
@@ -24,12 +24,12 @@ def run(args):
         description=DESCRIPTION,
         formatter=default_formatter(max_pos=120),
         subcommands=[
-            DetectGaps,
+            RawGaps,
             PublishGaps,
         ],
         version=__version__,
         examples=[
-            "pipe-gaps detect -c config/sample-from-file-to-file.json --min-gap-length 1.3",
+            "pipe-gaps raw-gaps -c config/sample-from-file-to-file.json --min-gap-length 1.3",
         ],
         logger_config=LoggerConfig(
             warning_level=[
