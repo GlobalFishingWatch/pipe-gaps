@@ -441,10 +441,10 @@ Examples:
 This is an example of a JSON config file for `raw-gaps` command:
 ```json
 {   
-    "bq_input_messages": "pipe_ais_v3_published.messages",
-    "bq_input_segments": "pipe_ais_v3_published.segs_activity",
-    "bq_input_open_gaps":  "pipe_ais_v3_published.product_events_ais_gaps",
-    "bq_output_gaps": "scratch_tomas_ttl30d.pipe_ais_gaps",
+    "bq_in_messages": "pipe_ais_v3_published.messages",
+    "bq_in_segments": "pipe_ais_v3_published.segs_activity",
+    "bq_in_open_gaps":  "pipe_ais_v3_published.product_events_ais_gaps",
+    "bq_out_gaps": "scratch_tomas_ttl30d.pipe_ais_gaps",
     "open_gaps_start_date": "2023-12-31",
     "ssvids": [
         "412331104",
@@ -473,12 +473,12 @@ This is an example of a JSON config file for `raw-gaps` command:
 This is an example of a YAML config file for the publication `publish` command:
 ```yaml
 # Query parameters:
-bq_input_gaps: "gfw-int-pipe-v3.pipe_ais_v3_internal.raw_gaps_last_versions"
-bq_input_segment_info: "global-fishing-watch.pipe_ais_v3_published.segment_info"
-bq_input_regions: "global-fishing-watch.pipe_regions_layers.event_regions"
-bq_input_voyages: "global-fishing-watch.pipe_ais_v3_published.voyages_c4"
-bq_input_port_visits: "global-fishing-watch.pipe_ais_v3_published.product_events_port_visit_v2"
-bq_input_all_vessels_byyear: "global-fishing-watch.pipe_ais_v3_published.product_vessel_info_summary"
+bq_in_gaps: "gfw-int-pipe-v3.pipe_ais_v3_internal.raw_gaps_last_versions"
+bq_in_segment_info: "global-fishing-watch.pipe_ais_v3_published.segment_info"
+bq_in_regions: "global-fishing-watch.pipe_regions_layers.event_regions"
+bq_in_voyages: "global-fishing-watch.pipe_ais_v3_published.voyages_c4"
+bq_in_port_visits: "global-fishing-watch.pipe_ais_v3_published.product_events_port_visit_v2"
+bq_in_all_vessels_byyear: "global-fishing-watch.pipe_ais_v3_published.product_vessel_info_summary"
 bq_output: "world-fishing-827.scratch_tomas_ttl30d.product_events_ais_gap"
 date_range: ["2025-11-01", "2025-11-02"]
 

@@ -23,12 +23,12 @@ defined for Apache Beam PipelineOptions class. For more information, see
 """
 
 HELP_BQ_READ_METHOD = "BigQuery read method. It may be 'DIRECT_READ' or 'EXPORT'."
-HELP_BQ_INPUT_MESSAGES = "BigQuery table with with input messages."
-HELP_BQ_INPUT_SEGMENTS = "BigQuery table with with input segments."
-HELP_BQ_INPUT_OPEN_GAPS = "BigQuery table with open gaps."
-HELP_BQ_OUTPUT_GAPS = "BigQuery table in which to store the gap events."
-HELP_JSON_INPUT_MESSAGES = "JSON file with input messages [Useful for development]."
-HELP_JSON_INPUT_OPEN_GAPS = "JSON file with open gaps [Useful for development]."
+HELP_BQ_IN_MESSAGES = "BigQuery table with with input messages."
+HELP_BQ_IN_SEGMENTS = "BigQuery table with with input segments."
+HELP_BQ_IN_OPEN_GAPS = "BigQuery table with open gaps."
+HELP_BQ_OUT_GAPS = "BigQuery table in which to store the gap events."
+HELP_JSON_IN_MESSAGES = "JSON file with input messages [Useful for development]."
+HELP_JSON_IN_OPEN_GAPS = "JSON file with open gaps [Useful for development]."
 
 HELP_OPEN_GAPS_START = "Fetch open gaps starting from this date range e.g., '2012-01-01'."
 HELP_SKIP_OPEN_GAPS = "If passed, pipeline will not fetch open gaps [Useful for development]. "
@@ -63,13 +63,13 @@ class RawGaps(Command):
     @property
     def options(self):
         return [
-            Option("-i", "--json-input-messages", type=str, help=HELP_JSON_INPUT_MESSAGES),
-            Option("-s", "--json-input-open-gaps", type=str, help=HELP_JSON_INPUT_OPEN_GAPS),
+            Option("-i", "--json-in-messages", type=str, help=HELP_JSON_IN_MESSAGES),
+            Option("-s", "--json-in-open-gaps", type=str, help=HELP_JSON_IN_OPEN_GAPS),
             Option("--bq-read-method", type=str, default="EXPORT", help=HELP_BQ_READ_METHOD),
-            Option("--bq-input-messages", type=str, help=HELP_BQ_INPUT_MESSAGES),
-            Option("--bq-input-segments", type=str, help=HELP_BQ_INPUT_SEGMENTS),
-            Option("--bq-input-open-gaps", type=str, help=HELP_BQ_INPUT_OPEN_GAPS),
-            Option("--bq-output-gaps", type=str, help=HELP_BQ_OUTPUT_GAPS),
+            Option("--bq-in-messages", type=str, help=HELP_BQ_IN_MESSAGES),
+            Option("--bq-in-segments", type=str, help=HELP_BQ_IN_SEGMENTS),
+            Option("--bq-in-open-gaps", type=str, help=HELP_BQ_IN_OPEN_GAPS),
+            Option("--bq-out-gaps", type=str, help=HELP_BQ_OUT_GAPS),
             Option("--open-gaps-start-date", type=str, required=True, help=HELP_OPEN_GAPS_START),
             Option("--filter-not-overlapping-and-short", type=bool, help=HELP_OVERL),
             Option("--filter-good-seg", type=bool, help=HELP_GOOD_SEG),

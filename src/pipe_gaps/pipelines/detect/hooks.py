@@ -48,7 +48,7 @@ def create_segments_n_days_ahead_hook(
         """
         n_days = pipeline_config.good_seg_stabilization_days
         end_date = pipeline_config.end_date
-        segments_table = pipeline_config.bq_input_segments
+        segments_table = pipeline_config.bq_in_segments
 
         query = N_DAYS_AHEAD_QUERY.format(table=segments_table)
         client_factory = BigQueryHelper.get_client_factory(mocked=mock)

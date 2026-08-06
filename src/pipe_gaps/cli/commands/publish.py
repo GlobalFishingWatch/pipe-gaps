@@ -11,14 +11,14 @@ DESCRIPTION = """\
 Enriches gaps data and creates publication events.
 """
 
-HELP_BQ_INPUT_GAPS = "BigQuery table with gaps."
-HELP_BQ_INPUT_SEGMENT_INFO = "BigQuery table with segments information."
-HELP_BQ_INPUT_SEGS_ACTIVITY = "BigQuery table with research aggregated segments data."
-HELP_BQ_INPUT_VOYAGES = "BigQuery table with voyages."
-HELP_BQ_INPUT_PORT_VISITS = "BigQuery table with port visits."
-HELP_BQ_INPUT_REGIONS = "BigQuery table with regions."
-HELP_BQ_INPUT_VESSELS_BYYEAR = "BigQuery table with vessels by year."
-HELP_BQ_INPUT_VESSELS_BYYEAR_FIELD_PREFIX = "Field prefix for fields in bq-input-vessels-by-year."
+HELP_BQ_IN_GAPS = "BigQuery table with gaps."
+HELP_BQ_IN_SEGMENT_INFO = "BigQuery table with segments information."
+HELP_BQ_IN_SEGS_ACTIVITY = "BigQuery table with research aggregated segments data."
+HELP_BQ_IN_VOYAGES = "BigQuery table with voyages."
+HELP_BQ_IN_PORT_VISITS = "BigQuery table with port visits."
+HELP_BQ_IN_REGIONS = "BigQuery table with regions."
+HELP_BQ_IN_VESSELS_BYYEAR = "BigQuery table with vessels by year."
+HELP_BQ_IN_VESSELS_BYYEAR_FIELD_PREFIX = "Field prefix for fields in bq-in-vessels-by-year."
 HELP_LABELS = "Labels to audit costs over the queries."
 
 HELP_BQ_OUTPUT = "BigQuery table in which to store the gap events."
@@ -44,15 +44,15 @@ class PublishGaps(Command):
             Option("--date-range", type=date_range, help=HELP_DATE_RANGE),
             Option("--project", type=str, help=HELP_BQ_PROJECT),
             Option("--dry-run", type=bool, help=HELP_DRY_RUN),
-            Option("--bq-input-gaps", type=str, help=HELP_BQ_INPUT_GAPS),
-            Option("--bq-input-segment-info", type=str, help=HELP_BQ_INPUT_SEGMENT_INFO),
-            Option("--bq-input-segs-activity", type=str, help=HELP_BQ_INPUT_SEGS_ACTIVITY),
-            Option("--bq-input-voyages", type=str, help=HELP_BQ_INPUT_VOYAGES),
-            Option("--bq-input-port-visits", type=str, help=HELP_BQ_INPUT_PORT_VISITS),
-            Option("--bq-input-regions", type=str, help=HELP_BQ_INPUT_REGIONS),
-            Option("--bq-input-vessels-byyear", type=str, help=HELP_BQ_INPUT_VESSELS_BYYEAR),
-            Option("--bq-input-vessels-byyear-field-prefix", type=str,
-                   help=HELP_BQ_INPUT_VESSELS_BYYEAR_FIELD_PREFIX, default=""),
+            Option("--bq-in-gaps", type=str, help=HELP_BQ_IN_GAPS),
+            Option("--bq-in-segment-info", type=str, help=HELP_BQ_IN_SEGMENT_INFO),
+            Option("--bq-in-segs-activity", type=str, help=HELP_BQ_IN_SEGS_ACTIVITY),
+            Option("--bq-in-voyages", type=str, help=HELP_BQ_IN_VOYAGES),
+            Option("--bq-in-port-visits", type=str, help=HELP_BQ_IN_PORT_VISITS),
+            Option("--bq-in-regions", type=str, help=HELP_BQ_IN_REGIONS),
+            Option("--bq-in-vessels-byyear", type=str, help=HELP_BQ_IN_VESSELS_BYYEAR),
+            Option("--bq-in-vessels-byyear-field-prefix", type=str,
+                   help=HELP_BQ_IN_VESSELS_BYYEAR_FIELD_PREFIX, default=""),
             Option("--bq-output", type=str, help=HELP_BQ_OUTPUT),
             Option("--mock-bq-clients", type=bool, help=HELP_MOCK_BQ_CLIENTS),
             Option("--labels", type=str, nargs="*", action=NestedKeyValueAction, help=HELP_LABELS),

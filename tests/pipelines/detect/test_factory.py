@@ -11,9 +11,9 @@ from pipe_gaps.pipelines.detect.factory import DetectGapsLinearDagFactory
 from pipe_gaps.pipelines.detect.transforms.detect_gaps import DetectGaps
 
 
-def test_sources_with_json_input_and_bq_input(base_config):
+def test_sources_with_json_in_and_bq_in(base_config):
     # Test with both JSON and BigQuery inputs
-    base_config = replace(base_config, json_input_messages="path/to/json")
+    base_config = replace(base_config, json_in_messages="path/to/json")
     factory = DetectGapsLinearDagFactory(base_config)
 
     sources = factory.sources
@@ -23,9 +23,9 @@ def test_sources_with_json_input_and_bq_input(base_config):
     assert len(sources) == 2
 
 
-def test_sources_with_only_bq_input(base_config):
+def test_sources_with_only_bq_in(base_config):
     # JSON input disabled
-    base_config = replace(base_config, json_input_messages=None)
+    base_config = replace(base_config, json_in_messages=None)
     factory = DetectGapsLinearDagFactory(base_config)
 
     sources = factory.sources

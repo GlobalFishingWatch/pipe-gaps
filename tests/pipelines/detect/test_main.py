@@ -8,9 +8,9 @@ from pipe_gaps.pipelines.detect import main
 def basic_config_kwargs():
     return {
         "date_range": ("2024-01-01", "2024-01-02"),
-        "bq_input_messages": "project.dataset.messages",
-        "bq_input_segments": "project.dataset.segments",
-        "bq_output_gaps": "project.dataset.gaps",
+        "bq_in_messages": "project.dataset.messages",
+        "bq_in_segments": "project.dataset.segments",
+        "bq_out_gaps": "project.dataset.gaps",
         "unknown_unparsed_args": [],
         "unknown_parsed_args": {"project": "test-project"},
         "mock_bq_clients": True,

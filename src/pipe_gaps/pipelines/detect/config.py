@@ -26,13 +26,13 @@ class DetectGapsConfig(PipelineConfig):
     window_period_d: int = None
     eval_last: bool = True
     normalize_output: bool = True
-    json_input_messages: str = None
-    json_input_open_gaps: str = None
+    json_in_messages: str = None
+    json_in_open_gaps: str = None
     bq_read_method: str = "EXPORT"
-    bq_input_messages: str = None
-    bq_input_segments: str = None
-    bq_input_open_gaps: str = None
-    bq_output_gaps: str = None
+    bq_in_messages: str = None
+    bq_in_segments: str = None
+    bq_in_open_gaps: str = None
+    bq_out_gaps: str = None
     bq_write_disposition: str = "WRITE_APPEND"
     mock_bq_clients: bool = False
     save_json: bool = False
@@ -55,21 +55,21 @@ class DetectGapsConfig(PipelineConfig):
     def table_config(self):
         """Returns configuration for the output gaps BigQuery table."""
         return GapsTableConfig(
-            table_id=self.bq_output_gaps,
+            table_id=self.bq_out_gaps,
             description=GapsTableDescription(
                 version=self.version,
-                relevant_params=self.bq_output_gaps_description_params
+                relevant_params=self.bq_out_gaps_description_params
             ),
             min_gap_length=self.min_gap_length,
         )
 
     @property
-    def bq_output_gaps_description_params(self):
+    def bq_out_gaps_description_params(self):
         """Returns Parameters to be included in the description of the BigQuery output table."""
         # Could be as well just return ALL parameters (and remove irrelevant ones).
         return dict(
-            bq_input_messages=self.bq_input_messages,
-            bq_input_segments=self.bq_input_segments,
+            bq_in_messages=self.bq_in_messages,
+            bq_in_segments=self.bq_in_segments,
             filter_good_seg=self.filter_good_seg,
             filter_not_overlapping_and_short=self.filter_not_overlapping_and_short,
             min_gap_length=self.min_gap_length,
@@ -87,7 +87,7 @@ class DetectGapsConfig(PipelineConfig):
                 )
             )
 
-        if self.bq_output_gaps is not None:
+        if self.bq_out_gaps is not None:
             pre_hooks.append(
                 create_table_hook(
                     table_config=self.table_config,
@@ -107,7 +107,7 @@ class DetectGapsConfig(PipelineConfig):
     @property
     def post_hooks(self):
         post_hooks = []
-        if self.bq_output_gaps is not None:
+        if self.bq_out_gaps is not None:
             post_hooks.append(
                 create_view_hook(
                     table_config=self.table_config,
@@ -118,8 +118,8 @@ class DetectGapsConfig(PipelineConfig):
 
     def validate(self):
         if (
-            self.json_input_messages is None
-            and (self.bq_input_messages is None or self.bq_input_segments is None)
+            self.json_in_messages is None
+            and (self.bq_in_messages is None or self.bq_in_segments is None)
         ):
             raise ValueError("You need to provide either a JSON inputs or BQ input.")
 

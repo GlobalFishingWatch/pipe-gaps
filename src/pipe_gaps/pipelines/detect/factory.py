@@ -19,18 +19,18 @@ class DetectGapsLinearDagFactory(LinearDagFactory):
     def sources(self):
         # Constructs the list of source PTransforms based on config.
         sources = []
-        if self.config.json_input_messages is not None:
+        if self.config.json_in_messages is not None:
             sources.append(
                 ReadFromJson(
-                    input_file=self.config.json_input_messages,
+                    input_file=self.config.json_in_messages,
                     lines=True,
                 )
             )
 
-        if self.config.bq_input_messages is not None:
+        if self.config.bq_in_messages is not None:
             query = MessagesQuery(
-                source_messages=self.config.bq_input_messages,
-                source_segments=self.config.bq_input_segments,
+                source_messages=self.config.bq_in_messages,
+                source_segments=self.config.bq_in_segments,
                 start_date=self.config.messages_query_start_date,
                 end_date=self.config.end_date,
                 ssvids=self.config.ssvids,
@@ -74,7 +74,7 @@ class DetectGapsLinearDagFactory(LinearDagFactory):
         ):
             side_inputs = ReadFromBigQuery.from_query(
                 query=GapsQuery(
-                    source_gaps=self.config.bq_input_open_gaps or self.config.bq_output_gaps,
+                    source_gaps=self.config.bq_in_open_gaps or self.config.bq_out_gaps,
                     start_date=self.config.open_gaps_start,
                     is_closed=False,
                     use_timestamp=True,
@@ -89,7 +89,7 @@ class DetectGapsLinearDagFactory(LinearDagFactory):
     def sinks(self):
         # Constructs the list of sink PTransforms based on config.
         sinks = []
-        if self.config.bq_output_gaps is not None:
+        if self.config.bq_out_gaps is not None:
             sinks.append(
                 WriteToBigQueryWrapper(
                     table=self.config.table_config.table_id,

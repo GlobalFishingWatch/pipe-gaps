@@ -5,14 +5,14 @@ def test_gaps_table_config_property(base_config):
     config = base_config.table_config
 
     assert isinstance(config, GapsTableConfig)
-    assert config.table_id == base_config.bq_output_gaps
+    assert config.table_id == base_config.bq_out_gaps
 
 
-def test_bq_output_gaps_description_params(base_config):
-    params = base_config.bq_output_gaps_description_params
+def test_bq_out_gaps_description_params(base_config):
+    params = base_config.bq_out_gaps_description_params
 
-    assert params["bq_input_messages"] == base_config.bq_input_messages
-    assert params["bq_input_segments"] == base_config.bq_input_segments
+    assert params["bq_in_messages"] == base_config.bq_in_messages
+    assert params["bq_in_segments"] == base_config.bq_in_segments
     assert params["filter_good_seg"] == base_config.filter_good_seg
     assert params["min_gap_length"] == base_config.min_gap_length
     assert params["n_hours_before"] == base_config.n_hours_before

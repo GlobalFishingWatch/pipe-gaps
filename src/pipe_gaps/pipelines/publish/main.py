@@ -28,14 +28,14 @@ class GapEventQuery(Query):
         start_date, end_date = self.config.date_range
 
         return {
-            "source_gaps": self.config.bq_input_gaps,
-            "source_segment_info": self.config.bq_input_segment_info,
-            "source_segs_activity": self.config.bq_input_segs_activity,
-            "source_regions": self.config.bq_input_regions,
-            "source_voyages": self.config.bq_input_voyages,
-            "source_port_visits": self.config.bq_input_port_visits,
-            "source_vessels_byyear": self.config.bq_input_vessels_byyear,
-            "vessel_info_field_prefix": self.config.bq_input_vessels_byyear_field_prefix,
+            "source_gaps": self.config.bq_in_gaps,
+            "source_segment_info": self.config.bq_in_segment_info,
+            "source_segs_activity": self.config.bq_in_segs_activity,
+            "source_regions": self.config.bq_in_regions,
+            "source_voyages": self.config.bq_in_voyages,
+            "source_port_visits": self.config.bq_in_port_visits,
+            "source_vessels_byyear": self.config.bq_in_vessels_byyear,
+            "vessel_info_field_prefix": self.config.bq_in_vessels_byyear_field_prefix,
             "start_date": self.config.start_date,
             "end_date": self.config.end_date,
         }

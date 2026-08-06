@@ -1,7 +1,7 @@
 {   
-    "bq_input_messages": "gfw-int-pipe-v3.pipe_ais_v3_internal.research_messages",
-    "bq_input_segments": "global-fishing-watch.pipe_ais_v3_published.segs_activity",
-    "bq_output_gaps": "gfw-int-pipe-v3.pipe_ais_v3_internal.raw_gaps",
+    "bq_in_messages": "gfw-int-pipe-v3.pipe_ais_v3_internal.research_messages",
+    "bq_in_segments": "global-fishing-watch.pipe_ais_v3_published.segs_activity",
+    "bq_out_gaps": "gfw-int-pipe-v3.pipe_ais_v3_internal.raw_gaps",
     "date_range": [
         "2012-01-01",
         "2025-11-24"
