@@ -8,14 +8,14 @@ from datetime import date, timedelta
 from gfw.common.config import PipelineConfig
 from gfw.common.beam.pipeline.hooks import create_view_hook, delete_events_hook, create_table_hook
 
-from pipe_gaps.pipelines.detect.table_config import GapsTableConfig, GapsTableDescription
-from pipe_gaps.pipelines.detect.hooks import create_segments_n_days_ahead_hook
+from pipe_gaps.pipelines.raw_gaps.table_config import GapsTableConfig, GapsTableDescription
+from pipe_gaps.pipelines.raw_gaps.hooks import create_segments_n_days_ahead_hook
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
-class DetectGapsConfig(PipelineConfig):
+class RawGapsConfig(PipelineConfig):
     filter_not_overlapping_and_short: bool = False
     filter_good_seg: bool = False
     open_gaps_start_date: str = "2019-01-01"

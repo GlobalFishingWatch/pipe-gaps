@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from pipe_gaps.pipelines.detect.messages import Messages
+from pipe_gaps.pipelines.raw_gaps.messages import Messages
 
 from tests.conftest import create_message, utc_datetime
 

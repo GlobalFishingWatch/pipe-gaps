@@ -7,14 +7,14 @@ from gfw.common.beam.transforms.read_from_json import ReadFromJson
 from gfw.common.beam.transforms.write_to_json import WriteToJson
 from gfw.common.beam.transforms.read_from_bigquery import ReadFromBigQuery
 
-from pipe_gaps.pipelines.detect.factory import DetectGapsLinearDagFactory
-from pipe_gaps.pipelines.detect.transforms.detect_gaps import DetectGaps
+from pipe_gaps.pipelines.raw_gaps.factory import RawGapsLinearDagFactory
+from pipe_gaps.pipelines.raw_gaps.transforms.detect_gaps import DetectGaps
 
 
 def test_sources_with_json_in_and_bq_in(base_config):
     # Test with both JSON and BigQuery inputs
     base_config = replace(base_config, json_in_messages="path/to/json")
-    factory = DetectGapsLinearDagFactory(base_config)
+    factory = RawGapsLinearDagFactory(base_config)
 
     sources = factory.sources
     # Should include ReadFromJson and ReadFromBigQuery transforms
@@ -26,7 +26,7 @@ def test_sources_with_json_in_and_bq_in(base_config):
 def test_sources_with_only_bq_in(base_config):
     # JSON input disabled
     base_config = replace(base_config, json_in_messages=None)
-    factory = DetectGapsLinearDagFactory(base_config)
+    factory = RawGapsLinearDagFactory(base_config)
 
     sources = factory.sources
     assert all(isinstance(s, ReadFromBigQuery) for s in sources)
@@ -34,7 +34,7 @@ def test_sources_with_only_bq_in(base_config):
 
 
 def test_core_property(base_config):
-    factory = DetectGapsLinearDagFactory(base_config)
+    factory = RawGapsLinearDagFactory(base_config)
     core = factory.core
 
     assert isinstance(core, DetectGaps)
@@ -48,7 +48,7 @@ def test_core_property(base_config):
 
 def test_side_inputs_with_open_gaps(base_config):
     # Case where skip_open_gaps is False and start_date > open_gaps_start
-    factory = DetectGapsLinearDagFactory(base_config)
+    factory = RawGapsLinearDagFactory(base_config)
     side_inputs = factory.side_inputs
 
     assert side_inputs is not None
@@ -57,7 +57,7 @@ def test_side_inputs_with_open_gaps(base_config):
 
 def test_side_inputs_skipped_when_configured(base_config):
     base_config = replace(base_config, skip_open_gaps=True)
-    factory = DetectGapsLinearDagFactory(base_config)
+    factory = RawGapsLinearDagFactory(base_config)
     side_inputs = factory.side_inputs
 
     assert side_inputs is None
@@ -72,7 +72,7 @@ def test_side_inputs_skipped_when_start_date_before_open_gaps(base_config):
         open_gaps_start_date="2021-01-01",
     )
 
-    factory = DetectGapsLinearDagFactory(base_config)
+    factory = RawGapsLinearDagFactory(base_config)
     side_inputs = factory.side_inputs
 
     assert side_inputs is None
@@ -80,7 +80,7 @@ def test_side_inputs_skipped_when_start_date_before_open_gaps(base_config):
 
 def test_sinks_with_bq_and_json(base_config):
     base_config = replace(base_config, save_json=True)
-    factory = DetectGapsLinearDagFactory(base_config)
+    factory = RawGapsLinearDagFactory(base_config)
 
     sinks = factory.sinks
     # Should contain a WriteToBigQueryWrapper and a WriteToJson
@@ -90,7 +90,7 @@ def test_sinks_with_bq_and_json(base_config):
 
 def test_sinks_with_only_bq(base_config):
     base_config = replace(base_config, save_json=False)
-    factory = DetectGapsLinearDagFactory(base_config)
+    factory = RawGapsLinearDagFactory(base_config)
 
     sinks = factory.sinks
     assert all(isinstance(s, WriteToBigQueryWrapper) for s in sinks)

@@ -28,7 +28,7 @@ class GapEventQuery(Query):
         start_date, end_date = self.config.date_range
 
         return {
-            "source_gaps": self.config.bq_in_gaps,
+            "source_gaps": self.config.bq_in_raw_gaps,
             "source_segment_info": self.config.bq_in_segment_info,
             "source_segs_activity": self.config.bq_in_segs_activity,
             "source_regions": self.config.bq_in_regions,
@@ -67,7 +67,7 @@ def run(
     )
 
     table_config = GapEventsTableConfig(
-        table_id=config.bq_output,
+        table_id=config.bq_out_gap_events,
         description=GapEventsTableDescription(
             version=__version__,
             relevant_params={}
@@ -77,7 +77,7 @@ def run(
     logger.info(f'Executing events query for date range: {config.date_range}...')
     bq.run_query(
         query_str=events_query.render(),
-        destination=config.bq_output,
+        destination=config.bq_out_gap_events,
         labels=config.labels,
         write_disposition="WRITE_TRUNCATE"
     )

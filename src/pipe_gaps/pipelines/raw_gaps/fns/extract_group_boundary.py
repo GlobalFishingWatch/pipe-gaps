@@ -5,7 +5,7 @@ from apache_beam.transforms.core import DoFn
 from apache_beam.transforms.window import IntervalWindow
 from gfw.common.datetime import datetime_from_date
 
-from pipe_gaps.pipelines.detect.messages import Messages
+from pipe_gaps.pipelines.raw_gaps.messages import Messages
 
 
 @dataclass(eq=True, frozen=True)

@@ -7,12 +7,12 @@ from gfw.common.beam.transforms.read_from_bigquery import ReadFromBigQuery
 
 from pipe_gaps.core import GapDetector
 from pipe_gaps.queries import GapsQuery, MessagesQuery
-from pipe_gaps.pipelines.detect.transforms.detect_gaps import DetectGaps
-from pipe_gaps.pipelines.detect.config import DetectGapsConfig
+from pipe_gaps.pipelines.raw_gaps.transforms.detect_gaps import DetectGaps
+from pipe_gaps.pipelines.raw_gaps.config import RawGapsConfig
 
 
-class DetectGapsLinearDagFactory(LinearDagFactory):
-    def __init__(self, config: DetectGapsConfig):
+class RawGapsLinearDagFactory(LinearDagFactory):
+    def __init__(self, config: RawGapsConfig):
         self.config = config
 
     @property

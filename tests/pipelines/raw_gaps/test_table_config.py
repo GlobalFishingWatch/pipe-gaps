@@ -1,4 +1,4 @@
-from pipe_gaps.pipelines.detect.table_config import (
+from pipe_gaps.pipelines.raw_gaps.table_config import (
     GapsTableConfig,
 )
 

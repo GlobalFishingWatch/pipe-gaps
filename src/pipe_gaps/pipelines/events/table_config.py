@@ -6,7 +6,7 @@ from gfw.common.bigquery.table_description import TableDescription
 from gfw.common.strings import collapse_paragraphs
 
 from pipe_gaps.assets import schemas
-from pipe_gaps.pipelines.detect.table_config import CAVEATS
+from pipe_gaps.pipelines.raw_gaps.table_config import CAVEATS
 
 SUMMARY = """\
 We create a gap event when the period of time between

@@ -1,10 +1,10 @@
 import pytest
-from pipe_gaps.pipelines.detect.config import DetectGapsConfig
+from pipe_gaps.pipelines.raw_gaps.config import RawGapsConfig
 
 
 @pytest.fixture
 def base_config():
-    return DetectGapsConfig(
+    return RawGapsConfig(
         date_range=("2023-01-01", "2023-01-02"),
         json_in_messages=None,
         bq_in_messages="some_bq_table",

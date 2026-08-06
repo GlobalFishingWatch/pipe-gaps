@@ -3,7 +3,7 @@ from types import SimpleNamespace
 
 from gfw.common.cli import Command, Option
 
-from pipe_gaps.pipelines.detect.main import run
+from pipe_gaps.pipelines.raw_gaps.main import run
 from pipe_gaps.cli.validations import date_range, ssvids
 
 DESCRIPTION = """\

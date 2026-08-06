@@ -14,9 +14,9 @@ from pipe_gaps.common.key import Key
 from gfw.common.beam.transforms import ApplySlidingWindows, GroupBy
 
 from pipe_gaps.common.beam.transforms import FilterWindowsByDateRange
-from pipe_gaps.pipelines.detect.fns.process_group import ProcessGroup
-from pipe_gaps.pipelines.detect.fns.process_boundaries import ProcessBoundaries
-from pipe_gaps.pipelines.detect.fns.extract_group_boundary import ExtractGroupBoundary
+from pipe_gaps.pipelines.raw_gaps.fns.process_group import ProcessGroup
+from pipe_gaps.pipelines.raw_gaps.fns.process_boundaries import ProcessBoundaries
+from pipe_gaps.pipelines.raw_gaps.fns.extract_group_boundary import ExtractGroupBoundary
 
 
 logger = logging.getLogger(__name__)
