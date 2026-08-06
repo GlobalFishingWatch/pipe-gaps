@@ -1,7 +1,7 @@
 from .raw_gaps import RawGaps
-from .publish import PublishGaps
+from .gap_events import GapEvents
 
 __all__ = [
     "RawGaps",
-    "PublishGaps",
+    "GapEvents",
 ]

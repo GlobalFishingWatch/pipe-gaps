@@ -8,7 +8,7 @@ from gfw.common.logging import LoggerConfig
 from gfw.common.cli.formatting import default_formatter
 
 from pipe_gaps.version import __version__
-from pipe_gaps.cli.commands import RawGaps, PublishGaps
+from pipe_gaps.cli.commands import RawGaps, GapEvents
 
 
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ def run(args):
         formatter=default_formatter(max_pos=120),
         subcommands=[
             RawGaps,
-            PublishGaps,
+            GapEvents,
         ],
         version=__version__,
         examples=[

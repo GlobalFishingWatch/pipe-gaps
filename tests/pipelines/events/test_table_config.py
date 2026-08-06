@@ -1,4 +1,4 @@
-from pipe_gaps.pipelines.publish.table_config import (
+from pipe_gaps.pipelines.events.table_config import (
     GapEventsTableConfig,
     GapEventsTableDescription,
 )

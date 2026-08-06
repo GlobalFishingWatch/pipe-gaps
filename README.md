@@ -382,7 +382,7 @@ we need to translate the output to the common schema defined in
 [schemas/events.json](src/pipe_gaps/assets/schemas/events.json).
 All the needed transformations are encapsulated in the query
 [queries/events.sql.j2](src/pipe_gaps/assets/queries/events.sql.j2).
-This process can be executed with the command `pipe-gaps publish`. See next section.
+This process can be executed with the command `pipe-gaps gap-events`. See next section.
 
 </div>
 
@@ -400,25 +400,25 @@ usage: pipe-gaps (v0.9.1). [-h] <command> ...
 Tools for detecting interruptions in vessel position reporting systems.
 
 options:
-  -h, --help  show this help message and exit
+  -h, --help    show this help message and exit
 
 Available subcommands:
   <command>
-    raw-gaps  Detects time gaps in position messages.
-              
-              The definition of a gap is configurable by a time threshold 'min-gap-length'.
-              For more information, check the documentation at
-                  https://github.com/GlobalFishingWatch/pipe-gaps/.
-              
-              You can provide a configuration file or command-line arguments.
-              The latter take precedence, so if you provide both, command-line arguments
-              will overwrite options in the config file provided.
-              
-              Besides the arguments defined here, you can also pass any pipeline option
-              defined for Apache Beam PipelineOptions class. For more information, see
-                  https://cloud.google.com/dataflow/docs/reference/pipeline-options#python.
-              
-    publish   Enrich gaps data and create publication events.
+    raw-gaps    Detects time gaps in position messages.
+                
+                The definition of a gap is configurable by a time threshold 'min-gap-length'.
+                For more information, check the documentation at
+                    https://github.com/GlobalFishingWatch/pipe-gaps/.
+                
+                You can provide a configuration file or command-line arguments.
+                The latter take precedence, so if you provide both, command-line arguments
+                will overwrite options in the config file provided.
+                
+                Besides the arguments defined here, you can also pass any pipeline option
+                defined for Apache Beam PipelineOptions class. For more information, see
+                    https://cloud.google.com/dataflow/docs/reference/pipeline-options#python.
+                
+    gap-events  Enriches gaps data and creates publication events.
 
 Examples:
     pipe-gaps raw-gaps -c config/sample-from-file-to-file.json --min-gap-length 1.3
@@ -470,7 +470,7 @@ This is an example of a JSON config file for `raw-gaps` command:
   where _you should_ pass `--no_use_public_ips` argument. 
 
 
-This is an example of a YAML config file for the publication `publish` command:
+This is an example of a YAML config file for the publication `gap-events` command:
 ```yaml
 # Query parameters:
 bq_in_gaps: "gfw-int-pipe-v3.pipe_ais_v3_internal.raw_gaps_last_versions"

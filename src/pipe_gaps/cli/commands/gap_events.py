@@ -5,7 +5,7 @@ from gfw.common.cli import Command, Option
 from gfw.common.cli.actions import NestedKeyValueAction
 
 from pipe_gaps.cli.validations import date_range
-from pipe_gaps.pipelines.publish.main import run
+from pipe_gaps.pipelines.events.main import run
 
 DESCRIPTION = """\
 Enriches gaps data and creates publication events.
@@ -29,10 +29,10 @@ HELP_BQ_PROJECT = "Project to use when executing the events query."
 HELP_DRY_RUN = "If True, executes queries in dry run mode."
 
 
-class PublishGaps(Command):
+class GapEvents(Command):
     @property
     def name(cls):
-        return "publish"
+        return "gap-events"
 
     @property
     def description(self):

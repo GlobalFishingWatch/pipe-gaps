@@ -3,7 +3,7 @@ from pipe_gaps.cli import main
 
 def test_cli_executes_run(tmp_path):
     args = [
-        "publish",
+        "gap-events",
         "--bq-in-gaps", "project.dataset.table",
         "--bq-in-segment-info", "project.dataset.table",
         "--bq-in-segs-activity", "project.dataset.table",

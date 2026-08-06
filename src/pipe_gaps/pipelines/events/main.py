@@ -7,8 +7,8 @@ from gfw.common.bigquery.helper import BigQueryHelper
 from gfw.common.query import Query
 
 from pipe_gaps.version import __version__
-from pipe_gaps.pipelines.publish.config import PublishGapsConfig
-from pipe_gaps.pipelines.publish.table_config import (
+from pipe_gaps.pipelines.events.config import GapEventsConfig
+from pipe_gaps.pipelines.events.table_config import (
     GapEventsTableConfig, GapEventsTableDescription
 )
 
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class GapEventQuery(Query):
-    def __init__(self, config: PublishGapsConfig) -> None:
+    def __init__(self, config: GapEventsConfig) -> None:
         self.config = config
 
     @cached_property
@@ -48,10 +48,10 @@ def run(
     bq_client_factory: Callable = None,
 ) -> None:
 
-    config = PublishGapsConfig.from_namespace(
+    config = GapEventsConfig.from_namespace(
         config,
         version=__version__,
-        name="pipe-gaps--publish"
+        name="pipe-gaps--gap-events"
     )
 
     bq_client_factory = bq_client_factory or BigQueryHelper.get_client_factory(

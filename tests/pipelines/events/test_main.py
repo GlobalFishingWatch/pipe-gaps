@@ -1,7 +1,7 @@
 import pytest
 from types import SimpleNamespace
 
-from pipe_gaps.pipelines.publish import main
+from pipe_gaps.pipelines.events import main
 
 
 @pytest.fixture

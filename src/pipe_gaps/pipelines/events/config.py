@@ -7,7 +7,7 @@ from gfw.common.config import PipelineConfig
 
 
 @dataclass(frozen=True, kw_only=True)
-class PublishGapsConfig(PipelineConfig):
+class GapEventsConfig(PipelineConfig):
     bq_in_gaps: str
     bq_in_segment_info: str
     bq_in_segs_activity: str
