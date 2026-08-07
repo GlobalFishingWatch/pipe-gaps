@@ -1,8 +1,8 @@
 {   
-    "bq_input_messages": "world-fishing-827.pipe_ais_v3_internal.research_messages",
-    "bq_input_segments": "world-fishing-827.pipe_ais_v3_published.segs_activity",
-    "bq_output_gaps": "world-fishing-827.scratch_tomas_ttl30d.raw_gaps",
-    "bq_output_gaps_description": false,
+    "bq_in_messages": "world-fishing-827.pipe_ais_v3_internal.research_messages",
+    "bq_in_segments": "world-fishing-827.pipe_ais_v3_published.segs_activity",
+    "bq_out_gaps": "world-fishing-827.scratch_tomas_ttl30d.raw_gaps",
+    "bq_out_gaps_description": false,
     "open_gaps_start_date": "2012-01-01",
     "skip_open_gaps": true,
     "date_range": [

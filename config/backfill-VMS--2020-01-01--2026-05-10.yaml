@@ -1,6 +1,6 @@
-bq_input_messages: gfw-int-vms-v3.pipe_vms_v3_internal.research_messages
-bq_input_segments: global-fishing-watch.pipe_vms_v4_published.segs_activity
-bq_output_gaps: world-fishing-827.scratch_tomas_ttl30d.raw_gaps_vms_backfill
+bq_in_messages: gfw-int-vms-v3.pipe_vms_v3_internal.research_messages
+bq_in_segments: global-fishing-watch.pipe_vms_v4_published.segs_activity
+bq_out_gaps: world-fishing-827.scratch_tomas_ttl30d.raw_gaps_vms_backfill
 date_range:
   - "2012-01-01"
   - "2026-05-10"

@@ -1,0 +1,112 @@
+from gfw.common.beam.transforms import (
+    ReadFromBigQuery,
+    ReadFromJson,
+    WriteToBigQueryWrapper,
+    WriteToJson,
+)
+from gfw.common.beam.pipeline.dag.factory import LinearDagFactory
+
+from pipe_gaps.core import GapDetector
+from pipe_gaps.queries import GapsQuery, MessagesQuery
+from pipe_gaps.pipelines.raw_gaps.transforms.detect_gaps import DetectGaps
+from pipe_gaps.pipelines.raw_gaps.config import RawGapsConfig
+
+
+class RawGapsLinearDagFactory(LinearDagFactory):
+    def __init__(self, config: RawGapsConfig):
+        self.config = config
+
+    @property
+    def sources(self):
+        # Constructs the list of source PTransforms based on config.
+        sources = []
+        if self.config.json_in_messages is not None:
+            sources.append(
+                ReadFromJson(
+                    input_file=self.config.json_in_messages,
+                    lines=True,
+                )
+            )
+
+        if self.config.bq_in_messages is not None:
+            query = MessagesQuery(
+                source_messages=self.config.bq_in_messages,
+                source_segments=self.config.bq_in_segments,
+                start_date=self.config.messages_query_start_date,
+                end_date=self.config.end_date,
+                ssvids=self.config.ssvids,
+                filter_not_overlapping_and_short=self.config.filter_not_overlapping_and_short,
+                filter_good_seg=self.config.filter_good_seg,
+            ).with_env(self.config.jinja_env)
+
+            sources.append(
+                ReadFromBigQuery.from_query(
+                    query,
+                    method=self.config.bq_read_method,
+                    read_from_bigquery_factory=self.read_from_bigquery_factory,
+                    label="ReadMessages",
+                ),
+            )
+
+        return sources
+
+    @property
+    def core(self):
+        # Core PTransform: Detect gaps in the data.
+        core_ptransform = DetectGaps(
+            gap_detector=GapDetector(
+                threshold=self.config.min_gap_length,
+                normalize_output=self.config.normalize_output,
+            ),
+            eval_last=self.config.eval_last,
+            date_range=self.config.date_range,
+            window_period_d=self.config.window_period_d,
+            window_offset_h=self.config.n_hours_before,
+        )
+        return core_ptransform
+
+    @property
+    def side_inputs(self):
+        """Returns side inputs for the core transform (open gaps data)."""
+        side_inputs = None
+        if (
+            not self.config.skip_open_gaps
+            and self.config.start_date > self.config.open_gaps_start
+        ):
+            side_inputs = ReadFromBigQuery.from_query(
+                query=GapsQuery(
+                    source_gaps=self.config.bq_in_open_gaps or self.config.bq_out_gaps,
+                    start_date=self.config.open_gaps_start,
+                    is_closed=False,
+                    use_timestamp=True,
+                ).with_env(self.config.jinja_env),
+                method=self.config.bq_read_method,
+                read_from_bigquery_factory=self.read_from_bigquery_factory,
+                label="ReadOpenGaps",
+            )
+        return side_inputs
+
+    @property
+    def sinks(self):
+        # Constructs the list of sink PTransforms based on config.
+        sinks = []
+        if self.config.bq_out_gaps is not None:
+            sinks.append(
+                WriteToBigQueryWrapper(
+                    table=self.config.table_config.table_id,
+                    schema=self.config.table_config.schema,
+                    write_to_bigquery_factory=self.write_to_bigquery_factory,
+                    write_disposition=self.config.bq_write_disposition,
+                    label="WriteGaps",
+                )
+            )
+
+        if self.config.save_json:
+            sinks.append(
+                WriteToJson(
+                    output_prefix="gaps",
+                    output_dir=self.config.work_dir,
+                )
+            )
+
+        return sinks

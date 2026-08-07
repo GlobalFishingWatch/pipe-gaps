@@ -69,7 +69,7 @@ geographiclib==2.1
     # via geopy
 geopy==2.4.1
     # via pipe-gaps (pyproject.toml)
-gfw-common==0.10.0
+gfw-common==0.14.1
     # via pipe-gaps (pyproject.toml)
 google-api-core==2.30.0
     # via
@@ -381,7 +381,9 @@ protobuf==5.29.6
 py-cpuinfo==9.0.0
     # via pipe-gaps (pyproject.toml)
 pyarrow==18.1.0
-    # via apache-beam
+    # via
+    #   apache-beam
+    #   gfw-common
 pyarrow-hotfix==0.7
     # via apache-beam
 pyasn1==0.6.2
@@ -413,6 +415,7 @@ pyparsing==3.3.2
 python-dateutil==2.9.0.post0
     # via
     #   apache-beam
+    #   gfw-common
     #   google-cloud-bigquery
     #   pandas
     #   pg8000
