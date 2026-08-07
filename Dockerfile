@@ -31,7 +31,7 @@ ENV PYTHONUNBUFFERED=1
 COPY --from=builder /install /usr/local
 
 # APACHE BEAM INTEGRATION
-COPY --from=apache/beam_python3.12_sdk:2.71.0 /opt/apache/beam /opt/apache/beam
+COPY --from=apache/beam_python3.12_sdk:2.75.0 /opt/apache/beam /opt/apache/beam
 ENTRYPOINT ["/opt/apache/beam/boot"]
 
 WORKDIR /opt/project

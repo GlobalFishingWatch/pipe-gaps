@@ -14,7 +14,7 @@ anyio==4.12.1
     # via
     #   google-genai
     #   httpx
-apache-beam==2.71.0
+apache-beam==2.75.0
     # via
     #   pipe-gaps (pyproject.toml)
     #   gfw-common
@@ -24,8 +24,10 @@ attrs==25.4.0
     # via aiohttp
 beartype==0.22.9
     # via apache-beam
-betterproto==1.2.5
-    # via envoy-data-plane
+betterproto==2.0.0b6
+    # via
+    #   pipe-gaps (pyproject.toml)
+    #   envoy-data-plane
 cachetools==6.2.6
     # via apache-beam
 certifi==2026.2.25
@@ -53,7 +55,7 @@ dnspython==2.8.0
     #   pymongo
 docstring-parser==0.17.0
     # via google-cloud-aiplatform
-envoy-data-plane==0.1.0
+envoy-data-plane==1.0.3
     # via apache-beam
 fastavro==1.12.1
     # via apache-beam
@@ -78,14 +80,15 @@ google-api-core==2.30.0
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
     #   google-cloud-bigtable
+    #   google-cloud-build
     #   google-cloud-core
+    #   google-cloud-dataflow-client
     #   google-cloud-datastore
     #   google-cloud-dlp
     #   google-cloud-kms
     #   google-cloud-language
     #   google-cloud-monitoring
     #   google-cloud-pubsub
-    #   google-cloud-pubsublite
     #   google-cloud-recommendations-ai
     #   google-cloud-resource-manager
     #   google-cloud-secret-manager
@@ -105,7 +108,9 @@ google-auth==2.49.0
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
     #   google-cloud-bigtable
+    #   google-cloud-build
     #   google-cloud-core
+    #   google-cloud-dataflow-client
     #   google-cloud-datastore
     #   google-cloud-dlp
     #   google-cloud-kms
@@ -134,6 +139,8 @@ google-cloud-bigquery-storage==2.36.2
     # via apache-beam
 google-cloud-bigtable==2.35.0
     # via apache-beam
+google-cloud-build==3.38.1
+    # via apache-beam
 google-cloud-core==2.5.0
     # via
     #   apache-beam
@@ -142,6 +149,8 @@ google-cloud-core==2.5.0
     #   google-cloud-datastore
     #   google-cloud-spanner
     #   google-cloud-storage
+google-cloud-dataflow-client==0.13.0
+    # via apache-beam
 google-cloud-datastore==2.23.0
     # via apache-beam
 google-cloud-dlp==3.34.0
@@ -153,15 +162,13 @@ google-cloud-language==2.19.0
 google-cloud-monitoring==2.29.1
     # via google-cloud-spanner
 google-cloud-pubsub==2.35.0
-    # via
-    #   apache-beam
-    #   google-cloud-pubsublite
-google-cloud-pubsublite==1.13.0
     # via apache-beam
 google-cloud-recommendations-ai==0.10.18
     # via apache-beam
 google-cloud-resource-manager==1.16.0
-    # via google-cloud-aiplatform
+    # via
+    #   apache-beam
+    #   google-cloud-aiplatform
 google-cloud-secret-manager==2.26.0
     # via apache-beam
 google-cloud-spanner==3.63.0
@@ -193,6 +200,7 @@ googleapis-common-protos==1.73.0
 grpc-google-iam-v1==0.14.3
     # via
     #   google-cloud-bigtable
+    #   google-cloud-build
     #   google-cloud-kms
     #   google-cloud-pubsub
     #   google-cloud-resource-manager
@@ -200,18 +208,19 @@ grpc-google-iam-v1==0.14.3
     #   google-cloud-spanner
 grpc-interceptor==0.15.4
     # via google-cloud-spanner
-grpcio==1.65.5
+grpcio==1.83.0
     # via
     #   apache-beam
     #   google-api-core
     #   google-cloud-bigquery-storage
+    #   google-cloud-build
+    #   google-cloud-dataflow-client
     #   google-cloud-datastore
     #   google-cloud-dlp
     #   google-cloud-kms
     #   google-cloud-language
     #   google-cloud-monitoring
     #   google-cloud-pubsub
-    #   google-cloud-pubsublite
     #   google-cloud-resource-manager
     #   google-cloud-secret-manager
     #   google-cloud-videointelligence
@@ -220,11 +229,13 @@ grpcio==1.65.5
     #   grpc-google-iam-v1
     #   grpc-interceptor
     #   grpcio-status
-grpcio-status==1.65.5
+    #   grpcio-tools
+grpcio-status==1.83.0
     # via
     #   google-api-core
     #   google-cloud-pubsub
-    #   google-cloud-pubsublite
+grpcio-tools==1.81.1
+    # via envoy-data-plane
 grpclib==0.4.9
     # via betterproto
 h11==0.16.0
@@ -318,8 +329,6 @@ opentelemetry-semantic-conventions==0.61b0
     #   opentelemetry-sdk
 orjson==3.11.7
     # via apache-beam
-overrides==7.7.0
-    # via google-cloud-pubsublite
 packaging==26.0
     # via
     #   apache-beam
@@ -328,6 +337,8 @@ packaging==26.0
 pandas==2.3.3
     # via pipe-gaps (pyproject.toml)
 pg8000==1.31.5
+    # via apache-beam
+pillow==12.3.0
     # via apache-beam
 pluggy==1.6.0
     # via keyrings-google-artifactregistry-auth
@@ -342,26 +353,29 @@ proto-plus==1.27.1
     #   google-cloud-aiplatform
     #   google-cloud-bigquery-storage
     #   google-cloud-bigtable
+    #   google-cloud-build
+    #   google-cloud-dataflow-client
     #   google-cloud-datastore
     #   google-cloud-dlp
     #   google-cloud-kms
     #   google-cloud-language
     #   google-cloud-monitoring
     #   google-cloud-pubsub
-    #   google-cloud-pubsublite
     #   google-cloud-recommendations-ai
     #   google-cloud-resource-manager
     #   google-cloud-secret-manager
     #   google-cloud-spanner
     #   google-cloud-videointelligence
     #   google-cloud-vision
-protobuf==5.29.6
+protobuf==6.33.6
     # via
     #   apache-beam
     #   google-api-core
     #   google-cloud-aiplatform
     #   google-cloud-bigquery-storage
     #   google-cloud-bigtable
+    #   google-cloud-build
+    #   google-cloud-dataflow-client
     #   google-cloud-datastore
     #   google-cloud-dlp
     #   google-cloud-kms
@@ -377,6 +391,7 @@ protobuf==5.29.6
     #   googleapis-common-protos
     #   grpc-google-iam-v1
     #   grpcio-status
+    #   grpcio-tools
     #   proto-plus
 py-cpuinfo==9.0.0
     # via pipe-gaps (pyproject.toml)
@@ -415,6 +430,7 @@ pyparsing==3.3.2
 python-dateutil==2.9.0.post0
     # via
     #   apache-beam
+    #   betterproto
     #   gfw-common
     #   google-cloud-bigquery
     #   pandas
@@ -454,6 +470,8 @@ scramp==1.4.8
     # via pg8000
 secretstorage==3.5.0
     # via keyring
+setuptools==83.0.0
+    # via grpcio-tools
 six==1.17.0
     # via
     #   google-apitools
@@ -468,8 +486,6 @@ sqlparse==0.5.0
     #   pipe-gaps (pyproject.toml)
     #   gfw-common
     #   google-cloud-spanner
-stringcase==1.2.0
-    # via betterproto
 tenacity==9.1.4
     # via google-genai
 typing-extensions==4.15.0
@@ -479,6 +495,7 @@ typing-extensions==4.15.0
     #   apache-beam
     #   google-cloud-aiplatform
     #   google-genai
+    #   grpcio
     #   opentelemetry-api
     #   opentelemetry-resourcedetector-gcp
     #   opentelemetry-sdk
