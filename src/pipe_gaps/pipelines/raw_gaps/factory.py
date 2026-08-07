@@ -1,9 +1,10 @@
-from gfw.common.beam.transforms import WriteToBigQueryWrapper
-
-from gfw.common.beam.transforms.read_from_json import ReadFromJson
-from gfw.common.beam.transforms.write_to_json import WriteToJson
+from gfw.common.beam.transforms import (
+    ReadFromBigQuery,
+    ReadFromJson,
+    WriteToBigQueryWrapper,
+    WriteToJson,
+)
 from gfw.common.beam.pipeline.dag.factory import LinearDagFactory
-from gfw.common.beam.transforms.read_from_bigquery import ReadFromBigQuery
 
 from pipe_gaps.core import GapDetector
 from pipe_gaps.queries import GapsQuery, MessagesQuery

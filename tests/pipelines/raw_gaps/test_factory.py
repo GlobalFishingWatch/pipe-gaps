@@ -1,11 +1,12 @@
 from datetime import timedelta
 from dataclasses import replace
 
-from gfw.common.beam.transforms import WriteToBigQueryWrapper
-
-from gfw.common.beam.transforms.read_from_json import ReadFromJson
-from gfw.common.beam.transforms.write_to_json import WriteToJson
-from gfw.common.beam.transforms.read_from_bigquery import ReadFromBigQuery
+from gfw.common.beam.transforms import (
+    ReadFromBigQuery,
+    ReadFromJson,
+    WriteToBigQueryWrapper,
+    WriteToJson,
+)
 
 from pipe_gaps.pipelines.raw_gaps.factory import RawGapsLinearDagFactory
 from pipe_gaps.pipelines.raw_gaps.transforms.detect_gaps import DetectGaps
