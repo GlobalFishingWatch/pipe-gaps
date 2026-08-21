@@ -19,6 +19,10 @@ HELP_BQ_IN_PORT_VISITS = "BigQuery table with port visits."
 HELP_BQ_IN_REGIONS = "BigQuery table with regions."
 HELP_BQ_IN_VESSELS_BYYEAR = "BigQuery table with vessels by year."
 HELP_BQ_IN_VESSELS_BYYEAR_FIELD_PREFIX = "Field prefix for fields in bq-in-vessels-by-year."
+HELP_BQ_IN_VESSELS_BYYEAR_FLAG_FIELD = (
+    "Field to read the vessel flag from in bq-in-vessels-by-year. "
+    "Defaults to «<field-prefix>mmsi_flag»; VMS pipelines pass «gfw_best_flag»."
+)
 HELP_LABELS = "Labels to audit costs over the queries."
 
 HELP_BQ_OUT_GAP_EVENTS = "BigQuery table in which to store the gap events."
@@ -53,6 +57,8 @@ class GapEvents(Command):
             Option("--bq-in-vessels-byyear", type=str, help=HELP_BQ_IN_VESSELS_BYYEAR),
             Option("--bq-in-vessels-byyear-field-prefix", type=str,
                    help=HELP_BQ_IN_VESSELS_BYYEAR_FIELD_PREFIX, default=""),
+            Option("--bq-in-vessels-byyear-flag-field", type=str,
+                   help=HELP_BQ_IN_VESSELS_BYYEAR_FLAG_FIELD, default=None),
             Option("--bq-out-gap-events", type=str, help=HELP_BQ_OUT_GAP_EVENTS),
             Option("--mock-bq-clients", type=bool, help=HELP_MOCK_BQ_CLIENTS),
             Option("--labels", type=str, nargs="*", action=NestedKeyValueAction, help=HELP_LABELS),
