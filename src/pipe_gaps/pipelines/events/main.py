@@ -36,6 +36,7 @@ class GapEventQuery(Query):
             "source_port_visits": self.config.bq_in_port_visits,
             "source_vessels_byyear": self.config.bq_in_vessels_byyear,
             "vessel_info_field_prefix": self.config.bq_in_vessels_byyear_field_prefix,
+            "vessel_info_flag_field": self.config.vessels_byyear_flag_field,
             "start_date": self.config.start_date,
             "end_date": self.config.end_date,
         }
