@@ -39,7 +39,13 @@ def test_eval_last_defaults_to_true_when_not_passed():
     assert config["eval_last"] is True
 
 
-def test_eval_last_can_be_disabled():
+def test_eval_last_flag_explicitly_enables():
     _, config = main.run(BASE_ARGS + ["--only-render", "--eval-last"])
+
+    assert config["eval_last"] is True
+
+
+def test_no_eval_last_flag_disables():
+    _, config = main.run(BASE_ARGS + ["--only-render", "--no-eval-last"])
 
     assert config["eval_last"] is False
