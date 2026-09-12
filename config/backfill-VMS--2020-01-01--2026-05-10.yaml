@@ -9,7 +9,7 @@ filter_good_seg: true
 min_gap_length: 1
 n_hours_before: 12
 window_period_d: 180
-no_rich_logging: true
+rich_logging: false
 good_seg_stabilization_days: 0
 
 # Apache Beam options

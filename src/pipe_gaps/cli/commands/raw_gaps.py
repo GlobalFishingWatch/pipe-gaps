@@ -1,5 +1,3 @@
-import argparse
-
 from types import SimpleNamespace
 from typing import Any
 
@@ -86,13 +84,7 @@ class RawGaps(Command):
             Option("--date-range", type=date_range, help=HELP_DATE_RANGE),
             Option("--min-gap-length", type=float, required=True, help=HELP_MIN_GAP_LENGTH),
             Option("--window-period-d", type=float, help=HELP_WINDOW_PERIOD_D),
-            Option(
-                "--eval-last",
-                type=bool,
-                default=True,
-                action=argparse.BooleanOptionalAction,
-                help=HELP_EVAL_LAST,
-            ),
+            Option("--eval-last", type=bool, default=True, help=HELP_EVAL_LAST),
             Option("--n-hours-before", default=12, type=float, help=HELP_N_HOURS_BEFORE),
             Option("--good-seg-stabilization-days", default=0, type=int, help=HELP_STABILIZATION),
         ]
