@@ -1,23 +1,39 @@
 import logging
-from types import SimpleNamespace
-from typing import Callable
+
 from functools import cached_property
+from types import SimpleNamespace
+from typing import Any, Callable, Sequence
 
 from gfw.common.bigquery.helper import BigQueryHelper
 from gfw.common.query import Query
-
-from pipe_gaps.version import __version__
 from pipe_gaps.pipelines.events.config import GapEventsConfig
-from pipe_gaps.pipelines.events.table_config import (
-    GapEventsTableConfig, GapEventsTableDescription
-)
+from pipe_gaps.pipelines.events.table_config import GapEventsTableConfig, GapEventsTableDescription
+from pipe_gaps.version import __version__
+
 
 logger = logging.getLogger(__name__)
 
 
+def fetch_regions_registry(
+    bq_helper: BigQueryHelper, bq_in_regions_registry: str
+) -> list[dict[str, Any]]:
+    """Reads pipe-regions' ``(region, description)`` registry table.
+
+    Used to build the query's region struct and the output table's per-region schema fields
+    dynamically, instead of hardcoding the region list -- see `GapEventQuery.template_vars` and
+    `GapEventsTableConfig.schema`.
+    """
+    query = f"SELECT region, description FROM `{bq_in_regions_registry}` ORDER BY region"
+    rows = bq_helper.run_query(query).tolist(as_dicts=True)
+    return [dict(row) for row in rows]
+
+
 class GapEventQuery(Query):
-    def __init__(self, config: GapEventsConfig) -> None:
+    def __init__(
+        self, config: GapEventsConfig, regions: Sequence[dict[str, Any]] = ()
+    ) -> None:
         self.config = config
+        self.regions = regions
 
     @cached_property
     def template_filename(self) -> str:
@@ -39,6 +55,7 @@ class GapEventQuery(Query):
             "vessel_info_flag_field": self.config.vessels_byyear_flag_field,
             "start_date": self.config.start_date,
             "end_date": self.config.end_date,
+            "regions": [region["region"] for region in self.regions],
         }
 
 
@@ -59,13 +76,14 @@ def run(
         mocked=config.mock_bq_clients
     )
 
-    events_query = GapEventQuery(config)
-
     bq = BigQueryHelper(
         dry_run=config.dry_run,
         project=config.project,
         client_factory=bq_client_factory
     )
+
+    regions = fetch_regions_registry(bq, config.bq_in_regions_registry)
+    events_query = GapEventQuery(config, regions=regions)
 
     table_config = GapEventsTableConfig(
         table_id=config.bq_out_gap_events,
@@ -73,6 +91,7 @@ def run(
             version=__version__,
             relevant_params={}
         ),
+        regions=regions,
     )
 
     logger.info(f'Executing events query for date range: {config.date_range}...')

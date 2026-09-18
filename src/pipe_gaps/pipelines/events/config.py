@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from dataclasses import dataclass, field
 
 # This command does not use beam but PipelineConfig has generic functionality.
@@ -14,6 +15,7 @@ class GapEventsConfig(PipelineConfig):
     bq_in_voyages: str
     bq_in_port_visits: str
     bq_in_regions: str
+    bq_in_regions_registry: str
     bq_in_vessels_byyear: str
     bq_in_vessels_byyear_field_prefix: str
     bq_out_gap_events: str
