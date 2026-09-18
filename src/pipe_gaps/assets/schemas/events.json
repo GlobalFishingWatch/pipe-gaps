@@ -76,7 +76,7 @@
         "type": "RECORD",
         "mode": "NULLABLE",
         "description": "The regions where the event happened. Calculated using the mean position. Per-region fields are populated dynamically at run time from pipe-regions' own registry -- see GapEventsTableConfig.schema.",
-        "fields": [],
+        "fields": []
     },
     {
         "name": "start_distance_from_shore_km",
