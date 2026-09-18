@@ -49,7 +49,7 @@ class GapEventsTableConfig(TableConfig):
             if field["name"] == "regions_mean_position":
                 field["fields"] = [
                     {
-                        "name": region["region"],
+                        "name": region["name"],
                         "type": "STRING",
                         "mode": "REPEATED",
                         "description": region["description"],

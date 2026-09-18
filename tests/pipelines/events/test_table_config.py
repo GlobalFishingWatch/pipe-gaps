@@ -18,8 +18,8 @@ def test_gaps_table_config_schema_regions_mean_position_is_built_from_regions():
     registry`), so a newly registered region shows up here without a pipe-gaps code change.
     """
     regions = [
-        {"region": "eez", "description": "Exclusive Economic Zones."},
-        {"region": "imma", "description": "International Marine Mammal Areas."},
+        {"name": "eez", "description": "Exclusive Economic Zones."},
+        {"name": "imma", "description": "International Marine Mammal Areas."},
     ]
     config = GapEventsTableConfig(table_id="some-table", regions=regions)
 

@@ -80,7 +80,7 @@ def test_fetch_regions_registry_queries_the_given_table():
 
     query_str = bq_helper.client.query.call_args.args[0]
     assert "project.dataset.registry" in query_str
-    assert "SELECT region, description" in query_str
+    assert "SELECT name, description" in query_str
 
 
 class TestRegions:
@@ -89,8 +89,8 @@ class TestRegions:
     """
 
     _REGIONS = [
-        {"region": "eez", "description": "Exclusive Economic Zones."},
-        {"region": "imma", "description": "International Marine Mammal Areas."},
+        {"name": "eez", "description": "Exclusive Economic Zones."},
+        {"name": "imma", "description": "International Marine Mammal Areas."},
     ]
 
     def _query(self, kwargs, regions=_REGIONS):

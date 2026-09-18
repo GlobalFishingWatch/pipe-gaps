@@ -17,13 +17,13 @@ logger = logging.getLogger(__name__)
 def fetch_regions_registry(
     bq_helper: BigQueryHelper, bq_in_regions_registry: str
 ) -> list[dict[str, Any]]:
-    """Reads pipe-regions' ``(region, description)`` registry table.
+    """Reads pipe-regions' ``(name, description)`` registry table.
 
     Used to build the query's region struct and the output table's per-region schema fields
     dynamically, instead of hardcoding the region list -- see `GapEventQuery.template_vars` and
     `GapEventsTableConfig.schema`.
     """
-    query = f"SELECT region, description FROM `{bq_in_regions_registry}` ORDER BY region"
+    query = f"SELECT name, description FROM `{bq_in_regions_registry}` ORDER BY name"
     rows = bq_helper.run_query(query).tolist(as_dicts=True)
     return [dict(row) for row in rows]
 
@@ -55,7 +55,7 @@ class GapEventQuery(Query):
             "vessel_info_flag_field": self.config.vessels_byyear_flag_field,
             "start_date": self.config.start_date,
             "end_date": self.config.end_date,
-            "regions": [region["region"] for region in self.regions],
+            "regions": [region["name"] for region in self.regions],
         }
 
 
