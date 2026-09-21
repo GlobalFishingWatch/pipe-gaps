@@ -1,11 +1,11 @@
-from typing import Any
 from types import SimpleNamespace
+from typing import Any
 
 from gfw.common.cli import Command, Option
 from gfw.common.cli.actions import NestedKeyValueAction
-
 from pipe_gaps.cli.validations import date_range
 from pipe_gaps.pipelines.events.main import run
+
 
 DESCRIPTION = """\
 Enriches gaps data and creates publication events.
@@ -17,6 +17,11 @@ HELP_BQ_IN_SEGS_ACTIVITY = "BigQuery table with research aggregated segments dat
 HELP_BQ_IN_VOYAGES = "BigQuery table with voyages."
 HELP_BQ_IN_PORT_VISITS = "BigQuery table with port visits."
 HELP_BQ_IN_REGIONS = "BigQuery table with regions."
+HELP_BQ_IN_REGISTRY = (
+    "BigQuery table with the region name -> description registry (published by pipe-regions' "
+    "publish-registry command), used to build the query's region struct/schema dynamically "
+    "instead of hardcoding the region list."
+)
 HELP_BQ_IN_VESSELS_BYYEAR = "BigQuery table with vessels by year."
 HELP_BQ_IN_VESSELS_BYYEAR_FIELD_PREFIX = "Field prefix for fields in bq-in-vessels-by-year."
 HELP_BQ_IN_VESSELS_BYYEAR_FLAG_FIELD = (
@@ -54,6 +59,7 @@ class GapEvents(Command):
             Option("--bq-in-voyages", type=str, help=HELP_BQ_IN_VOYAGES),
             Option("--bq-in-port-visits", type=str, help=HELP_BQ_IN_PORT_VISITS),
             Option("--bq-in-regions", type=str, help=HELP_BQ_IN_REGIONS),
+            Option("--bq-in-regions-registry", type=str, required=True, help=HELP_BQ_IN_REGISTRY),
             Option("--bq-in-vessels-byyear", type=str, help=HELP_BQ_IN_VESSELS_BYYEAR),
             Option("--bq-in-vessels-byyear-field-prefix", type=str,
                    help=HELP_BQ_IN_VESSELS_BYYEAR_FIELD_PREFIX, default=""),

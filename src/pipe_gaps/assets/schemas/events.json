@@ -75,79 +75,8 @@
         "name": "regions_mean_position",
         "type": "RECORD",
         "mode": "NULLABLE",
-        "fields":
-        [
-            {
-                "name": "eez",
-                "type": "STRING",
-                "mode": "REPEATED"
-            },
-            {
-                "name": "mpa",
-                "type": "STRING",
-                "mode": "REPEATED"
-            },
-            {
-                "name": "mpa_no_take",
-                "type": "STRING",
-                "mode": "REPEATED"
-            },
-            {
-                "name": "mpa_no_take_partial",
-                "type": "STRING",
-                "mode": "REPEATED"
-            },
-            {
-                "name": "high_seas",
-                "type": "STRING",
-                "mode": "REPEATED"
-            },
-            {
-                "name": "rfmo",
-                "type": "STRING",
-                "mode": "REPEATED"
-            },
-            {
-                "name": "fao",
-                "type": "STRING",
-                "mode": "REPEATED"
-            },
-            {
-                "name": "major_fao",
-                "type": "STRING",
-                "mode": "REPEATED"
-            },
-            {
-                "name": "eez12nm",
-                "type": "STRING",
-                "mode": "REPEATED"
-            },
-            {
-                "name": "hsp",
-                "type": "STRING",
-                "mode": "REPEATED",
-                "description": "High seas pocket."
-            },
-            {
-                "name": "protectedseas",
-                "type": "STRING",
-                "mode": "REPEATED",
-                "description": "Protected seas."
-            },
-            {
-                "name": "duke_paa",
-                "type": "STRING",
-                "mode": "REPEATED",
-                "description": "Preferential Access Areas - Duke."
-            },
-            {
-                "name": "fra_gfcm_fao",
-                "type": "STRING",
-                "mode": "REPEATED",
-                "description": "General Fisheries Commission for the Mediterranean - GFCM."
-            }
-        ],
-        "description": "The regions where the event happened. Calculated using the mean position."
+        "description": "The regions where the event happened. Calculated using the mean position. Per-region fields are populated dynamically at run time from pipe-regions' own registry -- see GapEventsTableConfig.schema.",
+        "fields": []
     },
     {
         "name": "start_distance_from_shore_km",

@@ -10,6 +10,7 @@ def test_cli_executes_run(tmp_path):
         "--bq-in-voyages", "project.dataset.table",
         "--bq-in-port-visits", "project.dataset.table",
         "--bq-in-regions", "project.dataset.table",
+        "--bq-in-regions-registry", "project.dataset.registry",
         "--bq-in-vessels-byyear", "project.dataset.table",
         "--bq-out-gap-events", "project.dataset.output",
         "--date-range", "2024-01-01,2024-01-02",
