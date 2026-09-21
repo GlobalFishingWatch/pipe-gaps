@@ -83,6 +83,21 @@ def test_fetch_regions_registry_queries_the_given_table():
     assert "SELECT name, description" in query_str
 
 
+def test_fetch_regions_registry_always_runs_for_real_under_dry_run():
+    """Even with `--dry-run`, this metadata read must actually execute.
+
+    Otherwise it returns no rows (BigQuery dry runs never return data), `regions` ends up
+    empty, and the main query renders an invalid `STRUCT<>` (see `utils.sql.j2`) -- breaking
+    dry-run validation of a query that would otherwise succeed for real.
+    """
+    bq_helper = BigQueryHelper.mocked(dry_run=True)
+
+    fetch_regions_registry(bq_helper, "project.dataset.registry")
+
+    job_config = bq_helper.client.query.call_args.kwargs["job_config"]
+    assert job_config.dry_run is False
+
+
 class TestRegions:
     """The region struct/schema is built from the registry, not hardcoded (see
     `fetch_regions_registry`).

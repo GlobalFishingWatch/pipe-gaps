@@ -22,9 +22,14 @@ def fetch_regions_registry(
     Used to build the query's region struct and the output table's per-region schema fields
     dynamically, instead of hardcoding the region list -- see `GapEventQuery.template_vars` and
     `GapEventsTableConfig.schema`.
+
+    Always runs for real, even when ``bq_helper`` is configured for dry runs: this is a cheap
+    metadata read needed to build a syntactically valid query, not the expensive/destructive
+    operation ``--dry-run`` is meant to skip. Skipping it too would leave `regions` empty and
+    render an invalid ``STRUCT<>`` in the main query (see `utils.sql.j2`).
     """
     query = f"SELECT name, description FROM `{bq_in_regions_registry}` ORDER BY name"
-    rows = bq_helper.run_query(query).tolist(as_dicts=True)
+    rows = bq_helper.run_query(query, dry_run=False).tolist(as_dicts=True)
     return [dict(row) for row in rows]
 
 
