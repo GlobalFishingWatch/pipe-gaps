@@ -476,6 +476,7 @@ This is an example of a YAML config file for the publication `gap-events` comman
 bq_in_raw_gaps: "gfw-int-pipe-v3.pipe_ais_v3_internal.raw_gaps_last_versions"
 bq_in_segment_info: "global-fishing-watch.pipe_ais_v3_published.segment_info"
 bq_in_regions: "global-fishing-watch.pipe_regions_layers.event_regions"
+bq_in_regions_registry: "world-fishing-827.scratch_tomas_ttl30d.regions_registry"
 bq_in_voyages: "global-fishing-watch.pipe_ais_v3_published.voyages_c4"
 bq_in_port_visits: "global-fishing-watch.pipe_ais_v3_published.product_events_port_visit_v2"
 bq_in_all_vessels_byyear: "global-fishing-watch.pipe_ais_v3_published.product_vessel_info_summary"

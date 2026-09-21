@@ -59,7 +59,10 @@ class GapEvents(Command):
             Option("--bq-in-voyages", type=str, help=HELP_BQ_IN_VOYAGES),
             Option("--bq-in-port-visits", type=str, help=HELP_BQ_IN_PORT_VISITS),
             Option("--bq-in-regions", type=str, help=HELP_BQ_IN_REGIONS),
-            Option("--bq-in-regions-registry", type=str, help=HELP_BQ_IN_REGIONS_REGISTRY),
+            Option(
+                "--bq-in-regions-registry", type=str, required=True,
+                help=HELP_BQ_IN_REGIONS_REGISTRY,
+            ),
             Option("--bq-in-vessels-byyear", type=str, help=HELP_BQ_IN_VESSELS_BYYEAR),
             Option("--bq-in-vessels-byyear-field-prefix", type=str,
                    help=HELP_BQ_IN_VESSELS_BYYEAR_FIELD_PREFIX, default=""),
