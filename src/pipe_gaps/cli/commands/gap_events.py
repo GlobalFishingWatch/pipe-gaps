@@ -17,7 +17,7 @@ HELP_BQ_IN_SEGS_ACTIVITY = "BigQuery table with research aggregated segments dat
 HELP_BQ_IN_VOYAGES = "BigQuery table with voyages."
 HELP_BQ_IN_PORT_VISITS = "BigQuery table with port visits."
 HELP_BQ_IN_REGIONS = "BigQuery table with regions."
-HELP_BQ_IN_REGIONS_REGISTRY = (
+HELP_BQ_IN_REGISTRY = (
     "BigQuery table with the region name -> description registry (published by pipe-regions' "
     "publish-registry command), used to build the query's region struct/schema dynamically "
     "instead of hardcoding the region list."
@@ -59,10 +59,7 @@ class GapEvents(Command):
             Option("--bq-in-voyages", type=str, help=HELP_BQ_IN_VOYAGES),
             Option("--bq-in-port-visits", type=str, help=HELP_BQ_IN_PORT_VISITS),
             Option("--bq-in-regions", type=str, help=HELP_BQ_IN_REGIONS),
-            Option(
-                "--bq-in-regions-registry", type=str, required=True,
-                help=HELP_BQ_IN_REGIONS_REGISTRY,
-            ),
+            Option("--bq-in-regions-registry", type=str, required=True, help=HELP_BQ_IN_REGISTRY),
             Option("--bq-in-vessels-byyear", type=str, help=HELP_BQ_IN_VESSELS_BYYEAR),
             Option("--bq-in-vessels-byyear-field-prefix", type=str,
                    help=HELP_BQ_IN_VESSELS_BYYEAR_FIELD_PREFIX, default=""),
