@@ -46,12 +46,12 @@ docker-test:
 docker-shell: docker-volume
 	docker compose run --rm -it ${DOCKER_DEV_SERVICE}
 
-.PHONY: docker-reqs  ## Compiles requirements.txt with pip-tools.
+.PHONY: reqs  ## Compiles requirements.txt with pip-tools.
 reqs:
 	docker compose run --rm ${DOCKER_DEV_NO_GCP_SERVICE} -c \
 		'${PIP_COMPILE} -o ${REQS_PROD} ${SETUP_FILE} -v'
 
-.PHONY: docker-reqs-upgrade  ## Upgrades requirements.txt with pip-tools.
+.PHONY: reqs-upgrade  ## Upgrades requirements.txt with pip-tools.
 reqs-upgrade:
 	docker compose run --rm ${DOCKER_DEV_NO_GCP_SERVICE} -c \
 		'${PIP_COMPILE} -o ${REQS_PROD} ${SETUP_FILE} -U -v'
