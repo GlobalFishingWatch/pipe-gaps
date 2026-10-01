@@ -11,10 +11,10 @@ from gfw.common.beam.pipeline.hooks import create_table_hook, create_view_hook, 
 from gfw.common.config import PipelineConfig
 from pipe_gaps.pipelines.raw_gaps.hooks import create_segments_n_days_ahead_hook
 from pipe_gaps.pipelines.raw_gaps.table_config import (
-    GapsLastVersionsTableDescription,
-    GapsLastVersionsViewConfig,
+    GapsLatestViewConfig,
     GapsTableConfig,
     GapsTableDescription,
+    GapsVersionedTableDescription,
 )
 
 
@@ -40,6 +40,7 @@ class RawGapsConfig(PipelineConfig):
     bq_in_segments: str = None
     bq_in_open_gaps: str = None
     bq_out_gaps: str = None
+    bq_out_latest_gaps: str = None
     bq_write_disposition: str = "WRITE_APPEND"
     mock_bq_clients: bool = False
     save_json: bool = False
@@ -63,7 +64,7 @@ class RawGapsConfig(PipelineConfig):
         """Returns configuration for the output gaps BigQuery table."""
         return GapsTableConfig(
             table_id=self.bq_out_gaps,
-            description=GapsTableDescription(
+            description=GapsVersionedTableDescription(
                 version=self.version,
                 relevant_params=self.bq_out_gaps_description_params
             ),
@@ -71,12 +72,14 @@ class RawGapsConfig(PipelineConfig):
 
     @property
     def view_config(self):
-        """Returns configuration for the gaps_last_versions BigQuery view."""
-        return GapsLastVersionsViewConfig(
+        """Returns configuration for the gaps_latest BigQuery view."""
+        return GapsLatestViewConfig(
             source=self.table_config,
+            view_id=self.bq_out_latest_gaps,
             min_gap_length=self.min_gap_length,
-            description=GapsLastVersionsTableDescription(
+            description=GapsTableDescription(
                 version=self.version,
+                source_table=self.table_config.table_id.rsplit(".", 1)[-1],
                 relevant_params=self.bq_out_gaps_description_params,
             ),
         )

@@ -1,4 +1,4 @@
-from pipe_gaps.pipelines.raw_gaps.table_config import GapsTableConfig, GapsLastVersionsViewConfig
+from pipe_gaps.pipelines.raw_gaps.table_config import GapsTableConfig, GapsLatestViewConfig
 
 
 def test_gaps_table_config_property(base_config):
@@ -11,8 +11,9 @@ def test_gaps_table_config_property(base_config):
 def test_gaps_view_config_property(base_config):
     view_config = base_config.view_config
 
-    assert isinstance(view_config, GapsLastVersionsViewConfig)
+    assert isinstance(view_config, GapsLatestViewConfig)
     assert view_config.source is base_config.table_config
+    assert view_config.view_id == base_config.bq_out_latest_gaps
     assert view_config.min_gap_length == base_config.min_gap_length
     assert view_config.description is not None
 
