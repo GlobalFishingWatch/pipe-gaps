@@ -26,7 +26,13 @@ HELP_BQ_READ_METHOD = "BigQuery read method. It may be 'DIRECT_READ' or 'EXPORT'
 HELP_BQ_IN_MESSAGES = "BigQuery table with with input messages."
 HELP_BQ_IN_SEGMENTS = "BigQuery table with with input segments."
 HELP_BQ_IN_OPEN_GAPS = "BigQuery table with open gaps."
-HELP_BQ_OUT_GAPS = "BigQuery table in which to store output raw gaps."
+HELP_BQ_OUT_GAPS = (
+    "Fully qualified gaps_latest BigQuery view, e.g. 'project.dataset.raw_gaps'. The "
+    "underlying versioned table is derived automatically -- see --versioned-suffix."
+)
+HELP_VERSIONED_SUFFIX = (
+    "Suffix appended to --bq-out-gaps to name the underlying versioned gaps table."
+)
 HELP_JSON_IN_MESSAGES = "JSON file with input messages [Useful for development]."
 HELP_JSON_IN_OPEN_GAPS = "JSON file with open gaps [Useful for development]."
 
@@ -73,6 +79,9 @@ class RawGaps(Command):
             Option("--bq-in-segments", type=str, help=HELP_BQ_IN_SEGMENTS),
             Option("--bq-in-open-gaps", type=str, help=HELP_BQ_IN_OPEN_GAPS),
             Option("--bq-out-gaps", type=str, help=HELP_BQ_OUT_GAPS),
+            Option(
+                "--versioned-suffix", type=str, default="versioned", help=HELP_VERSIONED_SUFFIX
+            ),
             Option("--open-gaps-start-date", type=str, required=True, help=HELP_OPEN_GAPS_START),
             Option("--filter-not-overlapping-and-short", type=bool, help=HELP_OVERL),
             Option("--filter-good-seg", type=bool, help=HELP_GOOD_SEG),

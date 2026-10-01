@@ -1,3 +1,7 @@
+from dataclasses import replace
+
+import pytest
+
 from pipe_gaps.pipelines.raw_gaps.table_config import GapsTableConfig, GapsLatestViewConfig
 
 
@@ -10,6 +14,17 @@ def test_gaps_table_config_property(base_config):
 
 def test_bq_out_gaps_versioned_derives_from_bq_out_gaps(base_config):
     assert base_config.bq_out_gaps_versioned == f"{base_config.bq_out_gaps}_versioned"
+
+
+def test_bq_out_gaps_versioned_uses_custom_suffix(base_config):
+    config = replace(base_config, versioned_suffix="backup")
+    assert config.bq_out_gaps_versioned == f"{config.bq_out_gaps}_backup"
+
+
+def test_bq_out_gaps_versioned_raises_when_bq_out_gaps_not_set(base_config):
+    config = replace(base_config, bq_out_gaps=None)
+    with pytest.raises(ValueError, match="bq_out_gaps_versioned requires bq_out_gaps"):
+        config.bq_out_gaps_versioned
 
 
 def test_gaps_view_config_property(base_config):

@@ -40,6 +40,7 @@ class RawGapsConfig(PipelineConfig):
     bq_in_segments: str = None
     bq_in_open_gaps: str = None
     bq_out_gaps: str = None
+    versioned_suffix: str = "versioned"
     bq_write_disposition: str = "WRITE_APPEND"
     mock_bq_clients: bool = False
     save_json: bool = False
@@ -62,10 +63,17 @@ class RawGapsConfig(PipelineConfig):
     def bq_out_gaps_versioned(self):
         """Returns the fully qualified ID of the versioned gaps table.
 
-        Derived from :attr:`bq_out_gaps` by appending a suffix -- never configured directly,
-        since the table is an internal implementation detail of the public-facing view.
+        Derived from :attr:`bq_out_gaps` by appending :attr:`versioned_suffix` -- the table
+        itself is never configured directly, since it's an internal implementation detail of
+        the public-facing view.
+
+        Raises:
+            ValueError: If :attr:`bq_out_gaps` is not set. Callers are expected to only
+                access this when BigQuery output is actually configured.
         """
-        return f"{self.bq_out_gaps}_versioned" if self.bq_out_gaps is not None else None
+        if self.bq_out_gaps is None:
+            raise ValueError("bq_out_gaps_versioned requires bq_out_gaps to be set.")
+        return f"{self.bq_out_gaps}_{self.versioned_suffix}"
 
     @cached_property
     def table_config(self):
