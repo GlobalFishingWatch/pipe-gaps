@@ -12,6 +12,12 @@
 -- * source_regions
 -- * source_vessels_byyear
 -- * start_date
+-- * classify_disabling
+-- * source_sat_reception (required if classify_disabling)
+-- * disabling_min_gap_duration_h (required if classify_disabling)
+-- * disabling_min_distance_from_shore_m (required if classify_disabling)
+-- * disabling_min_reception_positions_per_day (required if classify_disabling)
+-- * disabling_min_positions_before (required if classify_disabling)
 
 WITH
 
@@ -73,6 +79,24 @@ WITH
           AND end_timestamp IS NOT NULL
         {% endif %}
     ),
+
+    {% if classify_disabling %}
+    ##########################################################
+    # Satellite reception quality, for disabling             #
+    # classification. Averaged over all time -- matches      #
+    # "pipe-gaps-prototype's" own "TEMPORARY" design, not an #
+    # improvement on it.                                     #
+    ##########################################################
+    reception AS (
+        SELECT
+            lat_bin,
+            lon_bin,
+            class,
+            AVG(positions_per_day) AS positions_per_day
+        FROM `{{ source_sat_reception }}`
+        GROUP BY 1, 2, 3
+    ),
+    {% endif %}
 
     ############
     # Segments #
@@ -165,6 +189,20 @@ WITH
                       start_distance_from_shore_m,
                       COALESCE(end_distance_from_shore_m, start_distance_from_shore_m)
                     ) AS gap_min_distance_from_shore_m
+                    {% if classify_disabling %}
+                    ,
+                    start_distance_from_shore_m,
+                    positions_hours_before_sat,
+                    reception.positions_per_day AS positions_per_day_sat_reception,
+                    IF(
+                        duration_h >= {{ disabling_min_gap_duration_h }}
+                        AND start_distance_from_shore_m > {{ disabling_min_distance_from_shore_m }}
+                        AND reception.positions_per_day
+                            > {{ disabling_min_reception_positions_per_day }}
+                        AND positions_hours_before_sat >= {{ disabling_min_positions_before }},
+                        true, false
+                    ) AS intentional_disabling
+                    {% endif %}
                 )
             ) AS event_info,
             TO_JSON_STRING(
@@ -197,9 +235,18 @@ WITH
               )
             ) AS event_vessels,
         FROM source_gaps AS gaps
-            # Join with segments. 
+            # Join with segments.
             LEFT JOIN segment_info s1 ON gaps.start_seg_id = s1.seg_id
             LEFT JOIN segment_info s2 ON gaps.end_seg_id   = s2.seg_id
+
+            {% if classify_disabling %}
+            # Join with satellite reception quality, for disabling classification.
+            LEFT JOIN reception ON (
+                FLOOR(gaps.start_lat) = reception.lat_bin
+                AND FLOOR(gaps.start_lon) = reception.lon_bin
+                AND gaps.start_ais_class = reception.class
+            )
+            {% endif %}
 
             # Start / OFF vessel (mandatory)
             JOIN source_all_vessels AS vessel_start
