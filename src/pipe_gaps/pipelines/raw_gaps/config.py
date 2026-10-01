@@ -1,15 +1,22 @@
 from __future__ import annotations
 
-import math
 import logging
+import math
+
 from dataclasses import dataclass, field
 from datetime import date, timedelta
+from functools import cached_property
 
+from gfw.common.beam.pipeline.hooks import create_table_hook, create_view_hook, delete_events_hook
 from gfw.common.config import PipelineConfig
-from gfw.common.beam.pipeline.hooks import create_view_hook, delete_events_hook, create_table_hook
-
-from pipe_gaps.pipelines.raw_gaps.table_config import GapsTableConfig, GapsTableDescription
 from pipe_gaps.pipelines.raw_gaps.hooks import create_segments_n_days_ahead_hook
+from pipe_gaps.pipelines.raw_gaps.table_config import (
+    GapsLatestViewConfig,
+    GapsTableConfig,
+    GapsTableDescription,
+    GapsVersionedTableDescription,
+)
+
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +40,7 @@ class RawGapsConfig(PipelineConfig):
     bq_in_segments: str = None
     bq_in_open_gaps: str = None
     bq_out_gaps: str = None
+    versioned_suffix: str = "versioned"
     bq_write_disposition: str = "WRITE_APPEND"
     mock_bq_clients: bool = False
     save_json: bool = False
@@ -52,15 +60,44 @@ class RawGapsConfig(PipelineConfig):
         return self.start_date - timedelta(days=buffer_days)
 
     @property
+    def bq_out_gaps_versioned(self):
+        """Returns the fully qualified ID of the versioned gaps table.
+
+        Derived from :attr:`bq_out_gaps` by appending :attr:`versioned_suffix` -- the table
+        itself is never configured directly, since it's an internal implementation detail of
+        the public-facing view.
+
+        Raises:
+            ValueError: If :attr:`bq_out_gaps` is not set. Callers are expected to only
+                access this when BigQuery output is actually configured.
+        """
+        if self.bq_out_gaps is None:
+            raise ValueError("bq_out_gaps_versioned requires bq_out_gaps to be set.")
+        return f"{self.bq_out_gaps}_{self.versioned_suffix}"
+
+    @cached_property
     def table_config(self):
         """Returns configuration for the output gaps BigQuery table."""
         return GapsTableConfig(
-            table_id=self.bq_out_gaps,
-            description=GapsTableDescription(
+            table_id=self.bq_out_gaps_versioned,
+            description=GapsVersionedTableDescription(
                 version=self.version,
                 relevant_params=self.bq_out_gaps_description_params
             ),
+        )
+
+    @property
+    def view_config(self):
+        """Returns configuration for the gaps_latest BigQuery view."""
+        return GapsLatestViewConfig(
+            source=self.table_config,
+            view_id=self.bq_out_gaps,
             min_gap_length=self.min_gap_length,
+            description=GapsTableDescription(
+                version=self.version,
+                source_table=self.table_config.table_id.rsplit(".", 1)[-1],
+                relevant_params=self.bq_out_gaps_description_params,
+            ),
         )
 
     @property
@@ -110,7 +147,7 @@ class RawGapsConfig(PipelineConfig):
         if self.bq_out_gaps is not None:
             post_hooks.append(
                 create_view_hook(
-                    table_config=self.table_config,
+                    view_config=self.view_config,
                     mock=self.mock_bq_clients
                 )
             )

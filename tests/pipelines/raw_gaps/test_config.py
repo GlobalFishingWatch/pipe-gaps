@@ -1,11 +1,40 @@
-from pipe_gaps.pipelines.raw_gaps.table_config import GapsTableConfig
+from dataclasses import replace
+
+import pytest
+
+from pipe_gaps.pipelines.raw_gaps.table_config import GapsTableConfig, GapsLatestViewConfig
 
 
 def test_gaps_table_config_property(base_config):
     config = base_config.table_config
 
     assert isinstance(config, GapsTableConfig)
-    assert config.table_id == base_config.bq_out_gaps
+    assert config.table_id == base_config.bq_out_gaps_versioned
+
+
+def test_bq_out_gaps_versioned_derives_from_bq_out_gaps(base_config):
+    assert base_config.bq_out_gaps_versioned == f"{base_config.bq_out_gaps}_versioned"
+
+
+def test_bq_out_gaps_versioned_uses_custom_suffix(base_config):
+    config = replace(base_config, versioned_suffix="backup")
+    assert config.bq_out_gaps_versioned == f"{config.bq_out_gaps}_backup"
+
+
+def test_bq_out_gaps_versioned_raises_when_bq_out_gaps_not_set(base_config):
+    config = replace(base_config, bq_out_gaps=None)
+    with pytest.raises(ValueError, match="bq_out_gaps_versioned requires bq_out_gaps"):
+        config.bq_out_gaps_versioned
+
+
+def test_gaps_view_config_property(base_config):
+    view_config = base_config.view_config
+
+    assert isinstance(view_config, GapsLatestViewConfig)
+    assert view_config.source is base_config.table_config
+    assert view_config.view_id == base_config.bq_out_gaps
+    assert view_config.min_gap_length == base_config.min_gap_length
+    assert view_config.description is not None
 
 
 def test_bq_out_gaps_description_params(base_config):
