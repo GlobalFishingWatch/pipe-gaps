@@ -26,8 +26,7 @@ HELP_BQ_READ_METHOD = "BigQuery read method. It may be 'DIRECT_READ' or 'EXPORT'
 HELP_BQ_IN_MESSAGES = "BigQuery table with with input messages."
 HELP_BQ_IN_SEGMENTS = "BigQuery table with with input segments."
 HELP_BQ_IN_OPEN_GAPS = "BigQuery table with open gaps."
-HELP_BQ_OUT_GAPS = "BigQuery table in which to store the gap events."
-HELP_BQ_OUT_LATEST_GAPS = "Fully qualified gaps_last_versions BigQuery view."
+HELP_BQ_OUT_GAPS = "BigQuery table in which to store output raw gaps."
 HELP_JSON_IN_MESSAGES = "JSON file with input messages [Useful for development]."
 HELP_JSON_IN_OPEN_GAPS = "JSON file with open gaps [Useful for development]."
 
@@ -74,7 +73,6 @@ class RawGaps(Command):
             Option("--bq-in-segments", type=str, help=HELP_BQ_IN_SEGMENTS),
             Option("--bq-in-open-gaps", type=str, help=HELP_BQ_IN_OPEN_GAPS),
             Option("--bq-out-gaps", type=str, help=HELP_BQ_OUT_GAPS),
-            Option("--bq-out-latest-gaps", type=str, required=True, help=HELP_BQ_OUT_LATEST_GAPS),
             Option("--open-gaps-start-date", type=str, required=True, help=HELP_OPEN_GAPS_START),
             Option("--filter-not-overlapping-and-short", type=bool, help=HELP_OVERL),
             Option("--filter-good-seg", type=bool, help=HELP_GOOD_SEG),

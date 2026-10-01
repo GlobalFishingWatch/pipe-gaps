@@ -75,7 +75,7 @@ class RawGapsLinearDagFactory(LinearDagFactory):
         ):
             side_inputs = ReadFromBigQuery.from_query(
                 query=GapsQuery(
-                    source_gaps=self.config.bq_in_open_gaps or self.config.bq_out_gaps,
+                    source_gaps=self.config.bq_in_open_gaps or self.config.bq_out_gaps_versioned,
                     start_date=self.config.open_gaps_start,
                     is_closed=False,
                     use_timestamp=True,

@@ -5,7 +5,11 @@ def test_gaps_table_config_property(base_config):
     config = base_config.table_config
 
     assert isinstance(config, GapsTableConfig)
-    assert config.table_id == base_config.bq_out_gaps
+    assert config.table_id == base_config.bq_out_gaps_versioned
+
+
+def test_bq_out_gaps_versioned_derives_from_bq_out_gaps(base_config):
+    assert base_config.bq_out_gaps_versioned == f"{base_config.bq_out_gaps}_versioned"
 
 
 def test_gaps_view_config_property(base_config):
@@ -13,7 +17,7 @@ def test_gaps_view_config_property(base_config):
 
     assert isinstance(view_config, GapsLatestViewConfig)
     assert view_config.source is base_config.table_config
-    assert view_config.view_id == base_config.bq_out_latest_gaps
+    assert view_config.view_id == base_config.bq_out_gaps
     assert view_config.min_gap_length == base_config.min_gap_length
     assert view_config.description is not None
 

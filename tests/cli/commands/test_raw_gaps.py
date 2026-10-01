@@ -6,7 +6,6 @@ BASE_ARGS = [
     "--bq-in-messages", "project.dataset.table",
     "--bq-in-segments", "project.dataset.segments",
     "--bq-out-gaps", "project.dataset.output",
-    "--bq-out-latest-gaps", "project.dataset.output_last_versions",
     "--date-range", "2024-01-01,2024-01-02",
     "--min-gap-length", "4",
     "--open-gaps-start-date", "2020-01-01",

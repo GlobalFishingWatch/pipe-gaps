@@ -10,7 +10,6 @@ def base_config():
         bq_in_messages="some_bq_table",
         bq_in_segments="some_bq_segments",
         bq_out_gaps="output_gaps_table",
-        bq_out_latest_gaps="project.dataset.output_gaps_table_view",
         bq_write_disposition="WRITE_APPEND",
         filter_good_seg=True,
         filter_not_overlapping_and_short=True,

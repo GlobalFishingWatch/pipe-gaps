@@ -40,7 +40,6 @@ class RawGapsConfig(PipelineConfig):
     bq_in_segments: str = None
     bq_in_open_gaps: str = None
     bq_out_gaps: str = None
-    bq_out_latest_gaps: str = None
     bq_write_disposition: str = "WRITE_APPEND"
     mock_bq_clients: bool = False
     save_json: bool = False
@@ -59,11 +58,20 @@ class RawGapsConfig(PipelineConfig):
         buffer_days = math.ceil(self.n_hours_before / 24)
         return self.start_date - timedelta(days=buffer_days)
 
+    @property
+    def bq_out_gaps_versioned(self):
+        """Returns the fully qualified ID of the versioned gaps table.
+
+        Derived from :attr:`bq_out_gaps` by appending a suffix -- never configured directly,
+        since the table is an internal implementation detail of the public-facing view.
+        """
+        return f"{self.bq_out_gaps}_versioned" if self.bq_out_gaps is not None else None
+
     @cached_property
     def table_config(self):
         """Returns configuration for the output gaps BigQuery table."""
         return GapsTableConfig(
-            table_id=self.bq_out_gaps,
+            table_id=self.bq_out_gaps_versioned,
             description=GapsVersionedTableDescription(
                 version=self.version,
                 relevant_params=self.bq_out_gaps_description_params
@@ -75,7 +83,7 @@ class RawGapsConfig(PipelineConfig):
         """Returns configuration for the gaps_latest BigQuery view."""
         return GapsLatestViewConfig(
             source=self.table_config,
-            view_id=self.bq_out_latest_gaps,
+            view_id=self.bq_out_gaps,
             min_gap_length=self.min_gap_length,
             description=GapsTableDescription(
                 version=self.version,
