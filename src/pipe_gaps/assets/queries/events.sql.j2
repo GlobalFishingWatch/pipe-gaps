@@ -62,7 +62,22 @@ WITH
     source_gaps AS (
         SELECT
             *,
-            EXTRACT(year from start_timestamp) as year
+            EXTRACT(year from start_timestamp) as year,
+            -- For a still-open gap, duration_h is NULL (no ON message yet to measure
+            -- against). Use the elapsed time up to end_date instead -- the run's own
+            -- declared "as of" boundary -- so an open gap can still be evaluated (e.g.
+            -- for disabling classification) instead of silently never qualifying.
+            -- Deliberately end_date, not CURRENT_TIMESTAMP(): this keeps a historical
+            -- backfill reproducible (same inputs, same output) rather than depending on
+            -- whenever the query happens to be rerun.
+            {% if end_date %}
+            COALESCE(
+                duration_h,
+                TIMESTAMP_DIFF(TIMESTAMP('{{ end_date }}'), start_timestamp, SECOND) / 3600.0
+            ) AS effective_duration_h
+            {% else %}
+            duration_h AS effective_duration_h
+            {% endif %}
         FROM
             `{{ source_gaps }}`
         WHERE
@@ -164,7 +179,7 @@ WITH
             end_distance_from_port_m,
             TO_JSON_STRING(
                 STRUCT(
-                    duration_h,
+                    effective_duration_h AS duration_h,
                     convert_m_to_km(distance_m) AS total_distance_km,
                     implied_speed_knots,
                     vessel_start.prod_shiptype as vessel_class,
@@ -195,7 +210,7 @@ WITH
                     positions_hours_before_sat,
                     reception.positions_per_day AS positions_per_day_sat_reception,
                     IF(
-                        duration_h >= {{ disabling_min_gap_duration_h }}
+                        effective_duration_h >= {{ disabling_min_gap_duration_h }}
                         AND start_distance_from_shore_m > {{ disabling_min_distance_from_shore_m }}
                         AND reception.positions_per_day
                             > {{ disabling_min_reception_positions_per_day }}

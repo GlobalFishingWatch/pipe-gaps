@@ -1,5 +1,5 @@
 # Query parameters:
-bq_in_raw_gaps: "world-fishing-827.scratch_tomas_ttl30d.raw_gaps_pipeline_4615_2days"
+bq_in_raw_gaps: "world-fishing-827.scratch_tomas_ttl30d.raw_gaps_pipeline_4615_2026_7days"
 bq_in_segment_info: "global-fishing-watch.pipe_ais_v3_published.segment_info"
 bq_in_segs_activity: "global-fishing-watch.pipe_ais_v3_published.segs_activity"
 bq_in_regions: "global-fishing-watch.pipe_regions_layers.event_regions"
@@ -7,8 +7,8 @@ bq_in_regions_registry: "gfw-int-datalake.regions_v1.registry"
 bq_in_voyages: "global-fishing-watch.pipe_ais_v3_published.voyages_c4"
 bq_in_port_visits: "global-fishing-watch.pipe_ais_v3_published.product_events_port_visit_v2"
 bq_in_vessels_byyear: "global-fishing-watch.pipe_ais_v3_published.product_vessel_info_summary"
-bq_out_gap_events: "world-fishing-827.scratch_tomas_ttl30d.product_events_ais_gap_pipeline_4615_2days"
-date_range: ["2023-02-01", "2023-02-03"]
+bq_out_gap_events: "world-fishing-827.scratch_tomas_ttl30d.product_events_ais_gap_pipeline_4615_2026_7days"
+date_range: ["2026-09-01", "2026-09-08"]
 
 # Disabling-event classification (PIPELINE-4615). Thresholds left at their defaults,
 # which match pipe-gaps-prototype's historical AIS values exactly.
