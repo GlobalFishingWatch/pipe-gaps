@@ -62,6 +62,14 @@ class GapEventQuery(Query):
             "end_date": self.config.end_date,
             "exclude_open_gaps": self.config.exclude_open_gaps,
             "regions": [region["name"] for region in self.regions],
+            "classify_disabling": self.config.classify_disabling,
+            "source_sat_reception": self.config.bq_in_sat_reception,
+            "disabling_min_gap_duration_h": self.config.disabling_min_gap_duration_h,
+            "disabling_min_distance_from_shore_m": self.config.disabling_min_distance_from_shore_m,
+            "disabling_min_reception_positions_per_day": (
+                self.config.disabling_min_reception_positions_per_day
+            ),
+            "disabling_min_positions_before": self.config.disabling_min_positions_before,
         }
 
 

@@ -25,6 +25,28 @@ class GapEventsConfig(PipelineConfig):
     dry_run: bool = False
     exclude_open_gaps: bool = False
 
+    # Disabling-event classification (PIPELINE-4615): optional, additive-only -- it never
+    # filters out a gap-event row, it only adds intentional_disabling and the fields that
+    # drove it inside event_info.
+    classify_disabling: bool = False
+
+    # No default: a reception table is required whenever classification is on, so every
+    # caller must consciously choose which one (e.g. the prototype's "TEMPORARY" static
+    # 2017-2019 snapshot), rather than silently inheriting one.
+    bq_in_sat_reception: str | None = None
+
+    disabling_min_gap_duration_h: float = 12
+    disabling_min_distance_from_shore_m: float = 92600  # 1852 * 50 nautical miles
+    disabling_min_reception_positions_per_day: float = 10
+    disabling_min_positions_before: float = 14
+
+    def __post_init__(self) -> None:
+        self.validate()
+
+    def validate(self) -> None:
+        if self.classify_disabling and self.bq_in_sat_reception is None:
+            raise ValueError("bq_in_sat_reception is required when classify_disabling is set.")
+
     @property
     def vessels_byyear_flag_field(self) -> str:
         """Field to read the vessel flag from in ``bq_in_vessels_byyear``.

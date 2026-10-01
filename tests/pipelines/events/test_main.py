@@ -121,6 +121,74 @@ def test_fetch_regions_registry_queries_the_given_table():
     assert "SELECT name, description" in query_str
 
 
+class TestDisablingClassification:
+    """Classification is optional and additive-only (PIPELINE-4615).
+
+    Disabled by default: the rendered query carries none of this. Enabled, it joins
+    satellite reception quality and adds intentional_disabling (and the fields that
+    drove it) inside event_info -- it never filters out a gap-event row.
+    """
+
+    def _query(self, kwargs):
+        config = GapEventsConfig.from_namespace(
+            SimpleNamespace(**kwargs, unknown_parsed_args={}),
+            version="test",
+            name="test",
+        )
+        return GapEventQuery(config)
+
+    def test_disabled_by_default(self, basic_config_kwargs):
+        sql = self._query(basic_config_kwargs).render()
+
+        assert "reception AS (" not in sql
+        assert "LEFT JOIN reception" not in sql
+        assert "intentional_disabling" not in sql
+        assert "positions_per_day_sat_reception" not in sql
+
+    def test_config_requires_reception_table_when_enabled(self, basic_config_kwargs):
+        with pytest.raises(ValueError, match="bq_in_sat_reception"):
+            self._query(basic_config_kwargs | {"classify_disabling": True})
+
+    def test_enabled_adds_reception_join_and_classification(self, basic_config_kwargs):
+        sql = self._query(
+            basic_config_kwargs
+            | {
+                "classify_disabling": True,
+                "bq_in_sat_reception": "project.dataset.sat_reception",
+            }
+        ).render()
+
+        assert "FROM `project.dataset.sat_reception`" in sql
+        assert "GROUP BY 1, 2, 3" in sql
+        assert "FLOOR(gaps.start_lat) = reception.lat_bin" in sql
+        assert "FLOOR(gaps.start_lon) = reception.lon_bin" in sql
+        assert "gaps.start_ais_class = reception.class" in sql
+        assert "reception.positions_per_day AS positions_per_day_sat_reception" in sql
+        assert "positions_hours_before_sat" in sql
+        assert "duration_h >= 12" in sql
+        assert "start_distance_from_shore_m > 92600" in sql
+        assert "reception.positions_per_day" in sql and "> 10" in sql
+        assert "positions_hours_before_sat >= 14" in sql
+
+    def test_custom_thresholds_are_rendered(self, basic_config_kwargs):
+        sql = self._query(
+            basic_config_kwargs
+            | {
+                "classify_disabling": True,
+                "bq_in_sat_reception": "project.dataset.sat_reception",
+                "disabling_min_gap_duration_h": 6,
+                "disabling_min_distance_from_shore_m": 1000,
+                "disabling_min_reception_positions_per_day": 5,
+                "disabling_min_positions_before": 2,
+            }
+        ).render()
+
+        assert "duration_h >= 6" in sql
+        assert "start_distance_from_shore_m > 1000" in sql
+        assert "reception.positions_per_day" in sql and "> 5" in sql
+        assert "positions_hours_before_sat >= 2" in sql
+
+
 def test_fetch_regions_registry_always_runs_for_real_under_dry_run():
     """Even with `--dry-run`, this metadata read must actually execute.
 
