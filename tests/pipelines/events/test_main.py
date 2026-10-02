@@ -73,6 +73,21 @@ class TestFlagField:
         assert "ais_mmsi_flag AS flag" not in sql
 
 
+def test_end_date_filter_lets_open_gaps_through(basic_config_kwargs):
+    """An open gap (no ``end_timestamp`` yet) must still be included regardless of
+    ``end_date`` -- production was silently excluding every open gap from
+    ``product_events``, since ``DATE(NULL) < end_date`` is ``NULL``, not ``TRUE``,
+    which fails the ``WHERE`` clause instead of passing it.
+    """
+    config = GapEventsConfig.from_namespace(
+        SimpleNamespace(**basic_config_kwargs, unknown_parsed_args={}),
+        version="test",
+        name="test",
+    )
+    sql = GapEventQuery(config).render()
+    assert "end_timestamp IS NULL OR DATE(end_timestamp) <" in sql
+
+
 def test_fetch_regions_registry_queries_the_given_table():
     bq_helper = BigQueryHelper.mocked()
 
