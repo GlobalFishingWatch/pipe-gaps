@@ -88,6 +88,29 @@ def test_end_date_filter_lets_open_gaps_through(basic_config_kwargs):
     assert "end_timestamp IS NULL OR DATE(end_timestamp) <" in sql
 
 
+def test_exclude_open_gaps_defaults_to_false(basic_config_kwargs):
+    config = GapEventsConfig.from_namespace(
+        SimpleNamespace(**basic_config_kwargs, unknown_parsed_args={}),
+        version="test",
+        name="test",
+    )
+    sql = GapEventQuery(config).render()
+    assert "end_timestamp IS NOT NULL" not in sql
+
+
+def test_exclude_open_gaps_drops_them_from_the_output(basic_config_kwargs):
+    """VMS wants open gaps excluded until the open-gap peaks at the end of the last
+    processed day (expected, not a bug) are addressed.
+    """
+    config = GapEventsConfig.from_namespace(
+        SimpleNamespace(**basic_config_kwargs, exclude_open_gaps=True, unknown_parsed_args={}),
+        version="test",
+        name="test",
+    )
+    sql = GapEventQuery(config).render()
+    assert "AND end_timestamp IS NOT NULL" in sql
+
+
 def test_fetch_regions_registry_queries_the_given_table():
     bq_helper = BigQueryHelper.mocked()
 

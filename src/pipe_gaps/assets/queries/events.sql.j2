@@ -68,6 +68,10 @@ WITH
         {% if end_date %}
           AND (end_timestamp IS NULL OR DATE(end_timestamp) < '{{ end_date }}')
         {% endif %}
+
+        {% if exclude_open_gaps %}
+          AND end_timestamp IS NOT NULL
+        {% endif %}
     ),
 
     ############

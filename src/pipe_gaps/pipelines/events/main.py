@@ -60,6 +60,7 @@ class GapEventQuery(Query):
             "vessel_info_flag_field": self.config.vessels_byyear_flag_field,
             "start_date": self.config.start_date,
             "end_date": self.config.end_date,
+            "exclude_open_gaps": self.config.exclude_open_gaps,
             "regions": [region["name"] for region in self.regions],
         }
 
