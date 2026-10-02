@@ -52,6 +52,28 @@ class Boundaries:
     def last_boundary(self):
         return self._boundaries[-1]
 
+    def boundary_for_last_message(self):
+        """Returns the boundary with the fullest lookback for the vessel's last message.
+
+        A message can fall inside two overlapping sliding windows at once, so more than
+        one boundary can share the same last message. The earlier-starting of those
+        windows reaches further back in time, so its boundary's ``end`` list is never
+        shorter -- and is often fuller -- than a later-starting window sharing the same
+        last message, whose own range begins later and leaves that earlier history out
+        entirely.
+
+        Returns the earliest-starting boundary (in ``self._boundaries``' own sort order)
+        whose own last message matches the overall last message across all boundaries --
+        unlike :meth:`last_boundary`, which simply picks whichever boundary starts latest,
+        regardless of whether it has the fullest history for that message.
+        """
+        overall_last_key = timestamp_msgid_key()(self.last_message())
+
+        return next(
+            b for b in self._boundaries
+            if timestamp_msgid_key()(b.last_message()) == overall_last_key
+        )
+
     def first_message(self):
         return self.first_boundary().first_message()
 
@@ -147,7 +169,7 @@ class ProcessBoundaries(DoFn):
         # Step three:
         # Create open gap if last message of last group met condition.
         if self._eval_last:
-            last_boundary = boundaries.last_boundary()
+            last_boundary = boundaries.boundary_for_last_message()
             last_message = last_boundary.last_message()
 
             last_message_dt = datetime_from_timestamp(last_message[self.KEY_TIMESTAMP])

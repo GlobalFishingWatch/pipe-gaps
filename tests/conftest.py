@@ -298,6 +298,34 @@ class TestCases:
             ],
             "id": "one_ssvid_with_open_gaps"
         },
+        {
+            # The vessel's last message (the open gap's OFF message) falls in the 12h
+            # overlap shared by two consecutive sliding windows, both in range here
+            # (date_range spans 3 days so window B's own responsibility day, Jan 3,
+            # isn't filtered out by FilterWindowsByDateRange). The earlier satellite
+            # message, 4 hours before the OFF message, is only inside the
+            # earlier-starting window's own range -- the later-starting window's
+            # range begins after it, so its own boundary never includes it.
+            #
+            # eval_last must use whichever window has the fuller history for the
+            # vessel's last message, not simply whichever window starts latest.
+            "messages": [
+                create_message(time=datetime(2024, 1, 2, 9), receiver_type="satellite"),
+                create_message(time=datetime(2024, 1, 2, 13)),  # open gap (last message).
+            ],
+            "open_gaps": [],
+            "threshold": 6,
+            "date_range": ("2024-01-02", "2024-01-04"),
+            "expected_gaps": [
+                {
+                    "positions_hours_before": 2,
+                    "positions_hours_before_ter": 1,
+                    "positions_hours_before_sat": 1,
+                    "positions_hours_before_dyn": 0
+                },
+            ],
+            "id": "one_ssvid_with_open_gap_at_window_overlap_boundary"
+        },
     ]
 
     GAP_BETWEEN_ARBITRARY_PERIODS = [
