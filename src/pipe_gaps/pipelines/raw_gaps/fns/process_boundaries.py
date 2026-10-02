@@ -55,23 +55,30 @@ class Boundaries:
     def boundary_for_last_message(self):
         """Returns the boundary with the fullest lookback for the vessel's last message.
 
+        Unlike :meth:`last_boundary`, which simply picks whichever boundary starts
+        latest, regardless of whether it has the fullest history for that message.
+        See :meth:`boundary_for_message`.
+        """
+        return self.boundary_for_message(self.last_message())
+
+    def boundary_for_message(self, message: dict):
+        """Returns the boundary with the fullest lookback for the given message.
+
         A message can fall inside two overlapping sliding windows at once, so more than
-        one boundary can share the same last message. The earlier-starting of those
-        windows reaches further back in time, so its boundary's ``end`` list is never
-        shorter -- and is often fuller -- than a later-starting window sharing the same
-        last message, whose own range begins later and leaves that earlier history out
-        entirely.
+        one boundary can share it as their own last message. The earlier-starting of
+        those windows reaches further back in time, so its boundary's ``end`` list is
+        never shorter -- and is often fuller -- than a later-starting window sharing the
+        same last message, whose own range begins later and leaves that earlier history
+        out entirely.
 
         Returns the earliest-starting boundary (in ``self._boundaries``' own sort order)
-        whose own last message matches the overall last message across all boundaries --
-        unlike :meth:`last_boundary`, which simply picks whichever boundary starts latest,
-        regardless of whether it has the fullest history for that message.
+        whose own last message matches the given one.
         """
-        overall_last_key = timestamp_msgid_key()(self.last_message())
+        message_key = timestamp_msgid_key()(message)
 
         return next(
             b for b in self._boundaries
-            if timestamp_msgid_key()(b.last_message()) == overall_last_key
+            if timestamp_msgid_key()(b.last_message()) == message_key
         )
 
     def first_message(self):
@@ -111,6 +118,10 @@ class ProcessBoundaries(DoFn):
         # Step one:
         # detect potential gap between last message of a group and first message of next group.
         for left, right in boundaries.consecutive_boundaries():
+            # left may not have the fullest lookback for its own last message: another
+            # boundary, from an overlapping window, can share that same last message
+            # with a fuller history (see Boundaries.boundary_for_message).
+            left = boundaries.boundary_for_message(left.last_message())
             messages = left.end + [right.start]
 
             start_dt = datetime_from_timestamp(left.last_message()[self.KEY_TIMESTAMP])
