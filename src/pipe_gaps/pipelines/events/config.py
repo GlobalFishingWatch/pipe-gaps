@@ -23,6 +23,7 @@ class GapEventsConfig(PipelineConfig):
     bq_in_vessels_byyear_flag_field: str | None = None
     labels: dict = field(default_factory=dict)
     dry_run: bool = False
+    exclude_open_gaps: bool = False
 
     @property
     def vessels_byyear_flag_field(self) -> str:

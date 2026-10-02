@@ -36,6 +36,7 @@ HELP_MOCK_BQ_CLIENTS = "If passed, mocks the BQ clients [Useful for development]
 HELP_DATE_RANGE = "Create gap events for this date range, e.g., «2024-01-01,2024-01-02»."
 HELP_BQ_PROJECT = "Project to use when executing the events query."
 HELP_DRY_RUN = "If True, executes queries in dry run mode."
+HELP_EXCLUDE_OPEN_GAPS = "If passed, excludes open gaps (no end_timestamp yet) from the output."
 
 
 class GapEvents(Command):
@@ -67,6 +68,7 @@ class GapEvents(Command):
                    help=HELP_BQ_IN_VESSELS_BYYEAR_FLAG_FIELD, default=None),
             Option("--bq-out-gap-events", type=str, help=HELP_BQ_OUT_GAP_EVENTS),
             Option("--mock-bq-clients", type=bool, help=HELP_MOCK_BQ_CLIENTS),
+            Option("--exclude-open-gaps", type=bool, help=HELP_EXCLUDE_OPEN_GAPS),
             Option("--labels", type=str, nargs="*", action=NestedKeyValueAction, help=HELP_LABELS),
         ]
 
