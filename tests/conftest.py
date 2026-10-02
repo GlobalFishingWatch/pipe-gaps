@@ -326,6 +326,55 @@ class TestCases:
             ],
             "id": "one_ssvid_with_open_gap_at_window_overlap_boundary"
         },
+        {
+            # Closed-gap analog of the case above: the gap's OFF message (last message
+            # before the gap) falls in the 12h overlap shared by two consecutive sliding
+            # windows, same as above, but here a later message closes the gap instead of
+            # leaving it open. Step one (consecutive_boundaries()) must use whichever of
+            # the two boundaries sharing that OFF message has the fuller history, not
+            # simply whichever sorts adjacent to the post-gap boundary.
+            #
+            # The ON message is deliberately 2 days after the OFF message (not just past
+            # midnight) so it falls outside *both* overlapping windows' own 36h spans --
+            # otherwise the later-starting window would see the ON message too and
+            # wouldn't share the OFF message as its own last message at all.
+            #
+            # The gap spans multiple days, so this also produces an open-gap recovery row
+            # (same gap_id as the closed gap) and a separate new trailing open gap from
+            # eval_last on the ON message itself -- both expected, not bugs.
+            "messages": [
+                create_message(time=datetime(2024, 1, 2, 9), receiver_type="satellite"),
+                create_message(time=datetime(2024, 1, 2, 13)),  # OFF message (gap starts).
+                create_message(time=datetime(2024, 1, 4, 10)),  # ON message (gap ends).
+            ],
+            "open_gaps": [],
+            "threshold": 6,
+            "date_range": ("2024-01-02", "2024-01-05"),
+            "expected_gaps": [
+                {
+                    # Closed gap.
+                    "positions_hours_before": 2,
+                    "positions_hours_before_ter": 1,
+                    "positions_hours_before_sat": 1,
+                    "positions_hours_before_dyn": 0
+                },
+                {
+                    # Open-gap recovery row for the same gap_id.
+                    "positions_hours_before": 2,
+                    "positions_hours_before_ter": 1,
+                    "positions_hours_before_sat": 1,
+                    "positions_hours_before_dyn": 0
+                },
+                {
+                    # New trailing open gap from the ON message (unaffected by this bug).
+                    "positions_hours_before": 1,
+                    "positions_hours_before_ter": 1,
+                    "positions_hours_before_sat": 0,
+                    "positions_hours_before_dyn": 0
+                },
+            ],
+            "id": "one_ssvid_with_closed_gap_at_window_overlap_boundary"
+        },
     ]
 
     GAP_BETWEEN_ARBITRARY_PERIODS = [
