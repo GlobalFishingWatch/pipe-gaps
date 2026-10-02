@@ -1,23 +1,14 @@
 # Query parameters:
-bq_in_raw_gaps: "world-fishing-827.scratch_tomas_ttl30d.raw_gaps_pipeline_4615_2days"
+bq_in_raw_gaps: "world-fishing-827.scratch_tomas_ttl30d.raw_gaps_test_view_last_versions"
 bq_in_segment_info: "global-fishing-watch.pipe_ais_v3_published.segment_info"
 bq_in_segs_activity: "global-fishing-watch.pipe_ais_v3_published.segs_activity"
 bq_in_regions: "global-fishing-watch.pipe_regions_layers.event_regions"
-bq_in_regions_registry: "gfw-int-datalake.regions_v1.registry"
+bq_in_regions_registry: "world-fishing-827.scratch_tomas_ttl30d.regions_registry"
 bq_in_voyages: "global-fishing-watch.pipe_ais_v3_published.voyages_c4"
 bq_in_port_visits: "global-fishing-watch.pipe_ais_v3_published.product_events_port_visit_v2"
 bq_in_vessels_byyear: "global-fishing-watch.pipe_ais_v3_published.product_vessel_info_summary"
-bq_out_gap_events: "world-fishing-827.scratch_tomas_ttl30d.product_events_ais_gap_pipeline_4615_2days"
-date_range: ["2023-02-01", "2023-02-03"]
-
-# Disabling-event classification (PIPELINE-4615). Thresholds left at their defaults,
-# which match pipe-gaps-prototype's historical AIS values exactly.
-classify_disabling: true
-bq_in_sat_reception: "global-fishing-watch.pipe_static.sat_reception_smoothed_one_degree_v20210722"
-disabling_min_gap_duration_h: 12
-disabling_min_distance_from_shore_m: 92600  # 1852 * 50 nautical miles
-disabling_min_reception_positions_per_day: 10
-disabling_min_positions_before: 14
+bq_out_gap_events: "world-fishing-827.scratch_tomas_ttl30d.product_events_ais_gap"
+date_range: ["2025-11-01", "2025-11-02"]
 
 # General parameters:
 dry_run: false
