@@ -1,0 +1,18 @@
+bq_in_messages: world-fishing-827.scratch_tomas_ttl30d.research_messages
+bq_in_segments: world-fishing-827.scratch_tomas_ttl30d.segs_activity
+bq_out_gaps: world-fishing-827.scratch_tomas_ttl30d.raw_gaps_vms
+bq_out_gaps_description: true
+open_gaps_start_date: "2012-01-01"
+skip_open_gaps: true
+date_range: ["2025-12-10", "2020-12-12"]
+min_gap_length: 1
+n_hours_before: 12
+window_period_d: 2
+filter_good_seg: true
+
+# Apache Beam options
+runner: dataflow
+project: world-fishing-827
+max_num_workers: 200
+machine_type: e2-custom-2-3072
+job_name: tom-test-gaps-vms-2025-12-10--2025-12-12

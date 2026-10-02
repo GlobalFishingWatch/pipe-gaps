@@ -421,7 +421,7 @@ Available subcommands:
     gap-events  Enriches gaps data and creates publication events.
 
 Examples:
-    pipe-gaps raw-gaps -c config/sample-from-file-to-file.json --min-gap-length 1.3
+    pipe-gaps raw-gaps -c config/raw-gaps/local.yaml --min-gap-length 1.3
 ```
 
 > [!CAUTION]
