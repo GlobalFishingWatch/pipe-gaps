@@ -161,9 +161,12 @@ WITH
     ########################################################
     base_gap_event AS (
         SELECT
-            TO_HEX(MD5(FORMAT("%s|%s|%t|%t",'gaps', vessel_start.vessel_id, start_timestamp, end_timestamp))) AS event_id,
+            TO_HEX(MD5(FORMAT("%s|%s|%t|%t",'gaps', s1.vessel_id, start_timestamp, end_timestamp))) AS event_id,
             'gaps' AS event_type,
-            vessel_start.vessel_id,
+            # Identity comes from segment_info (always present), not vessels_byyear
+            # (vessel_start/vessel_end below, only used for display enrichment):
+            # matches pipe-gaps-prototype's own split between the two concerns.
+            s1.vessel_id,
             s1.seg_id,
             start_timestamp AS event_start,
             end_timestamp AS event_end,
@@ -225,7 +228,7 @@ WITH
                 [
                   STRUCT(
                     gaps.ssvid AS ssvid,
-                    vessel_start.vessel_id AS id,
+                    s1.vessel_id AS id,
                     vessel_start.{{ vessel_info_field_prefix }}shipname AS name,
                     vessel_start.prod_shiptype AS type,
                     vessel_start.{{ vessel_info_flag_field }} AS flag,
@@ -238,7 +241,7 @@ WITH
                   [
                     STRUCT(
                       gaps.ssvid AS ssvid,
-                      vessel_end.vessel_id AS id,
+                      s2.vessel_id AS id,
                       vessel_end.{{ vessel_info_field_prefix }}shipname AS name,
                       vessel_end.prod_shiptype AS type,
                       vessel_end.{{ vessel_info_flag_field }} AS flag,
