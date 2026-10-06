@@ -49,3 +49,12 @@ def test_no_eval_last_flag_disables():
     _, config = main.run(BASE_ARGS + ["--only-render", "--no-eval-last"])
 
     assert config["eval_last"] is False
+
+
+def test_labels_resolve_from_cli():
+    # --labels is a common option shared by every subcommand (see cli/main.py), forwarded
+    # by PipelineFactory to the Dataflow job -- see PIPELINE-4643.
+    args = BASE_ARGS + ["--only-render", "--labels", "team=pipeline", "env=prod"]
+    _, config = main.run(args)
+
+    assert config["labels"] == {"team": "pipeline", "env": "prod"}

@@ -2,7 +2,6 @@ from types import SimpleNamespace
 from typing import Any
 
 from gfw.common.cli import Command, Option
-from gfw.common.cli.actions import NestedKeyValueAction
 from pipe_gaps.cli.validations import date_range
 from pipe_gaps.pipelines.events.main import run
 
@@ -28,8 +27,6 @@ HELP_BQ_IN_VESSELS_BYYEAR_FLAG_FIELD = (
     "Field to read the vessel flag from in bq-in-vessels-by-year. "
     "Defaults to «<field-prefix>mmsi_flag»; VMS pipelines pass «gfw_best_flag»."
 )
-HELP_LABELS = "Labels to audit costs over the queries."
-
 HELP_BQ_OUT_GAP_EVENTS = "BigQuery table in which to store the gap events."
 
 HELP_MOCK_BQ_CLIENTS = "If passed, mocks the BQ clients [Useful for development]."
@@ -69,7 +66,6 @@ class GapEvents(Command):
             Option("--bq-out-gap-events", type=str, help=HELP_BQ_OUT_GAP_EVENTS),
             Option("--mock-bq-clients", type=bool, help=HELP_MOCK_BQ_CLIENTS),
             Option("--exclude-open-gaps", type=bool, help=HELP_EXCLUDE_OPEN_GAPS),
-            Option("--labels", type=str, nargs="*", action=NestedKeyValueAction, help=HELP_LABELS),
         ]
 
     @classmethod
