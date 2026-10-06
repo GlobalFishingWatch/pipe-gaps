@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 # This command does not use beam but PipelineConfig has generic functionality.
 # TODO: move PipelineConfig to a more generic package inside gfw-common lib.
@@ -21,7 +21,6 @@ class GapEventsConfig(PipelineConfig):
     bq_out_gap_events: str
     project: str
     bq_in_vessels_byyear_flag_field: str | None = None
-    labels: dict = field(default_factory=dict)
     dry_run: bool = False
     exclude_open_gaps: bool = False
 
