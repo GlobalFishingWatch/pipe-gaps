@@ -140,7 +140,11 @@ def test_open_gap_duration_falls_back_to_elapsed_time_to_end_date(basic_config_k
     assert "COALESCE(" in sql
     assert "TIMESTAMP_DIFF(TIMESTAMP('2024-01-02'), start_timestamp, SECOND) / 3600.0" in sql
     assert "AS effective_duration_h" in sql
-    assert "effective_duration_h AS duration_h" in sql
+
+    # duration_h keeps its original meaning (NULL for a still-open gap) in the output --
+    # effective_duration_h is exposed as its own field instead of overwriting duration_h.
+    assert "effective_duration_h AS duration_h" not in sql
+    assert "duration_h,\n                    effective_duration_h," in sql
 
 
 def _disabling_classification_query(kwargs):

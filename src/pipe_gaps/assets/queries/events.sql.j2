@@ -182,7 +182,8 @@ WITH
             end_distance_from_port_m,
             TO_JSON_STRING(
                 STRUCT(
-                    effective_duration_h AS duration_h,
+                    duration_h,
+                    effective_duration_h,
                     convert_m_to_km(distance_m) AS total_distance_km,
                     implied_speed_knots,
                     vessel_start.prod_shiptype as vessel_class,
