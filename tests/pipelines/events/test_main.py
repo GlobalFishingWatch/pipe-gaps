@@ -121,6 +121,105 @@ def test_fetch_regions_registry_queries_the_given_table():
     assert "SELECT name, description" in query_str
 
 
+def test_open_gap_duration_falls_back_to_elapsed_time_to_end_date(basic_config_kwargs):
+    """duration_h is NULL for an open gap (no ON message yet) -- fall back to the
+    elapsed time up to end_date (the run's own "as of" boundary) instead, so an open
+    gap can still be evaluated by duration-based conditions (e.g. disabling
+    classification) rather than permanently failing them.
+
+    Deliberately end_date, not CURRENT_TIMESTAMP(): a historical backfill for a given
+    window must stay reproducible, not depend on whenever it happens to be rerun.
+    """
+    config = GapEventsConfig.from_namespace(
+        SimpleNamespace(**basic_config_kwargs, unknown_parsed_args={}),
+        version="test",
+        name="test",
+    )
+    sql = GapEventQuery(config).render()
+
+    assert "COALESCE(" in sql
+    assert "TIMESTAMP_DIFF(TIMESTAMP('2024-01-02'), start_timestamp, SECOND) / 3600.0" in sql
+    assert "AS effective_duration_h" in sql
+
+    # duration_h keeps its original meaning (NULL for a still-open gap) in the output --
+    # effective_duration_h is exposed as its own field instead of overwriting duration_h.
+    assert "effective_duration_h AS duration_h" not in sql
+    assert "duration_h,\n                    effective_duration_h," in sql
+
+
+def _disabling_classification_query(kwargs):
+    config = GapEventsConfig.from_namespace(
+        SimpleNamespace(**kwargs, unknown_parsed_args={}),
+        version="test",
+        name="test",
+    )
+    return GapEventQuery(config)
+
+
+def test_disabling_classification_disabled_by_default(basic_config_kwargs):
+    """Classification is optional and additive-only (PIPELINE-4615): disabled by
+    default, the rendered query carries none of this.
+    """
+    sql = _disabling_classification_query(basic_config_kwargs).render()
+
+    assert "reception AS (" not in sql
+    assert "LEFT JOIN reception" not in sql
+    assert "intentional_disabling" not in sql
+    assert "positions_per_day_sat_reception" not in sql
+
+
+def test_disabling_classification_requires_reception_table_when_enabled(basic_config_kwargs):
+    with pytest.raises(ValueError, match="bq_in_sat_reception"):
+        _disabling_classification_query(basic_config_kwargs | {"classify_disabling": True})
+
+
+def test_disabling_classification_enabled_adds_reception_join_and_classification(
+    basic_config_kwargs,
+):
+    """Enabled, it joins satellite reception quality and adds intentional_disabling
+    (and the fields that drove it) inside event_info -- it never filters out a
+    gap-event row.
+    """
+    sql = _disabling_classification_query(
+        basic_config_kwargs
+        | {
+            "classify_disabling": True,
+            "bq_in_sat_reception": "project.dataset.sat_reception",
+        }
+    ).render()
+
+    assert "FROM `project.dataset.sat_reception`" in sql
+    assert "GROUP BY 1, 2, 3" in sql
+    assert "FLOOR(gaps.start_lat) = reception.lat_bin" in sql
+    assert "FLOOR(gaps.start_lon) = reception.lon_bin" in sql
+    assert "gaps.start_ais_class = reception.class" in sql
+    assert "reception.positions_per_day AS positions_per_day_sat_reception" in sql
+    assert "positions_hours_before_sat" in sql
+    assert "effective_duration_h >= 12" in sql
+    assert "start_distance_from_shore_m > 92600" in sql
+    assert "reception.positions_per_day" in sql and "> 10" in sql
+    assert "positions_hours_before_sat >= 14" in sql
+
+
+def test_disabling_classification_custom_thresholds_are_rendered(basic_config_kwargs):
+    sql = _disabling_classification_query(
+        basic_config_kwargs
+        | {
+            "classify_disabling": True,
+            "bq_in_sat_reception": "project.dataset.sat_reception",
+            "disabling_min_gap_duration_h": 6,
+            "disabling_min_distance_from_shore_m": 1000,
+            "disabling_min_reception_positions_per_day": 5,
+            "disabling_min_positions_before": 2,
+        }
+    ).render()
+
+    assert "effective_duration_h >= 6" in sql
+    assert "start_distance_from_shore_m > 1000" in sql
+    assert "reception.positions_per_day" in sql and "> 5" in sql
+    assert "positions_hours_before_sat >= 2" in sql
+
+
 def test_fetch_regions_registry_always_runs_for_real_under_dry_run():
     """Even with `--dry-run`, this metadata read must actually execute.
 

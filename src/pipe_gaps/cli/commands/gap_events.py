@@ -29,6 +29,29 @@ HELP_BQ_IN_VESSELS_BYYEAR_FLAG_FIELD = (
 )
 HELP_BQ_OUT_GAP_EVENTS = "BigQuery table in which to store the gap events."
 
+HELP_CLASSIFY_DISABLING = (
+    "If passed, adds intentional_disabling and the fields that drove it to event_info. "
+    "Additive only -- never filters out a gap-event row."
+)
+HELP_BQ_IN_SAT_RECEPTION = (
+    "BigQuery table with gridded satellite reception quality (lat_bin, lon_bin, class, "
+    "positions_per_day). Required when --classify-disabling is passed."
+)
+HELP_DISABLING_MIN_GAP_DURATION_H = (
+    "Minimum gap duration (hours) to classify a gap as intentional disabling."
+)
+HELP_DISABLING_MIN_DISTANCE_FROM_SHORE_M = (
+    "Minimum distance from shore (meters) at gap start to classify a gap as intentional disabling."
+)
+HELP_DISABLING_MIN_RECEPTION_POSITIONS_PER_DAY = (
+    "Minimum satellite reception quality (positions per day) at gap start to classify a gap "
+    "as intentional disabling."
+)
+HELP_DISABLING_MIN_POSITIONS_BEFORE = (
+    "Minimum position count in the hours before the gap (see --n-hours-before in raw-gaps) to "
+    "classify a gap as intentional disabling."
+)
+
 HELP_MOCK_BQ_CLIENTS = "If passed, mocks the BQ clients [Useful for development]."
 HELP_DATE_RANGE = "Create gap events for this date range, e.g., «2024-01-01,2024-01-02»."
 HELP_BQ_PROJECT = "Project to use when executing the events query."
@@ -66,6 +89,32 @@ class GapEvents(Command):
             Option("--bq-out-gap-events", type=str, help=HELP_BQ_OUT_GAP_EVENTS),
             Option("--mock-bq-clients", type=bool, help=HELP_MOCK_BQ_CLIENTS),
             Option("--exclude-open-gaps", type=bool, help=HELP_EXCLUDE_OPEN_GAPS),
+            Option("--classify-disabling", type=bool, help=HELP_CLASSIFY_DISABLING),
+            Option("--bq-in-sat-reception", type=str, help=HELP_BQ_IN_SAT_RECEPTION),
+            Option(
+                "--disabling-min-gap-duration-h",
+                type=float,
+                default=12,
+                help=HELP_DISABLING_MIN_GAP_DURATION_H,
+            ),
+            Option(
+                "--disabling-min-distance-from-shore-m",
+                type=float,
+                default=92600,
+                help=HELP_DISABLING_MIN_DISTANCE_FROM_SHORE_M,
+            ),
+            Option(
+                "--disabling-min-reception-positions-per-day",
+                type=float,
+                default=10,
+                help=HELP_DISABLING_MIN_RECEPTION_POSITIONS_PER_DAY,
+            ),
+            Option(
+                "--disabling-min-positions-before",
+                type=float,
+                default=14,
+                help=HELP_DISABLING_MIN_POSITIONS_BEFORE,
+            ),
         ]
 
     @classmethod
