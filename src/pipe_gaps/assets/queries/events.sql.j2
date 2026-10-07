@@ -267,10 +267,8 @@ WITH
             )
             {% endif %}
 
-            # Start / OFF vessel. LEFT JOIN: a missing vessels_byyear row (e.g. a
-            # stale/lagging source table) must not drop the whole event, matching
-            # pipe-gaps-prototype's own ais_gap_events_published.sql.j2.
-            LEFT JOIN source_all_vessels AS vessel_start
+            # Start / OFF vessel (mandatory)
+            JOIN source_all_vessels AS vessel_start
               ON vessel_start.vessel_id = s1.vessel_id
              AND vessel_start.year      = gaps.year
 
