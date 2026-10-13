@@ -96,3 +96,24 @@ def test_sinks_with_only_bq(base_config):
     sinks = factory.sinks
     assert all(isinstance(s, WriteToBigQueryWrapper) for s in sinks)
     assert len(sinks) == 1
+
+
+def test_bigquery_reads_forward_labels_as_job_labels(base_config):
+    """Both BigQuery reads label the BigQuery jobs Beam runs for them, not just the
+    Dataflow job, so their cost is attributed the same way.
+    """
+    labels = {"team": "pipeline", "env": "prod"}
+    factory = RawGapsLinearDagFactory(replace(base_config, json_in_messages=None, labels=labels))
+
+    reads = [*factory.sources, factory.side_inputs]
+
+    assert len(reads) == 2
+    for read in reads:
+        assert read._read_from_bigquery_kwargs == {"bigquery_job_labels": labels}
+
+
+def test_bigquery_reads_without_labels_pass_no_job_labels(base_config):
+    factory = RawGapsLinearDagFactory(replace(base_config, json_in_messages=None, labels={}))
+
+    for read in [*factory.sources, factory.side_inputs]:
+        assert read._read_from_bigquery_kwargs == {}
