@@ -17,6 +17,15 @@ class RawGapsLinearDagFactory(LinearDagFactory):
         self.config = config
 
     @property
+    def read_from_bigquery_kwargs(self) -> dict:
+        # Labels the BigQuery query/export jobs Beam runs for each read, not just the
+        # Dataflow job itself, so their cost is attributed the same way.
+        if not self.config.labels:
+            return {}
+
+        return {"bigquery_job_labels": dict(self.config.labels)}
+
+    @property
     def sources(self):
         # Constructs the list of source PTransforms based on config.
         sources = []
@@ -44,6 +53,7 @@ class RawGapsLinearDagFactory(LinearDagFactory):
                     query,
                     method=self.config.bq_read_method,
                     read_from_bigquery_factory=self.read_from_bigquery_factory,
+                    read_from_bigquery_kwargs=self.read_from_bigquery_kwargs,
                     label="ReadMessages",
                 ),
             )
@@ -82,6 +92,7 @@ class RawGapsLinearDagFactory(LinearDagFactory):
                 ).with_env(self.config.jinja_env),
                 method=self.config.bq_read_method,
                 read_from_bigquery_factory=self.read_from_bigquery_factory,
+                read_from_bigquery_kwargs=self.read_from_bigquery_kwargs,
                 label="ReadOpenGaps",
             )
         return side_inputs
