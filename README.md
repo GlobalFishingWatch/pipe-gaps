@@ -174,6 +174,10 @@ See [Events publication process](#events-publication-process).
 > Gaps starting **before 2017** are not classified:
   their `intentional_disabling` and `positions_per_day_sat_reception` are `null`.
   `null` means "not classified", never "not disabling".
+  A gap whose AIS class is unknown has no reception value.
+  It is still `false` if it fails any other condition,
+  since then it cannot be disabling whatever its reception;
+  otherwise it is `null`.
   2017 is when satellite reception became good enough for this analysis,
   with the launch of the Spire satellites [[1]](#1):
   *"This time series was bound by the 2017 launch of Spire satellites,

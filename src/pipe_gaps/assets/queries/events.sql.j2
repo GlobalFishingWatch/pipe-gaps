@@ -217,6 +217,8 @@ WITH
                     -- satellite reception was too sparse before the 2017 Spire launch
                     -- (PIPELINE-4662). positions_per_day_sat_reception needs its own guard:
                     -- reception is averaged over all time, so the join still matches them.
+                    -- No reception match (unknown AIS class) also gives NULL unless another
+                    -- condition already fails, as AND is three-valued (false AND NULL = false).
                     {% if classify_disabling %}
                     IF(
                         gaps.year < {{ disabling_min_year }},
@@ -226,14 +228,11 @@ WITH
                     IF(
                         gaps.year < {{ disabling_min_year }},
                         NULL,
-                        IF(
-                            effective_duration_h >= {{ disabling_min_gap_duration_h }}
-                            AND start_distance_from_shore_m > {{ disabling_min_distance_from_shore_m }}
-                            AND reception.positions_per_day
-                                > {{ disabling_min_reception_positions_per_day }}
-                            AND positions_hours_before_sat >= {{ disabling_min_positions_before }},
-                            true, false
-                        )
+                        effective_duration_h >= {{ disabling_min_gap_duration_h }}
+                        AND start_distance_from_shore_m > {{ disabling_min_distance_from_shore_m }}
+                        AND reception.positions_per_day
+                            > {{ disabling_min_reception_positions_per_day }}
+                        AND positions_hours_before_sat >= {{ disabling_min_positions_before }}
                     ) AS intentional_disabling
                     {% else %}
                     CAST(NULL AS FLOAT64) AS positions_per_day_sat_reception,
