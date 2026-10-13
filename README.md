@@ -142,6 +142,50 @@ This de-noising process happens in the [segment pipeline].
 
 </div>
 
+## Definition of disabling event
+
+<div align="justify">
+
+A **disabling event** is a gap that is likely to be caused by
+the onboard equipment being intentionally turned off,
+rather than by poor reception or malfunction.
+Following [[1]](#1),
+a gap is classified as a disabling event (`intentional_disabling = true`)
+when all of the following conditions hold:
+
+| Condition | Default | CLI option |
+|---|---|---|
+| Gap duration (hours). For open gaps, the elapsed time up to the end of the date range. | `>= 12` | `--disabling-min-gap-duration-h` |
+| Distance from shore at the `OFF` message (meters). | `> 92600` (50 nm) | `--disabling-min-distance-from-shore-m` |
+| Satellite reception quality at the `OFF` message (positions per day), for its 1° grid cell and AIS class. | `> 10` | `--disabling-min-reception-positions-per-day` |
+| Number of satellite positions in the hours before the gap (see `--n-hours-before` in `raw-gaps`). | `>= 14` | `--disabling-min-positions-before` |
+
+These conditions aim to keep only gaps in which the vessel was far from shore,
+in an area with good satellite reception,
+and transmitting regularly right before the gap,
+so that the gap is unlikely to be explained by poor reception.
+
+The classification is **not** done during gap detection (`raw-gaps`),
+which only detects gaps.
+It is done afterwards, when generating gap events (`gap-events`),
+and only when the `--classify-disabling` flag is passed.
+It is additive only: it never filters out a gap event,
+it only adds `intentional_disabling` and the fields that drove it
+(`start_distance_from_shore_m`, `positions_hours_before_sat`, `positions_per_day_sat_reception`)
+to the `event_info` of the event.
+See [Events publication process](#events-publication-process).
+
+</div>
+
+> [!IMPORTANT]
+> Gaps starting **before 2017** are not classified:
+  their `event_info` is the same as without `--classify-disabling`.
+  2017 is when satellite reception became good enough for this analysis,
+  with the launch of the Spire satellites [[1]](#1):
+  *"This time series was bound by the 2017 launch of Spire satellites,
+  providing more data points on AIS usage"*.
+  The year can be changed with `--disabling-min-year`.
+
 ## Some results
 
 These are some [results for 2021-2023].
@@ -383,6 +427,10 @@ we need to translate the output to the common schema defined in
 All the needed transformations are encapsulated in the query
 [queries/events.sql.j2](src/pipe_gaps/assets/queries/events.sql.j2).
 This process can be executed with the command `pipe-gaps gap-events`. See next section.
+
+When the `--classify-disabling` flag is passed,
+this is also the step in which gaps are classified as disabling events.
+See [Definition of disabling event](#definition-of-disabling-event).
 
 </div>
 
