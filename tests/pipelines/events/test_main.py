@@ -162,15 +162,16 @@ def _disabling_classification_query(kwargs):
 
 
 def test_disabling_classification_disabled_by_default(basic_config_kwargs):
-    """Classification is optional and additive-only (PIPELINE-4615): disabled by
-    default, the rendered query carries none of this.
+    """Classification is optional (PIPELINE-4615): disabled by default, the query doesn't
+    reference reception at all, and the classification fields are NULL ("not classified").
     """
-    sql = _disabling_classification_query(basic_config_kwargs).render()
+    sql = _normalize_whitespace(_disabling_classification_query(basic_config_kwargs).render())
 
     assert "reception AS (" not in sql
-    assert "LEFT JOIN reception" not in sql
-    assert "intentional_disabling" not in sql
-    assert "positions_per_day_sat_reception" not in sql
+    assert "JOIN reception" not in sql
+    assert "reception.positions_per_day" not in sql
+    assert "CAST(NULL AS FLOAT64) AS positions_per_day_sat_reception" in sql
+    assert "CAST(NULL AS BOOL) AS intentional_disabling" in sql
 
 
 def test_disabling_classification_requires_reception_table_when_enabled(basic_config_kwargs):
@@ -181,9 +182,8 @@ def test_disabling_classification_requires_reception_table_when_enabled(basic_co
 def test_disabling_classification_enabled_adds_reception_join_and_classification(
     basic_config_kwargs,
 ):
-    """Enabled, it joins satellite reception quality and adds intentional_disabling
-    (and the fields that drove it) inside event_info -- it never filters out a
-    gap-event row.
+    """Enabled, it joins satellite reception quality and classifies intentional_disabling
+    inside event_info -- it never filters out a gap-event row.
     """
     sql = _disabling_classification_query(
         basic_config_kwargs
@@ -198,13 +198,14 @@ def test_disabling_classification_enabled_adds_reception_join_and_classification
     assert "FLOOR(gaps.start_lat) = reception.lat_bin" in sql
     assert "FLOOR(gaps.start_lon) = reception.lon_bin" in sql
     assert "gaps.start_ais_class = reception.class" in sql
-    assert "reception.positions_per_day AS positions_per_day_sat_reception" in sql
+    assert "AS positions_per_day_sat_reception" in sql
+    assert ") AS intentional_disabling" in sql
     assert "positions_hours_before_sat" in sql
     assert "effective_duration_h >= 12" in sql
     assert "start_distance_from_shore_m > 92600" in sql
     assert "reception.positions_per_day" in sql and "> 10" in sql
     assert "positions_hours_before_sat >= 14" in sql
-    assert "gaps.year < 2017," in sql
+    assert sql.count("gaps.year < 2017") == 2
 
 
 def test_disabling_classification_custom_thresholds_are_rendered(basic_config_kwargs):
@@ -227,30 +228,21 @@ def test_disabling_classification_custom_thresholds_are_rendered(basic_config_kw
 
 
 def test_disabling_classification_skips_gaps_before_min_year(basic_config_kwargs):
-    """Gaps before disabling_min_year are not classified at all: their event_info is
-    exactly the one rendered without classify_disabling, as satellite reception was too
-    sparse before 2017 to tell (PIPELINE-4662).
+    """Gaps before disabling_min_year are not classified, as satellite reception was too
+    sparse before 2017 to tell (PIPELINE-4662): both intentional_disabling and
+    positions_per_day_sat_reception are guarded by the year. The latter needs its own guard
+    because reception is averaged over all time, so the join still matches older gaps.
     """
-    # Whitespace is normalized so that reformatting the template doesn't break this test.
-    unclassified_sql = _normalize_whitespace(
-        _disabling_classification_query(basic_config_kwargs).render()
-    )
-    unclassified_event_info = re.search(
-        r"(TO_JSON_STRING\(STRUCT\(.*?\)\)) AS event_info", unclassified_sql
-    ).group(1)
+    sql = _disabling_classification_query(
+        basic_config_kwargs
+        | {
+            "classify_disabling": True,
+            "bq_in_sat_reception": "project.dataset.sat_reception",
+            "disabling_min_year": 2019,
+        }
+    ).render()
 
-    sql = _normalize_whitespace(
-        _disabling_classification_query(
-            basic_config_kwargs
-            | {
-                "classify_disabling": True,
-                "bq_in_sat_reception": "project.dataset.sat_reception",
-                "disabling_min_year": 2019,
-            }
-        ).render()
-    )
-
-    assert f"gaps.year < 2019, {unclassified_event_info}," in sql
+    assert sql.count("gaps.year < 2019") == 2
 
 
 def test_fetch_regions_registry_always_runs_for_real_under_dry_run():
