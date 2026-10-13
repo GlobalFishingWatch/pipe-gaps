@@ -148,6 +148,10 @@ def test_open_gap_duration_falls_back_to_elapsed_time_to_end_date(basic_config_k
     assert re.search(r"duration_h,\s+effective_duration_h,", sql)
 
 
+def _normalize_whitespace(sql):
+    return " ".join(sql.split())
+
+
 def _disabling_classification_query(kwargs):
     config = GapEventsConfig.from_namespace(
         SimpleNamespace(**kwargs, unknown_parsed_args={}),
@@ -227,21 +231,26 @@ def test_disabling_classification_skips_gaps_before_min_year(basic_config_kwargs
     exactly the one rendered without classify_disabling, as satellite reception was too
     sparse before 2017 to tell (PIPELINE-4662).
     """
-    unclassified_sql = _disabling_classification_query(basic_config_kwargs).render()
+    # Whitespace is normalized so that reformatting the template doesn't break this test.
+    unclassified_sql = _normalize_whitespace(
+        _disabling_classification_query(basic_config_kwargs).render()
+    )
     unclassified_event_info = re.search(
-        r"(TO_JSON_STRING\(STRUCT\(.*?\)\)) AS event_info", unclassified_sql, re.DOTALL
+        r"(TO_JSON_STRING\(STRUCT\(.*?\)\)) AS event_info", unclassified_sql
     ).group(1)
 
-    sql = _disabling_classification_query(
-        basic_config_kwargs
-        | {
-            "classify_disabling": True,
-            "bq_in_sat_reception": "project.dataset.sat_reception",
-            "disabling_min_year": 2019,
-        }
-    ).render()
+    sql = _normalize_whitespace(
+        _disabling_classification_query(
+            basic_config_kwargs
+            | {
+                "classify_disabling": True,
+                "bq_in_sat_reception": "project.dataset.sat_reception",
+                "disabling_min_year": 2019,
+            }
+        ).render()
+    )
 
-    assert f"gaps.year < 2019,\n                {unclassified_event_info}," in sql
+    assert f"gaps.year < 2019, {unclassified_event_info}," in sql
 
 
 def test_fetch_regions_registry_always_runs_for_real_under_dry_run():
