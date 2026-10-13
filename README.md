@@ -425,10 +425,8 @@ this is also the step in which gaps are classified as disabling events.
 It is additive only: it never filters out a gap event,
 it only adds `intentional_disabling` and the fields that drove it
 (`start_distance_from_shore_m`, `positions_hours_before_sat`, `positions_per_day_sat_reception`)
-to the `event_info` of the event
-
+to the `event_info` of the event.
 See [Definition of disabling event](#definition-of-disabling-event).
-
 
 </div>
 
