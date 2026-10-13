@@ -153,7 +153,7 @@ Following [[1]](#1),
 a gap is classified as a disabling event (`intentional_disabling = true`)
 when all of the following conditions hold:
 
-| Condition | Threshold |
+| Condition | Default |
 |---|---|
 | Gap duration (hours). For open gaps, the time elapsed so far. | `>= 12` |
 | Distance from shore at the `OFF` message (meters). | `> 92600` (50 nm) |
@@ -165,13 +165,7 @@ in an area with good satellite reception,
 and transmitting regularly right before the gap,
 so that the gap is unlikely to be explained by poor reception.
 
-The classification is **not** done during gap detection,
-which only detects gaps.
-It is done afterwards, when generating gap events.
-It is additive only: it never filters out a gap event,
-it only adds `intentional_disabling` and the fields that drove it
-(`start_distance_from_shore_m`, `positions_hours_before_sat`, `positions_per_day_sat_reception`)
-to the `event_info` of the event.
+The classification is done when generating gap events.
 See [Events publication process](#events-publication-process).
 
 </div>
@@ -428,7 +422,13 @@ This process can be executed with the command `pipe-gaps gap-events`. See next s
 
 When the `--classify-disabling` flag is passed,
 this is also the step in which gaps are classified as disabling events.
+It is additive only: it never filters out a gap event,
+it only adds `intentional_disabling` and the fields that drove it
+(`start_distance_from_shore_m`, `positions_hours_before_sat`, `positions_per_day_sat_reception`)
+to the `event_info` of the event
+
 See [Definition of disabling event](#definition-of-disabling-event).
+
 
 </div>
 
