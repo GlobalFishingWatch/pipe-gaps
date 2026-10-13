@@ -24,9 +24,9 @@ class GapEventsConfig(PipelineConfig):
     dry_run: bool = False
     exclude_open_gaps: bool = False
 
-    # Disabling-event classification (PIPELINE-4615): optional, additive-only -- it never
-    # filters out a gap-event row, it only adds intentional_disabling and the fields that
-    # drove it inside event_info.
+    # Disabling-event classification (PIPELINE-4615): optional -- it never filters out a
+    # gap-event row. event_info always has the same keys: when classification is off,
+    # intentional_disabling and positions_per_day_sat_reception are NULL ("not classified").
     classify_disabling: bool = False
 
     # No default: a reception table is required whenever classification is on, so every
@@ -38,6 +38,11 @@ class GapEventsConfig(PipelineConfig):
     disabling_min_distance_from_shore_m: float = 92600  # 1852 * 50 nautical miles
     disabling_min_reception_positions_per_day: float = 10
     disabling_min_positions_before: float = 14
+
+    # Gaps starting before this year are not classified: intentional_disabling and
+    # positions_per_day_sat_reception are NULL, as satellite reception was too sparse before
+    # the 2017 Spire launch. See PIPELINE-4662.
+    disabling_min_year: int = 2017
 
     def __post_init__(self) -> None:
         self.validate()

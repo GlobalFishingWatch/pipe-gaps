@@ -18,6 +18,7 @@
 -- * disabling_min_distance_from_shore_m (required if classify_disabling)
 -- * disabling_min_reception_positions_per_day (required if classify_disabling)
 -- * disabling_min_positions_before (required if classify_disabling)
+-- * disabling_min_year (required if classify_disabling)
 
 WITH
 
@@ -64,8 +65,8 @@ WITH
             *,
             EXTRACT(year from start_timestamp) as year,
             -- For a still-open gap, duration_h is NULL (no ON message yet to measure
-            -- against). Use the elapsed time up to end_date instead -- the run's own
-            -- declared "as of" boundary -- so an open gap can still be evaluated (e.g.
+            -- against). Use the elapsed time up to end_date instead -- the declared
+            -- "as of" boundary of the run -- so an open gap can still be evaluated (e.g.
             -- for disabling classification) instead of silently never qualifying.
             -- Deliberately end_date, not CURRENT_TIMESTAMP(): this keeps a historical
             -- backfill reproducible (same inputs, same output) rather than depending on
@@ -99,7 +100,7 @@ WITH
     ##########################################################
     # Satellite reception quality, for disabling             #
     # classification. Averaged over all time -- matches      #
-    # "pipe-gaps-prototype's" own "TEMPORARY" design, not an #
+    # the "TEMPORARY" design of pipe-gaps-prototype, not an  #
     # improvement on it.                                     #
     ##########################################################
     reception AS (
@@ -165,7 +166,7 @@ WITH
             'gaps' AS event_type,
             # Identity comes from segment_info (always present), not vessels_byyear
             # (vessel_start/vessel_end below, only used for display enrichment):
-            # matches pipe-gaps-prototype's own split between the two concerns.
+            # matches the split pipe-gaps-prototype makes between the two concerns.
             s1.vessel_id,
             s1.seg_id,
             start_timestamp AS event_start,
@@ -207,20 +208,35 @@ WITH
                     LEAST(
                       start_distance_from_shore_m,
                       COALESCE(end_distance_from_shore_m, start_distance_from_shore_m)
-                    ) AS gap_min_distance_from_shore_m
-                    {% if classify_disabling %}
-                    ,
+                    ) AS gap_min_distance_from_shore_m,
                     start_distance_from_shore_m,
                     positions_hours_before_sat,
-                    reception.positions_per_day AS positions_per_day_sat_reception,
+                    -- Disabling classification (PIPELINE-4615). Same keys whether it is on or
+                    -- off, and for every year: NULL means "not classified", never "not
+                    -- disabling". Gaps before disabling_min_year are not classified, as
+                    -- satellite reception was too sparse before the 2017 Spire launch
+                    -- (PIPELINE-4662). positions_per_day_sat_reception needs its own guard:
+                    -- reception is averaged over all time, so the join still matches them.
+                    -- No reception match (unknown AIS class) also gives NULL unless another
+                    -- condition already fails, as AND is three-valued (false AND NULL = false).
+                    {% if classify_disabling %}
                     IF(
+                        gaps.year < {{ disabling_min_year }},
+                        NULL,
+                        reception.positions_per_day
+                    ) AS positions_per_day_sat_reception,
+                    IF(
+                        gaps.year < {{ disabling_min_year }},
+                        NULL,
                         effective_duration_h >= {{ disabling_min_gap_duration_h }}
                         AND start_distance_from_shore_m > {{ disabling_min_distance_from_shore_m }}
                         AND reception.positions_per_day
                             > {{ disabling_min_reception_positions_per_day }}
-                        AND positions_hours_before_sat >= {{ disabling_min_positions_before }},
-                        true, false
+                        AND positions_hours_before_sat >= {{ disabling_min_positions_before }}
                     ) AS intentional_disabling
+                    {% else %}
+                    CAST(NULL AS FLOAT64) AS positions_per_day_sat_reception,
+                    CAST(NULL AS BOOL) AS intentional_disabling
                     {% endif %}
                 )
             ) AS event_info,

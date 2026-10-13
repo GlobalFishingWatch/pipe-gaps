@@ -30,8 +30,8 @@ HELP_BQ_IN_VESSELS_BYYEAR_FLAG_FIELD = (
 HELP_BQ_OUT_GAP_EVENTS = "BigQuery table in which to store the gap events."
 
 HELP_CLASSIFY_DISABLING = (
-    "If passed, adds intentional_disabling and the fields that drove it to event_info. "
-    "Additive only -- never filters out a gap-event row."
+    "If passed, classifies gaps as intentional disabling in event_info. If not, "
+    "intentional_disabling is NULL. Never filters out a gap-event row."
 )
 HELP_BQ_IN_SAT_RECEPTION = (
     "BigQuery table with gridded satellite reception quality (lat_bin, lon_bin, class, "
@@ -50,6 +50,10 @@ HELP_DISABLING_MIN_RECEPTION_POSITIONS_PER_DAY = (
 HELP_DISABLING_MIN_POSITIONS_BEFORE = (
     "Minimum position count in the hours before the gap (see --n-hours-before in raw-gaps) to "
     "classify a gap as intentional disabling."
+)
+HELP_DISABLING_MIN_YEAR = (
+    "Gaps starting before this year are not classified (intentional_disabling is NULL), "
+    "as satellite reception was too sparse before then."
 )
 
 HELP_MOCK_BQ_CLIENTS = "If passed, mocks the BQ clients [Useful for development]."
@@ -114,6 +118,12 @@ class GapEvents(Command):
                 type=float,
                 default=14,
                 help=HELP_DISABLING_MIN_POSITIONS_BEFORE,
+            ),
+            Option(
+                "--disabling-min-year",
+                type=int,
+                default=2017,
+                help=HELP_DISABLING_MIN_YEAR,
             ),
         ]
 

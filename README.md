@@ -142,6 +142,47 @@ This de-noising process happens in the [segment pipeline].
 
 </div>
 
+## Definition of disabling event
+
+<div align="justify">
+
+A **disabling event** is a gap that is likely to be caused by
+the onboard equipment being intentionally turned off,
+rather than by poor reception or malfunction.
+Following [[1]](#1),
+a gap is classified as a disabling event (`intentional_disabling = true`)
+when all of the following conditions hold:
+
+| Condition | Default |
+|---|---|
+| Gap duration (hours). For open gaps, the time elapsed so far. | `>= 12` |
+| Distance from shore at the `OFF` message (meters). | `> 92600` (50 nm) |
+| Satellite reception quality at the `OFF` message (positions per day), for its 1° grid cell and AIS class. | `> 10` |
+| Number of satellite positions in the 12 hours before the gap. | `>= 14` |
+
+These conditions aim to keep only gaps in which the vessel was far from shore,
+in an area with good satellite reception,
+and transmitting regularly right before the gap,
+so that the gap is unlikely to be explained by poor reception.
+
+The classification is done when generating gap events.
+See [Events publication process](#events-publication-process).
+
+</div>
+
+> [!IMPORTANT]
+> Gaps starting **before 2017** are not classified:
+  their `intentional_disabling` and `positions_per_day_sat_reception` are `null`.
+  `null` means "not classified", never "not disabling".
+  A gap whose AIS class is unknown has no reception value.
+  It is still `false` if it fails any other condition,
+  since then it cannot be disabling whatever its reception;
+  otherwise it is `null`.
+  2017 is when satellite reception became good enough for this analysis,
+  with the launch of the Spire satellites [[1]](#1):
+  *"This time series was bound by the 2017 launch of Spire satellites,
+  providing more data points on AIS usage"*.
+
 ## Some results
 
 These are some [results for 2021-2023].
@@ -383,6 +424,15 @@ we need to translate the output to the common schema defined in
 All the needed transformations are encapsulated in the query
 [queries/events.sql.j2](src/pipe_gaps/assets/queries/events.sql.j2).
 This process can be executed with the command `pipe-gaps gap-events`. See next section.
+
+When the `--classify-disabling` flag is passed,
+this is also the step in which gaps are classified as disabling events.
+It never filters out a gap event:
+it sets `intentional_disabling` and `positions_per_day_sat_reception`
+in the `event_info` of the event.
+Without the flag, both fields are still present, as `null` (not classified),
+so `event_info` has the same keys either way.
+See [Definition of disabling event](#definition-of-disabling-event).
 
 </div>
 
