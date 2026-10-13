@@ -1,3 +1,4 @@
+import re
 from types import SimpleNamespace
 
 import pytest
@@ -144,7 +145,7 @@ def test_open_gap_duration_falls_back_to_elapsed_time_to_end_date(basic_config_k
     # duration_h keeps its original meaning (NULL for a still-open gap) in the output --
     # effective_duration_h is exposed as its own field instead of overwriting duration_h.
     assert "effective_duration_h AS duration_h" not in sql
-    assert "duration_h,\n                    effective_duration_h," in sql
+    assert re.search(r"duration_h,\s+effective_duration_h,", sql)
 
 
 def _disabling_classification_query(kwargs):
@@ -199,6 +200,7 @@ def test_disabling_classification_enabled_adds_reception_join_and_classification
     assert "start_distance_from_shore_m > 92600" in sql
     assert "reception.positions_per_day" in sql and "> 10" in sql
     assert "positions_hours_before_sat >= 14" in sql
+    assert "gaps.year < 2017," in sql
 
 
 def test_disabling_classification_custom_thresholds_are_rendered(basic_config_kwargs):
@@ -218,6 +220,28 @@ def test_disabling_classification_custom_thresholds_are_rendered(basic_config_kw
     assert "start_distance_from_shore_m > 1000" in sql
     assert "reception.positions_per_day" in sql and "> 5" in sql
     assert "positions_hours_before_sat >= 2" in sql
+
+
+def test_disabling_classification_skips_gaps_before_min_year(basic_config_kwargs):
+    """Gaps before disabling_min_year are not classified at all: their event_info is
+    exactly the one rendered without classify_disabling, as satellite reception was too
+    sparse before 2017 to tell (PIPELINE-4662).
+    """
+    unclassified_sql = _disabling_classification_query(basic_config_kwargs).render()
+    unclassified_event_info = re.search(
+        r"(TO_JSON_STRING\(STRUCT\(.*?\)\)) AS event_info", unclassified_sql, re.DOTALL
+    ).group(1)
+
+    sql = _disabling_classification_query(
+        basic_config_kwargs
+        | {
+            "classify_disabling": True,
+            "bq_in_sat_reception": "project.dataset.sat_reception",
+            "disabling_min_year": 2019,
+        }
+    ).render()
+
+    assert f"gaps.year < 2019,\n                {unclassified_event_info}," in sql
 
 
 def test_fetch_regions_registry_always_runs_for_real_under_dry_run():

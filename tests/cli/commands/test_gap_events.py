@@ -30,6 +30,7 @@ def test_cli_executes_run_with_disabling_classification(tmp_path):
         "--disabling-min-distance-from-shore-m", "1000",
         "--disabling-min-reception-positions-per-day", "5",
         "--disabling-min-positions-before", "2",
+        "--disabling-min-year", "2019",
     ]
 
     main.run(args)

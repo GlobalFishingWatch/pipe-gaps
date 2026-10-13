@@ -51,6 +51,10 @@ HELP_DISABLING_MIN_POSITIONS_BEFORE = (
     "Minimum position count in the hours before the gap (see --n-hours-before in raw-gaps) to "
     "classify a gap as intentional disabling."
 )
+HELP_DISABLING_MIN_YEAR = (
+    "Gaps starting before this year are not classified: their event_info is the same as "
+    "without --classify-disabling, as satellite reception was too sparse before then."
+)
 
 HELP_MOCK_BQ_CLIENTS = "If passed, mocks the BQ clients [Useful for development]."
 HELP_DATE_RANGE = "Create gap events for this date range, e.g., «2024-01-01,2024-01-02»."
@@ -114,6 +118,12 @@ class GapEvents(Command):
                 type=float,
                 default=14,
                 help=HELP_DISABLING_MIN_POSITIONS_BEFORE,
+            ),
+            Option(
+                "--disabling-min-year",
+                type=int,
+                default=2017,
+                help=HELP_DISABLING_MIN_YEAR,
             ),
         ]
 

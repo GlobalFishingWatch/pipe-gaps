@@ -39,6 +39,11 @@ class GapEventsConfig(PipelineConfig):
     disabling_min_reception_positions_per_day: float = 10
     disabling_min_positions_before: float = 14
 
+    # Gaps starting before this year are not classified at all: their event_info is the same
+    # as without classify_disabling (no intentional_disabling nor the fields that drive it),
+    # as satellite reception was too sparse before Spire's 2017 launch. See PIPELINE-4662.
+    disabling_min_year: int = 2017
+
     def __post_init__(self) -> None:
         self.validate()
 

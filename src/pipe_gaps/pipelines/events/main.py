@@ -70,6 +70,7 @@ class GapEventQuery(Query):
                 self.config.disabling_min_reception_positions_per_day
             ),
             "disabling_min_positions_before": self.config.disabling_min_positions_before,
+            "disabling_min_year": self.config.disabling_min_year,
         }
 
 

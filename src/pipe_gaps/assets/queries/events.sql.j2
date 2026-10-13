@@ -18,6 +18,7 @@
 -- * disabling_min_distance_from_shore_m (required if classify_disabling)
 -- * disabling_min_reception_positions_per_day (required if classify_disabling)
 -- * disabling_min_positions_before (required if classify_disabling)
+-- * disabling_min_year (required if classify_disabling)
 
 WITH
 
@@ -180,50 +181,61 @@ WITH
             end_distance_from_shore_m,
             start_distance_from_port_m,
             end_distance_from_port_m,
-            TO_JSON_STRING(
+            {% set event_info_fields %}
+                duration_h,
+                effective_duration_h,
+                convert_m_to_km(distance_m) AS total_distance_km,
+                implied_speed_knots,
+                vessel_start.prod_shiptype as vessel_class,
                 STRUCT(
-                    duration_h,
-                    effective_duration_h,
-                    convert_m_to_km(distance_m) AS total_distance_km,
-                    implied_speed_knots,
-                    vessel_start.prod_shiptype as vessel_class,
+                -- destination port after event
+                    vessel_trip_end_anchorages.event_id AS event_id,
+                    SAFE.STRING(PARSE_JSON(vessel_trip_end_anchorages.event_info, wide_number_mode=>'round').intermediate_anchorage.id) as id,
+                    SAFE.STRING(PARSE_JSON(vessel_trip_end_anchorages.event_info, wide_number_mode=>'round').intermediate_anchorage.flag) as flag,
+                    SAFE.STRING(PARSE_JSON(vessel_trip_end_anchorages.event_info, wide_number_mode=>'round').intermediate_anchorage.name) as name
+                ) as main_vessel_destination_port,
+                s1.vessel_id AS vessel_1_id,
+                s2.vessel_id AS vessel_2_id,
+                s1.vessel_id != s2.vessel_id AS is_multi_vessel_gap,
+                s1.overlapping_and_short AS gap_start_overlapping_and_short,
+                s2.overlapping_and_short AS gap_end_overlapping_and_short,
+                s1.overlapping_and_short AND s2.overlapping_and_short AS gap_overlapping_and_short,
+                LEAST(
+                  start_distance_from_port_m,
+                  COALESCE(end_distance_from_port_m, start_distance_from_port_m)
+                ) AS gap_min_distance_from_port_m,
+                LEAST(
+                  start_distance_from_shore_m,
+                  COALESCE(end_distance_from_shore_m, start_distance_from_shore_m)
+                ) AS gap_min_distance_from_shore_m
+            {% endset %}
+            {% if classify_disabling %}
+            -- Gaps before disabling_min_year are not classified at all: their event_info is
+            -- exactly what it would be without classify_disabling, as satellite reception
+            -- was too sparse before Spire's 2017 launch. See PIPELINE-4662.
+            IF(
+                gaps.year < {{ disabling_min_year }},
+                TO_JSON_STRING(STRUCT({{ event_info_fields | trim }})),
+                TO_JSON_STRING(
                     STRUCT(
-                    -- destination port after event
-                        vessel_trip_end_anchorages.event_id AS event_id,
-                        SAFE.STRING(PARSE_JSON(vessel_trip_end_anchorages.event_info, wide_number_mode=>'round').intermediate_anchorage.id) as id,
-                        SAFE.STRING(PARSE_JSON(vessel_trip_end_anchorages.event_info, wide_number_mode=>'round').intermediate_anchorage.flag) as flag,
-                        SAFE.STRING(PARSE_JSON(vessel_trip_end_anchorages.event_info, wide_number_mode=>'round').intermediate_anchorage.name) as name
-                    ) as main_vessel_destination_port,
-                    s1.vessel_id AS vessel_1_id,
-                    s2.vessel_id AS vessel_2_id,
-                    s1.vessel_id != s2.vessel_id AS is_multi_vessel_gap,
-                    s1.overlapping_and_short AS gap_start_overlapping_and_short,
-                    s2.overlapping_and_short AS gap_end_overlapping_and_short,
-                    s1.overlapping_and_short AND s2.overlapping_and_short AS gap_overlapping_and_short,
-                    LEAST(
-                      start_distance_from_port_m,
-                      COALESCE(end_distance_from_port_m, start_distance_from_port_m)
-                    ) AS gap_min_distance_from_port_m,
-                    LEAST(
-                      start_distance_from_shore_m,
-                      COALESCE(end_distance_from_shore_m, start_distance_from_shore_m)
-                    ) AS gap_min_distance_from_shore_m
-                    {% if classify_disabling %}
-                    ,
-                    start_distance_from_shore_m,
-                    positions_hours_before_sat,
-                    reception.positions_per_day AS positions_per_day_sat_reception,
-                    IF(
-                        effective_duration_h >= {{ disabling_min_gap_duration_h }}
-                        AND start_distance_from_shore_m > {{ disabling_min_distance_from_shore_m }}
-                        AND reception.positions_per_day
-                            > {{ disabling_min_reception_positions_per_day }}
-                        AND positions_hours_before_sat >= {{ disabling_min_positions_before }},
-                        true, false
-                    ) AS intentional_disabling
-                    {% endif %}
+                        {{ event_info_fields | trim }},
+                        start_distance_from_shore_m,
+                        positions_hours_before_sat,
+                        reception.positions_per_day AS positions_per_day_sat_reception,
+                        IF(
+                            effective_duration_h >= {{ disabling_min_gap_duration_h }}
+                            AND start_distance_from_shore_m > {{ disabling_min_distance_from_shore_m }}
+                            AND reception.positions_per_day
+                                > {{ disabling_min_reception_positions_per_day }}
+                            AND positions_hours_before_sat >= {{ disabling_min_positions_before }},
+                            true, false
+                        ) AS intentional_disabling
+                    )
                 )
             ) AS event_info,
+            {% else %}
+            TO_JSON_STRING(STRUCT({{ event_info_fields | trim }})) AS event_info,
+            {% endif %}
             TO_JSON_STRING(
                 ARRAY_CONCAT(
                 [
