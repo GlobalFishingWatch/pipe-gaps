@@ -609,6 +609,25 @@ flowchart TD;
     H ==> |**New closed gaps <br/> New open gaps <br/> Closed open gaps**| K[Write Outputs]
 ```
 
+### Design proposals
+
+<div align="justify">
+
+The current design carries open gaps from one run to the next,
+which has two costs:
+every run reads all of history to find the open gaps,
+and fixing a period in the middle of history requires rerunning from there to the present.
+Two drafts (not implemented) explore alternatives:
+
+* [Separate open-gaps table, no versioning](analysis/proposal-open-gaps-table.md):
+  a smaller change that keeps open and closed gaps in different tables,
+  removing the versioning and most of the daily cost.
+* [Stateless raw gaps](analysis/design-stateless-gaps.md):
+  a redesign with per-day detection plus pairing of long gaps,
+  so any period can be reprocessed without rerunning to the present.
+
+</div>
+
 ## References
 <a id="1">[1]</a> Welch H., Clavelle T., White T. D., Cimino M. A., Van Osdel J., Hochberg T., et al. (2022). Hot spots of unseen fishing vessels. Sci. Adv. 8 (44), eabq2109. doi: 10.1126/sciadv.abq2109
 
