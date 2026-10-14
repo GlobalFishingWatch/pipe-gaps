@@ -75,6 +75,7 @@ Time gap detector for vessel position reporting systems (**[AIS]**, **[VMS]**, e
 **Table of contents**:
 - [Introduction](#introduction)
 - [Definition of gap](#definition-of-gap)
+- [Definition of disabling event](#definition-of-disabling-event)
 - [Some results](#some-results)
 - [:warning: Important note on grouping messages by `ssvid`](#warning-important-note-on-grouping-messages-by-ssvid)
 - [:warning: Important note on not filtering `overlapping_and_short`](#warning-important-note-on-not-filtering-overlapping_and_short)
@@ -84,11 +85,12 @@ Time gap detector for vessel position reporting systems (**[AIS]**, **[VMS]**, e
   * [Gaps detection pipeline](#gaps-detection-pipeline)
     + [BigQuery output schema](#bigquery-output-schema)
     + [BigQuery data persistence pattern](#bigquery-data-persistence-pattern)
-    * [Events publication process](#events-publication-process)
+    + [Events publication process](#events-publication-process)
     + [Running from CLI](#running-from-cli)
 - [Implementation details](#implementation-details)
   * [Most relevant modules](#most-relevant-modules)
   * [Flow chart](#flow-chart)
+  * [Design proposals](#design-proposals)
 - [References](#references)
 
 ## Introduction
