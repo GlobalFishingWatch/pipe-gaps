@@ -1,6 +1,7 @@
 # Proposal: separate open-gaps table, no versioning
 
-Status: **proposal / untested**. Written 2026-10-14. A smaller change to the current v5
+Status: **proposal / untested**. Written 2026-10-14; updated 2026-10-15 with the
+clustering-aware query rewrite (PIPELINE-4670). A smaller change to the current v5
 raw-gaps design than the full redesign in
 [design-stateless-gaps.md](design-stateless-gaps.md); it can be done first, and either
 alone or before the redesign.
@@ -33,13 +34,61 @@ costs ~23 TB.
 average row size). Narrow columns (`gap_id`, `start_timestamp`, `version`,
 `is_closed`): 52 GB.
 
-### Rewriting the query alone doesn't help
+### Rewriting the query helps, but only ~3x
 
-Tried: find the latest version per gap with narrow columns only, then join back to
-fetch full rows for the open ones. Billed **331.7 GB**, the same as today: the join
-phase still reads every column of the whole table, and the `is_closed` filter (first
-clustering column) does not prune it. No query over the whole versioned table will be
-cheap.
+Updated 2026-10-15 (PIPELINE-4670). The table is partitioned by month on
+`start_timestamp` and clustered by `(is_closed, version, ssvid)`.
+
+**Why the current query can't prune.** Two reasons:
+
+1. The `is_closed` filter runs after `QUALIFY ROW_NUMBER()` over the whole table.
+2. BigQuery prunes clustered blocks only for comparisons like `is_closed = FALSE`.
+   `NOT is_closed` prunes nothing. Measured on one column (`start_seg_id`, 42.3 GB):
+   `NOT is_closed` 43.3 GB, `is_closed = FALSE` 14.9 GB.
+
+An earlier rewrite attempt (latest version with narrow columns, then join back) billed
+331.7 GB because it used `NOT is_closed`, not because clustering doesn't work.
+
+**`version` can't tell which gaps are still open.** It is a message timestamp, not a
+run time: the OFF timestamp for an open row, the ON timestamp for a closed row
+(`core/gap_detector.py`). A gap gets one open row when it opens, never re-stamped;
+closing appends a closed row and the open row stays. So the 322M open rows hold ~3.7M
+gaps still open and ~318M stale rows of gaps that closed later, with nothing on the row
+to tell them apart: only the existence of a closed row with the same `gap_id` does.
+
+**Rewrite that uses the clustering.** Read the open blocks fully and only two narrow
+columns of the closed blocks:
+
+```sql
+WITH
+  open_rows AS (
+    SELECT * FROM raw_gaps_versioned
+    WHERE is_closed = FALSE AND DATE(start_timestamp) >= @start_date
+  ),
+  closed_ids AS (
+    SELECT DISTINCT gap_id, start_timestamp FROM raw_gaps_versioned
+    WHERE is_closed = TRUE AND DATE(start_timestamp) >= @start_date
+  )
+SELECT <fields>
+FROM open_rows LEFT JOIN closed_ids USING (gap_id, start_timestamp)
+WHERE closed_ids.gap_id IS NULL
+QUALIFY ROW_NUMBER() OVER (PARTITION BY gap_id, start_timestamp ORDER BY version DESC) = 1
+```
+
+Equivalent to the current logic: a closed row's `version` (ON) is always later than its
+open row's (OFF), so if a closed row exists it is the latest version. The final
+`QUALIFY` only dedups duplicate open versions (see below).
+
+| Query (measured 2026-10-15) | GB billed | Result |
+|---|---|---|
+| Current | ~338 | 3,679,174 open gaps |
+| Rewrite with `NOT is_closed` | 338 | same |
+| Rewrite with `is_closed = FALSE` / `= TRUE` | **116** (~2 slot-hours) | same 3,679,174; 0 differences either way |
+
+It can't go much lower with this table: it still reads all columns of the ~322M open
+rows and `gap_id`/`start_timestamp` of all closed rows. A separate open-gaps table reads
+~1.2 GB. The rewrite is a small, low-risk first step (one template, same tables, same
+output); this proposal is the larger one.
 
 ### Data issue found
 
@@ -162,15 +211,16 @@ is split across several load jobs, write to a temp table and copy instead.
 
 ## Cost (estimated)
 
-| | Current v5 | Proposal |
-|---|---|---|
-| Daily: messages | ~51 GB | ~51 GB |
-| Daily: open state | ~336 GB | ~3 GB (rebuild, current end-month partition) + ~1.2 GB (`open_gaps`) |
-| Daily total | ~387 GB | **~55 GB** (~7x less) |
-| ~60-day rerun | ~23 TB | ~3–4 TB |
-| Storage | 332 GB versioned (growing with every version) | ~230 GB (one row per gap) |
+| | Current v5 | Query rewrite (PIPELINE-4670) | Proposal |
+|---|---|---|---|
+| Daily: messages | ~51 GB | ~51 GB | ~51 GB |
+| Daily: open state | ~336 GB | 116 GB (measured) | ~3 GB (rebuild, current end-month partition) + ~1.2 GB (`open_gaps`) |
+| Daily total | ~387 GB | ~167 GB (~2.3x less) | **~55 GB** (~7x less) |
+| ~60-day rerun | ~23 TB | ~10 TB | ~3–4 TB |
+| Storage | 332 GB versioned (growing with every version) | same | ~230 GB (one row per gap) |
 
-Proposal figures are estimates from row counts and average row size, not measured.
+Proposal figures are estimates from row counts and average row size, not measured. The
+rewrite's open-state figure is measured; its totals add the measured messages cost.
 Dataflow cost not included (not in `INFORMATION_SCHEMA`). Pricing model (on-demand vs
 slots) to be confirmed; on-demand at $6.25/TB, daily goes from ~$2.40 to ~$0.35.
 
@@ -215,3 +265,5 @@ slots) to be confirmed; on-demand at $6.25/TB, daily goes from ~$2.40 to ~$0.35.
 2. Confirm nobody needs `raw_gaps_versioned` history.
 3. Confirm the BigQuery pricing model; measure Dataflow cost.
 4. Whether to do this before, instead of, or alongside the redesign.
+5. The query rewrite (PIPELINE-4670) is independent and can ship first; this proposal
+   would then save ~110 GB/day more.

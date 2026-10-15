@@ -226,8 +226,9 @@ less than v5, and parallel instead of sequential.
 ### Cheaper fix inside v5
 
 Most of the **daily** saving doesn't need the redesign: keep open gaps in a small
-separate table, or rewrite the side-input query so it doesn't scan all history (~336 GB
--> a few GB per run). That does **not** fix rerunning to the present or the sequential
+separate table (~336 GB -> ~4 GB per run, estimated), or rewrite the side-input query to
+use the table's clustering (~336 -> 116 GB per run, measured; PIPELINE-4670, see
+[proposal-open-gaps-table.md](proposal-open-gaps-table.md)). That does **not** fix rerunning to the present or the sequential
 chain. So the redesign's value depends mostly on how often we reprocess (three large
 reruns in about a month as of 2026-10-14).
 
