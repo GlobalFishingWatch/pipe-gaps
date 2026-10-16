@@ -111,4 +111,3 @@ def test_bigquery_reads_forward_labels_as_job_labels(base_config):
     assert len(reads) == 2
     for read in reads:
         assert read._read_from_bigquery_kwargs == {"bigquery_job_labels": labels}
-
