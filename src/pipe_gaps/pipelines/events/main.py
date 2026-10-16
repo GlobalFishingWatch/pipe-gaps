@@ -3,7 +3,6 @@ import logging
 
 from dataclasses import dataclass
 from datetime import date
-from types import SimpleNamespace
 from typing import Any, Callable, Optional, Sequence
 
 from gfw.common.bigquery.helper import BigQueryHelper
@@ -107,15 +106,7 @@ class GapEventQuery(Query):
         )
 
 
-def run(
-    config: SimpleNamespace,
-    unknown_unparsed_args: tuple = (),
-    unknown_parsed_args: dict = None,
-    bq_client_factory: Callable = None,
-) -> None:
-
-    config = GapEventsConfig.from_namespace(config)
-
+def run(config: GapEventsConfig, bq_client_factory: Callable = None) -> None:
     bq_client_factory = bq_client_factory or BigQueryHelper.get_client_factory(
         mocked=config.mock_bq_clients
     )

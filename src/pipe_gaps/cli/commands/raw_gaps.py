@@ -3,6 +3,7 @@ from typing import Any
 
 from gfw.common.cli import Command, Option, date_range_options
 from pipe_gaps.cli.validations import ssvids
+from pipe_gaps.pipelines.raw_gaps.config import RawGapsConfig
 from pipe_gaps.pipelines.raw_gaps.main import run
 
 
@@ -97,6 +98,5 @@ class RawGaps(Command):
             Option("--good-seg-stabilization-days", default=0, type=int, help=HELP_STABILIZATION),
         ]
 
-    @classmethod
-    def run(cls, config: SimpleNamespace, **kwargs: Any) -> Any:
-        return run(config, **kwargs)
+    def run(self, config: SimpleNamespace, **kwargs: Any) -> Any:
+        return run(RawGapsConfig.from_namespace(config), **kwargs)

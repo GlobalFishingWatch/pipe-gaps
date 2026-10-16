@@ -2,6 +2,7 @@
 
 VENV_NAME:=.venv
 REQS_PROD:=requirements.txt
+REQS_TEST:=requirements-test.txt
 SETUP_FILE:=pyproject.toml
 SOURCES = src
 
@@ -12,6 +13,9 @@ DOCKER_TEST_SERVICE:=test
 
 GCP_PROJECT:=world-fishing-827
 GCP_DOCKER_VOLUME:=gcp
+
+# Run as the host user so files written into the mounted repo aren't owned by root.
+DOCKER_AS_USER:=--user $(shell id -u):$(shell id -g) -e UV_CACHE_DIR=/tmp/uv-cache
 
 PYTHON_VERSION:=3.12
 UV_VERSION := 0.10.9
@@ -46,22 +50,24 @@ docker-test:
 docker-shell: docker-volume
 	docker compose run --rm -it ${DOCKER_DEV_SERVICE}
 
-.PHONY: reqs  ## Compiles requirements.txt with pip-tools.
+.PHONY: reqs  ## Compiles requirements.txt and requirements-test.txt with uv.
 reqs:
-	docker compose run --rm ${DOCKER_DEV_NO_GCP_SERVICE} -c \
-		'${PIP_COMPILE} -o ${REQS_PROD} ${SETUP_FILE} -v'
+	docker compose run --rm ${DOCKER_AS_USER} ${DOCKER_DEV_NO_GCP_SERVICE} -c \
+		'${PIP_COMPILE} -o ${REQS_PROD} ${SETUP_FILE} -v && \
+		${PIP_COMPILE} --group ${SETUP_FILE}:test -c ${REQS_PROD} -o ${REQS_TEST} -v'
 
-.PHONY: reqs-upgrade  ## Upgrades requirements.txt with pip-tools.
+.PHONY: reqs-upgrade  ## Upgrades requirements.txt and requirements-test.txt with uv.
 reqs-upgrade:
-	docker compose run --rm ${DOCKER_DEV_NO_GCP_SERVICE} -c \
-		'${PIP_COMPILE} -o ${REQS_PROD} ${SETUP_FILE} -U -v'
+	docker compose run --rm ${DOCKER_AS_USER} ${DOCKER_DEV_NO_GCP_SERVICE} -c \
+		'${PIP_COMPILE} -o ${REQS_PROD} ${SETUP_FILE} -U -v && \
+		${PIP_COMPILE} --group ${SETUP_FILE}:test -c ${REQS_PROD} -o ${REQS_TEST} -U -v'
 
 # ---------------------
 # VIRTUAL ENVIRONMENT
 # ---------------------
 
 .PHONY: uv  ## Installs UV
-uv: 
+uv:
 	curl -LsSf https://astral.sh/uv/install.sh | UV_VERSION=$(UV_VERSION) sh
 	uv python pin ${PYTHON_VERSION}
 
@@ -93,7 +99,6 @@ test:
 .PHONY: hooks  ## Install and pre-commit hooks.
 hooks:
 	python -m pre_commit install --install-hooks
-	python -m pre_commit install --hook-type commit-msg
 
 .PHONY: format  ## Auto-format python source files according with PEP8.
 format:
@@ -109,7 +114,7 @@ lint:
 
 .PHONY: codespell  ## Use Codespell to do spell checking.
 codespell:
-	python -m codespell
+	python -m codespell_lib
 
 .PHONY: typecheck  ## Perform type-checking.
 typecheck:

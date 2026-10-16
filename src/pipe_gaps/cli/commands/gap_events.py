@@ -2,6 +2,7 @@ from types import SimpleNamespace
 from typing import Any
 
 from gfw.common.cli import Command, Option, date_range_options
+from pipe_gaps.pipelines.events.config import GapEventsConfig
 from pipe_gaps.pipelines.events.main import run
 
 
@@ -125,6 +126,5 @@ class GapEvents(Command):
             ),
         ]
 
-    @classmethod
-    def run(cls, config: SimpleNamespace, **kwargs: Any) -> Any:
-        return run(config, **kwargs)
+    def run(self, config: SimpleNamespace, **kwargs: Any) -> Any:
+        return run(GapEventsConfig.from_namespace(config), **kwargs)

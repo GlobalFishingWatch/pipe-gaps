@@ -30,6 +30,8 @@ jobs:
       fail-fast: true
       matrix:
         os: ["ubuntu-latest"]
+        # 3.12 is covered by tests-in-docker (same version the Dockerfile builds on);
+        # no need to run it twice.
         python-version: ["3.13"]
     env:
       VENV: .venv
@@ -44,12 +46,13 @@ jobs:
           cache: 'pip'
           # cache option make the step fail if you don´t have requirements.txt or pyproject.toml on root.
           # https://github.com/actions/setup-python/issues/807.
-      
+
       - name: Install UV
         run: make uv
 
       - name: Create virtual environment
-        run: uv venv $VENV
+        # make uv pins .python-version to 3.12; --python makes the venv use the matrix version.
+        run: uv venv --python ${{ matrix.python-version }} $VENV
 
       - name: Install package with test dependencies
         run: |
@@ -57,13 +60,20 @@ jobs:
           make install-test
           pip install .
 
+      - name: Cache Prism
+        # The tests run Beam on Prism, a binary Beam downloads from GitHub on first use.
+        uses: actions/cache@v4
+        with:
+          path: ~/.apache_beam/cache/prism
+          key: prism-${{ runner.os }}-${{ hashFiles('pyproject.toml', 'requirements.txt') }}
+
       - name: Test with pytest
         run: |
           . $VENV/bin/activate
           pytest --cov=$PACKAGE --cov-report=xml
 
       - name: Upload coverage reports to Codecov
-        if: github.ref == 'refs/heads/main' && matrix.python-version == '3.13'
+        if: github.ref == 'refs/heads/main'
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -75,9 +85,9 @@ jobs:
       - uses: actions/checkout@v6
       - name: Set up Python
         uses: actions/setup-python@v6
-  
+
       - name: Build docker image
         run: make docker-build
-    
+
       - name: Run tests
         run: make docker-test

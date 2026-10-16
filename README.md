@@ -2,13 +2,13 @@
 
 <p align="center">
   <a href="https://codecov.io/gh/GlobalFishingWatch/pipe-gaps">
-    <img alt="Coverage" src="https://codecov.io/gh/GlobalFishingWatch/pipe-gaps/branch/develop/graph/badge.svg?token=OO2L9SXVG0">
+    <img alt="Coverage" src="https://codecov.io/gh/GlobalFishingWatch/pipe-gaps/graph/badge.svg?token=OO2L9SXVG0">
   </a>
   <a>
     <img alt="Python versions" src="https://img.shields.io/badge/python-3.12-blue">
   </a>
   <a>
-    <img alt="Apache Beam version" src="https://img.shields.io/badge/ApacheBeam-2.75.0-orange">
+    <img alt="Apache Beam version" src="https://img.shields.io/badge/ApacheBeam-2.76.0-orange">
   </a>
   <a>
     <img alt="Docker Engine version" src="https://img.shields.io/badge/DockerEngine-v27-yellow">
@@ -37,19 +37,13 @@ Time gap detector for vessel position reporting systems (**[AIS]**, **[VMS]**, e
 [Apache Beam Pipeline Options]: https://cloud.google.com/dataflow/docs/reference/pipeline-options#python
 [Google Dataflow]: https://cloud.google.com/products/dataflow?hl=en
 [Google BigQuery]: https://cloud.google.com/bigquery
-[bigquery-emulator]: https://github.com/goccy/bigquery-emulator
-[configure a SSH-key for GitHub]: https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account
 [Dataflow runner]: https://beam.apache.org/documentation/runners/dataflow/
-[docker official instructions]: https://docs.docker.com/engine/install/
-[docker compose plugin]: https://docs.docker.com/compose/install/linux/
-[examples]: examples/
 [gfw-common]: https://github.com/GlobalFishingWatch/gfw-common/
-[git installed]: https://git-scm.com/downloads
-[git workflow documentation]: GIT-WORKFLOW.md
 [Makefile]: Makefile
-[pip-tools]: https://pip-tools.readthedocs.io/en/stable/
-[requirements.txt]: requirements.txt
-[requirements/prod.in]: requirements/prod.in
+[contributing guide]: https://github.com/GlobalFishingWatch/python-app-template/blob/main/CONTRIBUTING.md
+[preparing the development environment]: https://github.com/GlobalFishingWatch/python-app-template/blob/main/CONTRIBUTING.md#preparing-the-development-environment
+[git workflow]: https://github.com/GlobalFishingWatch/python-app-template/blob/main/CONTRIBUTING.md#git-workflow
+[python-app-template]: https://github.com/GlobalFishingWatch/python-app-template
 [segment pipeline]: https://github.com/GlobalFishingWatch/pipe-segment
 [slowly changing dimension]: https://en.wikipedia.org/wiki/Slowly_changing_dimension
 [Semantic Versioning]: https://semver.org
@@ -261,34 +255,22 @@ since the track or even the vessel might not exist where a gap starts and/or end
 
 We still don't have a package in PYPI.
 
-First, clone the repository.
+First, clone the repository:
 
-Install UV: 
 ```shell
-make uv
-```
-Create virtual environment and activate it:
-```shell
-make venv
-. ./.venv/bin/activate
-```
-Install dependencies
-```shell
-make install
-```
-Make sure you can run unit tests
-```shell
-make test
-```
-Make sure you can build the docker image:
-```shell
-make docker-build
+git clone https://github.com/GlobalFishingWatch/pipe-gaps.git
+cd pipe-gaps
 ```
 
-In order to be able to connect to BigQuery, authenticate and configure the project:
-```shell
-make docker-gcp
-```
+Then, from the cloned repository, follow the [contributing guide]
+shared by the repositories created from [python-app-template]:
+[preparing the development environment] (Docker setup, installing dependencies, pre-commit hooks)
+and the [git workflow].
+
+The [Makefile] exposes the usual targets:
+`make docker-build`, `make docker-gcp`, `make docker-shell`, `make test`, `make format`, `make lint`,
+among others -- run `make help` for the full list.
+No repository-specific system dependency is required.
 
 ### Gap detection low level process
 
