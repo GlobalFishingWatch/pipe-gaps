@@ -1,3 +1,5 @@
+from datetime import date
+
 import pytest
 from pipe_gaps.pipelines.raw_gaps.config import RawGapsConfig
 
@@ -5,7 +7,9 @@ from pipe_gaps.pipelines.raw_gaps.config import RawGapsConfig
 @pytest.fixture
 def base_config():
     return RawGapsConfig(
-        date_range=("2023-01-01", "2023-01-02"),
+        labels={"env": "test"},
+        start_date=date(2023, 1, 1),
+        end_date=date(2023, 1, 2),
         json_in_messages=None,
         bq_in_messages="some_bq_table",
         bq_in_segments="some_bq_segments",

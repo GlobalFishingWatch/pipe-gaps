@@ -34,7 +34,8 @@ ssvids:
   - "98342091"
   - "419088700"
   - "563040676"
-date_range: ["2020-12-10", "2020-12-11"]
+start_date: "2020-12-10"
+end_date: "2020-12-11"  # exclusive
 min_gap_length: 6
 n_hours_before: 12
 window_period_d: 1
@@ -46,3 +47,10 @@ project: world-fishing-827
 max_num_workers: 50
 machine_type: e2-custom-2-3072
 job_name: tom-test-gaps-1-day-2-ssvids-2
+
+# Labels for cost tracking (label values: lowercase letters, digits, '_' and '-').
+labels:
+  environment: development
+  resource_creator: tomas-link
+  project: ais
+  stage: gaps

@@ -1,7 +1,7 @@
 import pytest
 
 from typing import Optional
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from gfw.common.logging import LoggerConfig
 from gfw.common.io import json_save
@@ -171,7 +171,7 @@ class TestCases:
                 )
             ],
             "threshold": 6,
-            "date_range": ("2020-12-20", "2020-12-23"),
+            "date_range": (date(2020, 12, 20), date(2020, 12, 23)),
             "window_period_d": 1,
             "expected_gaps": 2,
             "expected_dt": {
@@ -221,7 +221,7 @@ class TestCases:
             ],
             "open_gaps": [],
             "threshold": 3,
-            "date_range": ("2024-01-02", "2024-01-03"),
+            "date_range": (date(2024, 1, 2), date(2024, 1, 3)),
             "expected_gaps": [
                 {
                     "positions_hours_before": 7,
@@ -266,7 +266,7 @@ class TestCases:
                 )
             ],
             "threshold": 6,
-            "date_range": ("2024-01-03", "2024-01-04"),
+            "date_range": (date(2024, 1, 3), date(2024, 1, 4)),
             "expected_gaps": [
                 {
                     "positions_hours_before": 4,
@@ -315,7 +315,7 @@ class TestCases:
             ],
             "open_gaps": [],
             "threshold": 6,
-            "date_range": ("2024-01-02", "2024-01-04"),
+            "date_range": (date(2024, 1, 2), date(2024, 1, 4)),
             "expected_gaps": [
                 {
                     "positions_hours_before": 2,
@@ -349,7 +349,7 @@ class TestCases:
             ],
             "open_gaps": [],
             "threshold": 6,
-            "date_range": ("2024-01-02", "2024-01-05"),
+            "date_range": (date(2024, 1, 2), date(2024, 1, 5)),
             "expected_gaps": [
                 {
                     # Closed gap.
@@ -391,7 +391,7 @@ class TestCases:
             ],
             "open_gaps": [],
             "threshold": 10,
-            "date_range": ("2024-02-01", "2024-03-01"),  # We want to process february.
+            "date_range": (date(2024, 2, 1), date(2024, 3, 1)),  # We want to process february.
             "window_period_d": 1,
             "expected_gaps": 6,
             "eval_last": True,
@@ -411,7 +411,7 @@ class TestCases:
             ],
             "open_gaps": [],
             "threshold": 6,
-            "date_range": ("2024-02-01", "2024-02-04"),
+            "date_range": (date(2024, 2, 1), date(2024, 2, 4)),
             "window_period_d": 1,
             "expected_gaps": 4,
             "eval_last": True,
@@ -423,7 +423,7 @@ class TestCases:
             ],
             "open_gaps": [],
             "threshold": 6,
-            "date_range": ("2024-01-02", "2024-01-03"),
+            "date_range": (date(2024, 1, 2), date(2024, 1, 3)),
             "window_period_d": 1,
             "expected_gaps": 0,
             "eval_last": True,
@@ -437,7 +437,7 @@ class TestCases:
             ],
             "open_gaps": [],
             "threshold": 6,
-            "date_range": ("2020-12-20", "2020-12-21"),
+            "date_range": (date(2020, 12, 20), date(2020, 12, 21)),
             "window_period_d": 1,
             "expected_gaps": 1,
             "eval_last": True,
@@ -452,7 +452,7 @@ class TestCases:
             ],
             "open_gaps": [],
             "threshold": 6,
-            "date_range": ("2020-12-21", "2020-12-22"),
+            "date_range": (date(2020, 12, 21), date(2020, 12, 22)),
             "window_period_d": 1,
             "expected_gaps": 1,
             "eval_last": True,
@@ -468,7 +468,7 @@ class TestCases:
             ],
             "open_gaps": [],
             "threshold": 10,
-            "date_range": ("2024-02-01", "2024-03-01"),  # We want to process february.
+            "date_range": (date(2024, 2, 1), date(2024, 3, 1)),  # We want to process february.
             "window_period_d": 30,
             "eval_last": True,
             "expected_gaps": 6,
@@ -480,7 +480,7 @@ class TestCases:
             ],
             "open_gaps": [],
             "threshold": 6,
-            "date_range": ("2020-01-01", "2020-12-20"),
+            "date_range": (date(2020, 1, 1), date(2020, 12, 20)),
             "window_period_d": 180,
             "eval_last": True,
             "expected_gaps": 1,
@@ -492,7 +492,7 @@ class TestCases:
             ],
             "open_gaps": [],
             "threshold": 6,
-            "date_range": ("2020-01-01", "2020-12-20"),
+            "date_range": (date(2020, 1, 1), date(2020, 12, 20)),
             "window_period_d": 180,
             "eval_last": True,
             "expected_gaps": 1,
@@ -517,7 +517,7 @@ class TestCases:
             ],
             "open_gaps": [],
             "threshold": 2,
-            "date_range": None,
+            "date_range": (date(2023, 12, 31), date(2024, 1, 2)),
             "expected_gaps": [
                 {
                     "positions_hours_before": 4,

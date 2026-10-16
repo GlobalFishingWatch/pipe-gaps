@@ -502,10 +502,12 @@ This is an example of a JSON config file for `raw-gaps` command:
         "412331104",
         "477334300"
     ],
-    "date_range": [
-        "2024-01-01",
-        "2024-01-02"
-    ],
+    "start_date": "2024-01-01",
+    "end_date": "2024-01-02",
+    "labels": {
+        "environment": "development",
+        "stage": "gaps"
+    },
     "min_gap_length": 6,
     "n_hours_before": 12,
     "window_period_d": 1,
@@ -534,11 +536,17 @@ bq_in_voyages: "global-fishing-watch.pipe_ais_v3_published.voyages_c4"
 bq_in_port_visits: "global-fishing-watch.pipe_ais_v3_published.product_events_port_visit_v2"
 bq_in_vessels_byyear: "global-fishing-watch.pipe_ais_v3_published.product_vessel_info_summary"
 bq_out_gap_events: "world-fishing-827.scratch_tomas_ttl30d.product_events_ais_gap"
-date_range: ["2025-11-01", "2025-11-02"]
+start_date: "2025-11-01"
+end_date: "2025-11-02"  # exclusive
 
 # General parameters:
 dry_run: false
 project: world-fishing-827
+
+# Labels for cost tracking (required).
+labels:
+  environment: development
+  stage: gaps
 ```
 
 `bq_in_regions_registry` points to pipe-regions' `(name, description)` registry table

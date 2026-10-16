@@ -7,7 +7,9 @@ from pipe_gaps.pipelines.raw_gaps import main
 @pytest.fixture
 def basic_config_kwargs():
     return {
-        "date_range": ("2024-01-01", "2024-01-02"),
+        "labels": {"env": "test"},
+        "start_date": "2024-01-01",
+        "end_date": "2024-01-02",
         "bq_in_messages": "project.dataset.messages",
         "bq_in_segments": "project.dataset.segments",
         "bq_out_gaps": "project.dataset.gaps",

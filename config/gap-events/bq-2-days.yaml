@@ -8,8 +8,16 @@ bq_in_voyages: "global-fishing-watch.pipe_ais_v3_published.voyages_c4"
 bq_in_port_visits: "global-fishing-watch.pipe_ais_v3_published.product_events_port_visit_v2"
 bq_in_vessels_byyear: "global-fishing-watch.pipe_ais_v3_published.product_vessel_info_summary"
 bq_out_gap_events: "world-fishing-827.scratch_tomas_ttl30d.product_events_ais_gap"
-date_range: ["2025-11-01", "2025-11-02"]
+start_date: "2025-11-01"
+end_date: "2025-11-02"  # exclusive
 
 # General parameters:
 dry_run: false
 project: world-fishing-827
+
+# Labels for cost tracking (label values: lowercase letters, digits, '_' and '-').
+labels:
+  environment: development
+  resource_creator: tomas-link
+  project: ais
+  stage: gaps

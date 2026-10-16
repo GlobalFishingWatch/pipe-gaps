@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import date, timedelta
 from dataclasses import replace
 
 from gfw.common.beam.transforms import (
@@ -42,7 +42,7 @@ def test_core_property(base_config):
     assert core._gap_detector._threshold_h == timedelta(hours=base_config.min_gap_length)
     assert core._gap_detector._normalize_output == base_config.normalize_output
     assert core._eval_last == base_config.eval_last
-    assert core._date_range == base_config.date_range
+    assert core._date_range == (base_config.start_date, base_config.end_date)
     assert core._window_period_d == base_config.window_period_d
     assert core._window_offset_h == base_config.n_hours_before
 
@@ -69,7 +69,8 @@ def test_side_inputs_skipped_when_start_date_before_open_gaps(base_config):
         base_config,
         skip_open_gaps=False,
         # Set start_date before open_gaps_start_date
-        date_range=("2020-01-01", "2020-01-02"),
+        start_date=date(2020, 1, 1),
+        end_date=date(2020, 1, 2),
         open_gaps_start_date="2021-01-01",
     )
 
@@ -111,9 +112,3 @@ def test_bigquery_reads_forward_labels_as_job_labels(base_config):
     for read in reads:
         assert read._read_from_bigquery_kwargs == {"bigquery_job_labels": labels}
 
-
-def test_bigquery_reads_without_labels_pass_no_job_labels(base_config):
-    factory = RawGapsLinearDagFactory(replace(base_config, json_in_messages=None, labels={}))
-
-    for read in [*factory.sources, factory.side_inputs]:
-        assert read._read_from_bigquery_kwargs == {}

@@ -32,11 +32,11 @@ class DetectGaps(beam.PTransform):
     def __init__(
         self,
         gap_detector: GapDetector,
+        date_range: tuple[date, date],
         key: Key = None,
         eval_last: bool = False,
         window_period_d: int = None,
         window_offset_h: int = 12,
-        date_range: tuple[str, str] = None,
         side_inputs: PCollection = None,
         **kwargs: Any
     ):
@@ -60,6 +60,10 @@ class DetectGaps(beam.PTransform):
                 Instance of `GapDetector` that implements the logic to detect gaps
                 between consecutive messages.
 
+            date_range:
+                Range of dates to process: (start_date, end_date), end exclusive.
+                Used to trim windows and avoid processing outside of bounds.
+
             key:
                 A `Key` object used to group elements, typically by SSVID or a similar entity.
                 Defaults to `Key([GapDetector.KEY_SSVID])` if not provided.
@@ -70,15 +74,11 @@ class DetectGaps(beam.PTransform):
 
             window_period_d:
                 Size of the time window (in days) for grouping messages. If not set,
-                it will be computed from `date_range`, capped by `MAX_WINDOW_PERIOD_D`.
+                it is the length of `date_range`, capped by `MAX_WINDOW_PERIOD_D`.
 
             window_offset_h:
                 Offset of the sliding window in hours.
                 Defaults to 12.
-
-            date_range:
-                Tuple of (start_date, end_date) in ISO format strings.
-                Used to trim windows and avoid processing outside of bounds.
 
             side_inputs:
                 A PCollection with additional data (e.g., open gaps from the previous run)
@@ -97,25 +97,13 @@ class DetectGaps(beam.PTransform):
         self._side_inputs = side_inputs
 
     @cached_property
-    def date_range(self):
-        date_range = None
-        if self._date_range is not None:
-            # TODO: should we make the date_range mandatory for the pipeline?
-            date_range = [date.fromisoformat(x) for x in self._date_range]
-
-        return date_range
-
-    @cached_property
     def window_period_d(self):
         window_period_d = self._window_period_d
 
         if window_period_d is None:
-            if self.date_range is not None:
-                logger.debug("Window period is None. Will be adjusted to provided date range.")
-                date_range_size = (self.date_range[1] - self.date_range[0]).days
-                window_period_d = min(date_range_size, MAX_WINDOW_PERIOD_D)
-            else:
-                window_period_d = MAX_WINDOW_PERIOD_D
+            logger.debug("Window period is None. Will be adjusted to provided date range.")
+            date_range_size = (self._date_range[1] - self._date_range[0]).days
+            window_period_d = min(date_range_size, MAX_WINDOW_PERIOD_D)
         elif window_period_d > MAX_WINDOW_PERIOD_D:
             logger.warning(
                 "window period {} surpassed maximum of {}."
@@ -140,18 +128,18 @@ class DetectGaps(beam.PTransform):
             gap_detector=self._gap_detector,
             key=self._key,
             window_offset_h=self._window_offset_h,
-            date_range=self.date_range
+            date_range=self._date_range,
         )
 
         process_boundaries = ProcessBoundaries(
             gap_detector=self._gap_detector,
             key=self._key,
             eval_last=self._eval_last,
-            date_range=self.date_range
+            date_range=self._date_range,
         )
 
         extract_group_boundary = ExtractGroupBoundary(
-            window_offset_s=self.offset_s, date_range=self.date_range
+            window_offset_s=self.offset_s, date_range=self._date_range
         )
 
         # Group pcollection by a configured key and time window.
@@ -161,9 +149,8 @@ class DetectGaps(beam.PTransform):
             | GroupBy(*self._key.keys, elements="Messages")
         )
 
-        if self.date_range is not None:
-            filter_tr = FilterWindowsByDateRange(self.date_range, offset=self.offset_s)
-            groups = groups | "FilterWindowsOutOfRange" >> filter_tr
+        filter_tr = FilterWindowsByDateRange(self._date_range, offset=self.offset_s)
+        groups = groups | "FilterWindowsOutOfRange" >> filter_tr
 
         # Open side inputs if they exist, and grouped them by the same key.
         side_inputs = None
