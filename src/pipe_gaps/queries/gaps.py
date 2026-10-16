@@ -2,7 +2,7 @@
 import dataclasses
 import logging
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import NamedTuple, Optional, Sequence
 
@@ -56,8 +56,8 @@ class Gap(NamedTuple):
 class GapsQuery(Query):
     """Last version of each gap, with TIMESTAMP columns (e.g. for the raw_gaps view).
 
-    Its fields are the template's variables. Subclasses change what is read through the
-    is_closed and timestamps_as_seconds properties.
+    Its fields are the template's variables. Subclasses change what is read through is_closed,
+    which isn't a constructor argument, and the timestamps_as_seconds property.
 
     Args:
         source_gaps:
@@ -74,6 +74,10 @@ class GapsQuery(Query):
 
         min_gap_length:
             If provided, filter out closed gaps whose duration_h is <= this threshold (in hours).
+
+        is_closed:
+            Not a constructor argument: set by each class. Read only open gaps (False) or all of
+            them, each in its last version (None).
     """
 
     source_gaps: str
@@ -81,6 +85,7 @@ class GapsQuery(Query):
     end_date: Optional[date] = None
     ssvids: Sequence[str] = ()
     min_gap_length: Optional[float] = None
+    is_closed: Optional[bool] = field(default=None, init=False)
 
     @property
     def template_filename(self) -> str:
@@ -89,11 +94,6 @@ class GapsQuery(Query):
     @property
     def output_type(self) -> type[Gap]:
         return Gap
-
-    @property
-    def is_closed(self) -> Optional[bool]:
-        """Read only closed gaps (True), only open ones (False), or all (None)."""
-        return None
 
     @property
     def timestamps_as_seconds(self) -> bool:
@@ -105,7 +105,6 @@ class GapsQuery(Query):
         return {
             **dataclasses.asdict(self),
             "ssvids": self.sql_strings(self.ssvids),
-            "is_closed": self.is_closed,
             "fields": self.get_select_fields(self.timestamps_as_seconds),
         }
 
@@ -119,9 +118,7 @@ class OpenGapsQuery(GapsQuery):
     the gap detector expects.
     """
 
-    @property
-    def is_closed(self) -> Optional[bool]:
-        return False
+    is_closed: Optional[bool] = field(default=False, init=False)
 
     @property
     def timestamps_as_seconds(self) -> bool:

@@ -14,12 +14,21 @@ def _sql(query):
     return " ".join(query.render().split())
 
 
-@pytest.mark.parametrize("query_class", [queries.GapsQuery, queries.OpenGapsQuery])
-def test_constructor_takes_only_template_variables(query_class):
-    fields = [field.name for field in dataclasses.fields(query_class)]
+@pytest.mark.parametrize(
+    "query_class, is_closed",
+    [(queries.GapsQuery, None), (queries.OpenGapsQuery, False)],
+)
+def test_constructor_takes_only_template_variables(query_class, is_closed):
+    """is_closed is a template variable set by each class, not a constructor argument."""
+    arguments = [field.name for field in dataclasses.fields(query_class) if field.init]
+    assert arguments == ["source_gaps", "start_date", "end_date", "ssvids", "min_gap_length"]
 
-    assert fields == ["source_gaps", "start_date", "end_date", "ssvids", "min_gap_length"]
-    assert query_class(source_gaps=DUMMY_TABLE).output_type == queries.Gap
+    query = query_class(source_gaps=DUMMY_TABLE)
+    assert query.template_vars["is_closed"] is is_closed
+    assert query.output_type == queries.Gap
+
+    with pytest.raises(TypeError, match="is_closed"):
+        query_class(source_gaps=DUMMY_TABLE, is_closed=True)
 
 
 def test_gaps_query_reads_every_gap_with_timestamps():
