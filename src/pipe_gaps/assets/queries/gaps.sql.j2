@@ -1,33 +1,60 @@
-SELECT
-  {{ fields }}
-FROM (
-  SELECT *
-  FROM `{{ source_gaps }}`
-  QUALIFY ROW_NUMBER() OVER (
-    PARTITION BY gap_id, start_timestamp
-    ORDER BY version DESC
-  ) = 1
-)
-WHERE
-  1=1
-  {% if start_date %}
-    AND DATE(start_timestamp) >= '{{ start_date }}'
+{#
+  Last version of each gap.
+
+  start_date filters on start_timestamp, which is part of the dedup key, so it goes before the
+  dedup to prune partitions. The other filters go after it: before, they could drop a gap's
+  last version and let an older one take its place.
+#}
+{% set start_date_filter %}
+  {% if start_date %}AND DATE(start_timestamp) >= '{{ start_date }}'{% endif %}
+{% endset %}
+
+WITH
+  {% if is_closed == false %}
+  {#
+    Only open gaps: read the open rows with all columns and only the ids of the closed ones,
+    so the table's clustering on is_closed prunes the rest (is_closed = FALSE prunes,
+    NOT is_closed doesn't). An open row whose gap has a closed row is no longer open.
+  #}
+  open_rows AS (
+    SELECT * FROM `{{ source_gaps }}`
+    WHERE is_closed = FALSE {{ start_date_filter }}
+  ),
+
+  closed_ids AS (
+    SELECT DISTINCT gap_id, start_timestamp FROM `{{ source_gaps }}`
+    WHERE is_closed = TRUE {{ start_date_filter }}
+  ),
+
+  candidates AS (
+    SELECT open_rows.*
+    FROM open_rows
+    LEFT JOIN closed_ids USING (gap_id, start_timestamp)
+    WHERE closed_ids.gap_id IS NULL
+  ),
+  {% else %}
+  candidates AS (
+    SELECT * FROM `{{ source_gaps }}`
+    WHERE 1=1 {{ start_date_filter }}
+  ),
   {% endif %}
 
+  latest AS (
+    SELECT * FROM candidates
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY gap_id, start_timestamp ORDER BY version DESC) = 1
+  )
+
+SELECT
+  {{ fields }}
+FROM latest
+WHERE
+  1=1
   {% if end_date %}
     AND DATE(end_timestamp) < '{{ end_date }}'
   {% endif %}
 
   {% if ssvids %}
     AND ssvid IN ({{ ssvids | join(', ') }})
-  {% endif %}
-
-  {% if is_closed is not none %}
-    {% if is_closed %}
-      AND is_closed
-    {% else %}
-      AND NOT is_closed
-    {% endif %}
   {% endif %}
 
   {% if min_gap_length is not none %}
