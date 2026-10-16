@@ -4,7 +4,8 @@ bq_out_gaps: world-fishing-827.scratch_tomas_ttl30d.raw_gaps_vms
 bq_out_gaps_description: true
 open_gaps_start_date: "2012-01-01"
 skip_open_gaps: true
-date_range: ["2025-12-10", "2020-12-12"]
+start_date: "2025-12-10"
+end_date: "2025-12-12"  # exclusive
 min_gap_length: 1
 n_hours_before: 12
 window_period_d: 2
@@ -16,3 +17,10 @@ project: world-fishing-827
 max_num_workers: 200
 machine_type: e2-custom-2-3072
 job_name: tom-test-gaps-vms-2025-12-10--2025-12-12
+
+# Labels for cost tracking (label values: lowercase letters, digits, '_' and '-').
+labels:
+  environment: development
+  resource_creator: tomas-link
+  project: vms
+  stage: gaps

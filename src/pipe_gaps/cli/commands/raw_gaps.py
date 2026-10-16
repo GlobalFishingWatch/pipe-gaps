@@ -1,8 +1,8 @@
 from types import SimpleNamespace
 from typing import Any
 
-from gfw.common.cli import Command, Option
-from pipe_gaps.cli.validations import date_range, ssvids
+from gfw.common.cli import Command, Option, date_range_options
+from pipe_gaps.cli.validations import ssvids
 from pipe_gaps.pipelines.raw_gaps.main import run
 
 
@@ -44,7 +44,6 @@ HELP_MOCK_BQ_CLIENTS = "If passed, mocks the BQ clients [Useful for development]
 HELP_SAVE_JSON = "If passed, saves the results in JSON file [Useful for development]."
 HELP_WORK_DIR = "Directory to use as working directory."
 HELP_SSVIDS = "Detect gaps for this list of ssvids, e.g., «412331104,477334300»."
-HELP_DATE_RANGE = "Detect gaps within this date range, e.g., «2024-01-01,2024-01-02»."
 
 HELP_MIN_GAP_LENGTH = "Minimum time difference (hours) to start considering gaps."
 HELP_WINDOW_PERIOD_D = "Period (in days) of time windows used to parallelize the process."
@@ -72,6 +71,7 @@ class RawGaps(Command):
     @property
     def options(self):
         return [
+            *date_range_options(),
             Option("-i", "--json-in-messages", type=str, help=HELP_JSON_IN_MESSAGES),
             Option("-s", "--json-in-open-gaps", type=str, help=HELP_JSON_IN_OPEN_GAPS),
             Option("--bq-read-method", type=str, default="EXPORT", help=HELP_BQ_READ_METHOD),
@@ -90,7 +90,6 @@ class RawGaps(Command):
             Option("--save-json", type=bool, help=HELP_SAVE_JSON),
             Option("--work-dir", type=str, default="workdir", help=HELP_WORK_DIR),
             Option("--ssvids", type=ssvids, default=tuple(), help=HELP_SSVIDS),
-            Option("--date-range", type=date_range, help=HELP_DATE_RANGE),
             Option("--min-gap-length", type=float, required=True, help=HELP_MIN_GAP_LENGTH),
             Option("--window-period-d", type=float, help=HELP_WINDOW_PERIOD_D),
             Option("--eval-last", type=bool, default=True, help=HELP_EVAL_LAST),

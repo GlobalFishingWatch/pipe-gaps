@@ -1,9 +1,8 @@
 bq_in_messages: gfw-int-vms-v3.pipe_vms_v3_internal.research_messages
 bq_in_segments: global-fishing-watch.pipe_vms_v4_published.segs_activity
 bq_out_gaps: world-fishing-827.scratch_tomas_ttl30d.raw_gaps_vms_backfill
-date_range:
-  - "2012-01-01"
-  - "2026-05-10"
+start_date: "2012-01-01"
+end_date: "2026-05-10"  # exclusive
 open_gaps_start_date: "2012-01-01"
 filter_good_seg: true
 min_gap_length: 1
@@ -24,3 +23,10 @@ subnetwork: regions/us-central1/subnetworks/gfw-internal-us-central1
 sdk_container_image: us-central1-docker.pkg.dev/gfw-int-infrastructure/core/pipe-gaps:v0.9.6
 service_account_email: pipeline-vms-v3@gfw-int-vms-v3.iam.gserviceaccount.com
 job_name: detect-gaps-vms-backfill--2012-01-01--2026-05-10
+
+# Labels for cost tracking (label values: lowercase letters, digits, '_' and '-').
+labels:
+  environment: development
+  resource_creator: tomas-link
+  project: vms
+  stage: gaps

@@ -27,6 +27,12 @@ POSITIONS_HOURS_BEFORE_KEYS = [
 ]
 
 
+def _covering_date_range(messages: list[dict]) -> tuple[date, date]:
+    """A date range (end exclusive) that includes every message."""
+    dates = [datetime_from_timestamp(m["timestamp"]).date() for m in messages]
+    return min(dates), max(dates) + timedelta(days=1)
+
+
 @pytest.mark.parametrize(
     "messages, threshold, expected_gaps",
     [
@@ -52,7 +58,7 @@ def test_detect_gaps_between_years(messages, threshold, expected_gaps):
             | "DetectGaps" >> DetectGaps(
                 gap_detector=gap_detector,
                 eval_last=False,
-                date_range=None,
+                date_range=_covering_date_range(messages),
                 window_offset_h=12,
             )
         )
@@ -178,6 +184,7 @@ def test_detect_open_gaps(messages, threshold, expected_gaps):
             main_input
             | "DetectGaps" >> DetectGaps(
                 gap_detector=gap_detector,
+                date_range=_covering_date_range(messages),
                 eval_last=True  # Required to detect open-ended gaps
             )
         )
@@ -382,7 +389,7 @@ def test_incremental_mode(
                 main_inputs
                 | "DetectGaps" >> DetectGaps(
                     gap_detector=gap_detector,
-                    date_range=[start_date_str, end_date_str],
+                    date_range=(start_date, end_date),
                     eval_last=True,
                     window_period_d=window_period_d,
                     side_inputs=side_inputs,

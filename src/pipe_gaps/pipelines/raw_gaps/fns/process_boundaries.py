@@ -1,6 +1,6 @@
 import logging
 from typing import Iterable, Optional, Any
-from datetime import timedelta
+from datetime import date, timedelta
 
 from apache_beam.transforms.core import DoFn
 from gfw.common.datetime import datetime_from_timestamp, datetime_from_date
@@ -20,7 +20,7 @@ class Boundaries:
         _key = timestamp_msgid_key()
         self._boundaries = sorted(boundaries, key=lambda x: _key(x.first_message()))
 
-    def get_first_message_inside_range(self, date_range: tuple = None) -> dict:
+    def get_first_message_inside_range(self, date_range: tuple[date, date]) -> dict:
         """Returns the first message across all boundaries that falls within date_range.
 
         Searches start, end and first_message_in_range of each boundary and returns
@@ -28,12 +28,8 @@ class Boundaries:
 
         Args:
             date_range:
-                Tuple of (start_date, end_date). If None, returns None.
+                Tuple of (start_date, end_date).
         """
-        if date_range is None:
-            # TODO: should we make date_range mandatory for the pipeline?
-            return None
-
         start_ds = datetime_from_date(date_range[0]).timestamp()
         candidates = (
             m
@@ -96,7 +92,11 @@ class ProcessBoundaries(DoFn):
     KEY_GAP_ID = GapDetector.KEY_GAP_ID
 
     def __init__(
-        self, gap_detector: GapDetector, key: Key, eval_last: bool = False, date_range=None
+        self,
+        gap_detector: GapDetector,
+        key: Key,
+        date_range: tuple[date, date],
+        eval_last: bool = False,
     ):
         self._gap_detector = gap_detector
         self._key = key
@@ -185,10 +185,7 @@ class ProcessBoundaries(DoFn):
 
             last_message_dt = datetime_from_timestamp(last_message[self.KEY_TIMESTAMP])
 
-            comparison_date = last_message_dt.date()
-            if self._date_range is not None:
-                # TODO: should we make the date_range mandatory for the pipeline?
-                comparison_date = self._date_range[1] - timedelta(days=1)
+            comparison_date = self._date_range[1] - timedelta(days=1)
 
             last_message_in_range = self._is_message_in_range(last_message)
             open_gap_condition_is_met = self._gap_detector.eval_open_gap(
@@ -232,12 +229,8 @@ class ProcessBoundaries(DoFn):
         message_ts = message[self.KEY_TIMESTAMP]
         message_dt = datetime_from_timestamp(message_ts)
 
-        if self._date_range is not None:
-            # TODO: should we make the date_range mandatory for the pipeline?
-            start_dt = datetime_from_date(self._date_range[0])
-            if buffer:
-                start_dt -= self._gap_detector.min_gap_length
+        start_dt = datetime_from_date(self._date_range[0])
+        if buffer:
+            start_dt -= self._gap_detector.min_gap_length
 
-            return message_dt >= start_dt
-
-        return True
+        return message_dt >= start_dt

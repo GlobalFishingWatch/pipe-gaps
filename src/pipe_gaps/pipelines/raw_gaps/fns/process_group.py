@@ -25,8 +25,8 @@ class ProcessGroup(DoFn):
         self,
         gap_detector: GapDetector,
         key: Key,
+        date_range: tuple[date, date],
         window_offset_h: int = 12,
-        date_range: tuple[date, date] = None,
     ):
         self._gd = gap_detector
         self._key = key
@@ -50,19 +50,18 @@ class ProcessGroup(DoFn):
         logger.debug("Processing window [{}, {}]".format(window_start_time, window_end_time))
 
         start_time = window_start_time + timedelta(hours=self._window_offset_h)
-        if self._date_range is not None:
-            range_start_time = datetime_from_date(self._date_range[0])
+        range_start_time = datetime_from_date(self._date_range[0])
 
-            start_idx = self._get_index_for_time(messages, range_start_time)
-            if start_idx > 0:
-                # Step back one message to include context from before the range boundary.
-                # This only applies to the first window, which has no previous boundary.
-                # Subsequent windows will evaluate this previous message in ProcessBoundaries.
-                # So no duplicate should appear from this.
-                start_idx = start_idx - 1
+        start_idx = self._get_index_for_time(messages, range_start_time)
+        if start_idx > 0:
+            # Step back one message to include context from before the range boundary.
+            # This only applies to the first window, which has no previous boundary.
+            # Subsequent windows will evaluate this previous message in ProcessBoundaries.
+            # So no duplicate should appear from this.
+            start_idx = start_idx - 1
 
-            effective_start_time = datetime_from_timestamp(messages[start_idx][self.KEY_TIMESTAMP])
-            start_time = max(start_time, effective_start_time)
+        effective_start_time = datetime_from_timestamp(messages[start_idx][self.KEY_TIMESTAMP])
+        start_time = max(start_time, effective_start_time)
 
         gaps = self._gd.detect(messages=messages, start_time=start_time)
 
@@ -95,7 +94,7 @@ class ProcessGroup(DoFn):
             )
 
             # Don't emit open v1 if OFF is before range start - it's handled via ProcessBoundaries.
-            is_before_range = self._date_range is not None and off_m_ts < range_start_time
+            is_before_range = off_m_ts < range_start_time
 
             if should_emit_open and not is_before_range:
                 logger.debug("Emitting open gap for recovery...")

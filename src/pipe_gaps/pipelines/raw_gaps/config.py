@@ -8,7 +8,7 @@ from datetime import date, timedelta
 from functools import cached_property
 
 from gfw.common.beam.pipeline.hooks import create_table_hook, create_view_hook, delete_events_hook
-from gfw.common.config import PipelineConfig
+from gfw.common.config import DatePipelineConfig
 from pipe_gaps.pipelines.raw_gaps.hooks import create_segments_n_days_ahead_hook
 from pipe_gaps.pipelines.raw_gaps.table_config import (
     GapsLatestViewConfig,
@@ -16,13 +16,14 @@ from pipe_gaps.pipelines.raw_gaps.table_config import (
     GapsTableDescription,
     GapsVersionedTableDescription,
 )
+from pipe_gaps.version import __version__
 
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass(frozen=True)
-class RawGapsConfig(PipelineConfig):
+@dataclass(frozen=True, kw_only=True)
+class RawGapsConfig(DatePipelineConfig):
     filter_not_overlapping_and_short: bool = False
     filter_good_seg: bool = False
     open_gaps_start_date: str = "2019-01-01"
@@ -48,6 +49,7 @@ class RawGapsConfig(PipelineConfig):
     good_seg_stabilization_days: int = 0
 
     def __post_init__(self) -> None:
+        super().__post_init__()
         self.validate()
 
     @property
@@ -81,7 +83,7 @@ class RawGapsConfig(PipelineConfig):
         return GapsTableConfig(
             table_id=self.bq_out_gaps_versioned,
             description=GapsVersionedTableDescription(
-                version=self.version,
+                version=__version__,
                 relevant_params=self.bq_out_gaps_description_params
             ),
         )
@@ -94,7 +96,7 @@ class RawGapsConfig(PipelineConfig):
             view_id=self.bq_out_gaps,
             min_gap_length=self.min_gap_length,
             description=GapsTableDescription(
-                version=self.version,
+                version=__version__,
                 source_table=self.table_config.table_id.rsplit(".", 1)[-1],
                 relevant_params=self.bq_out_gaps_description_params,
             ),
@@ -159,7 +161,3 @@ class RawGapsConfig(PipelineConfig):
             and (self.bq_in_messages is None or self.bq_in_segments is None)
         ):
             raise ValueError("You need to provide either a JSON inputs or BQ input.")
-
-        if not self.end_date > self.start_date:
-            raise ValueError(
-                f"end_date ({self.end_date}) must be greater than start_date ({self.start_date})")

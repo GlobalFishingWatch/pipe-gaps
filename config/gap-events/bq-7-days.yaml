@@ -8,7 +8,8 @@ bq_in_voyages: "global-fishing-watch.pipe_ais_v3_published.voyages_c4"
 bq_in_port_visits: "global-fishing-watch.pipe_ais_v3_published.product_events_port_visit_v2"
 bq_in_vessels_byyear: "global-fishing-watch.pipe_ais_v3_published.product_vessel_info_summary"
 bq_out_gap_events: "world-fishing-827.scratch_tomas_ttl30d.product_events_ais_gap_pipeline_4615_2026_7days"
-date_range: ["2026-09-01", "2026-09-08"]
+start_date: "2026-09-01"
+end_date: "2026-09-08"  # exclusive
 
 # Disabling-event classification (PIPELINE-4615). Thresholds left at their defaults,
 # which match pipe-gaps-prototype's historical AIS values exactly.
@@ -23,3 +24,10 @@ disabling_min_year: 2017
 # General parameters:
 dry_run: false
 project: world-fishing-827
+
+# Labels for cost tracking (label values: lowercase letters, digits, '_' and '-').
+labels:
+  environment: development
+  resource_creator: tomas-link
+  project: ais
+  stage: gaps

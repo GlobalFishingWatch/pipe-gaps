@@ -2,13 +2,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-# This command does not use beam but PipelineConfig has generic functionality.
-# TODO: move PipelineConfig to a more generic package inside gfw-common lib.
-from gfw.common.config import PipelineConfig
+from gfw.common.config import DatePipelineConfig
 
 
 @dataclass(frozen=True, kw_only=True)
-class GapEventsConfig(PipelineConfig):
+class GapEventsConfig(DatePipelineConfig):
     bq_in_raw_gaps: str
     bq_in_segment_info: str
     bq_in_segs_activity: str
@@ -45,6 +43,7 @@ class GapEventsConfig(PipelineConfig):
     disabling_min_year: int = 2017
 
     def __post_init__(self) -> None:
+        super().__post_init__()
         self.validate()
 
     def validate(self) -> None:

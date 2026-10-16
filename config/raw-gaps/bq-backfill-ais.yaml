@@ -1,7 +1,8 @@
 bq_in_messages: gfw-int-pipe-v3.pipe_ais_v3_internal.research_messages
 bq_in_segments: global-fishing-watch.pipe_ais_v3_published.segs_activity
 bq_out_gaps: gfw-int-pipe-v3.pipe_ais_v3_internal.raw_gaps
-date_range: ["2012-01-01", "2025-11-24"]
+start_date: "2012-01-01"
+end_date: "2025-11-24"  # exclusive
 open_gaps_start_date: "2012-01-01"
 filter_good_seg: true
 min_gap_length: 4
@@ -20,3 +21,10 @@ subnetwork: regions/us-central1/subnetworks/gfw-internal-us-central1
 sdk_container_image: gcr.io/world-fishing-827/github.com/globalfishingwatch/pipe-gaps:main
 service_account_email: pipeline-ais-v3@gfw-research.iam.gserviceaccount.com
 job_name: tom-gaps-historical-backfill--2012-01-01--2025-11-24
+
+# Labels for cost tracking (label values: lowercase letters, digits, '_' and '-').
+labels:
+  environment: development
+  resource_creator: tomas-link
+  project: ais
+  stage: gaps

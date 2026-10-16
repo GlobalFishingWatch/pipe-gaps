@@ -2,7 +2,8 @@ bq_in_messages: pipe_ais_v3_internal.research_messages
 bq_in_segments: pipe_ais_v3_published.segs_activity
 bq_out_gaps: scratch_tomas_ttl30d.raw_gaps
 open_gaps_start_date: "2021-01-01"
-date_range: ["2023-01-01", "2023-01-02"]
+start_date: "2023-01-01"
+end_date: "2023-01-02"  # exclusive
 min_gap_length: 6
 n_hours_before: 12
 window_period_d: 30
@@ -14,3 +15,10 @@ runner: dataflow
 max_num_workers: 200
 machine_type: e2-standard-2
 job_name: tom-test-gaps-1-month
+
+# Labels for cost tracking (label values: lowercase letters, digits, '_' and '-').
+labels:
+  environment: development
+  resource_creator: tomas-link
+  project: ais
+  stage: gaps

@@ -4,7 +4,8 @@ bq_out_gaps: world-fishing-827.scratch_tomas_ttl30d.raw_gaps_pipeline_4615_2026_
 bq_in_open_gaps: gfw-int-pipe-v3.pipe_ais_v3_internal.raw_gaps
 open_gaps_start_date: "2020-02-01"
 skip_open_gaps: false
-date_range: ["2026-09-01", "2026-09-08"]
+start_date: "2026-09-01"
+end_date: "2026-09-08"  # exclusive
 min_gap_length: 6
 n_hours_before: 12
 window_period_d: 1
@@ -21,3 +22,10 @@ staging_location: gs://gfw-dataflow-temp-staging-ttl-7/dataflow_staging
 region: us-central1
 subnetwork: regions/us-central1/subnetworks/gfw-internal-us-central1
 service_account_email: engineering-development@world-fishing-827.iam.gserviceaccount.com
+
+# Labels for cost tracking (label values: lowercase letters, digits, '_' and '-').
+labels:
+  environment: development
+  resource_creator: tomas-link
+  project: ais
+  stage: gaps

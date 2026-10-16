@@ -1,8 +1,7 @@
 from types import SimpleNamespace
 from typing import Any
 
-from gfw.common.cli import Command, Option
-from pipe_gaps.cli.validations import date_range
+from gfw.common.cli import Command, Option, date_range_options
 from pipe_gaps.pipelines.events.main import run
 
 
@@ -57,7 +56,6 @@ HELP_DISABLING_MIN_YEAR = (
 )
 
 HELP_MOCK_BQ_CLIENTS = "If passed, mocks the BQ clients [Useful for development]."
-HELP_DATE_RANGE = "Create gap events for this date range, e.g., «2024-01-01,2024-01-02»."
 HELP_BQ_PROJECT = "Project to use when executing the events query."
 HELP_DRY_RUN = "If True, executes queries in dry run mode."
 HELP_EXCLUDE_OPEN_GAPS = "If passed, excludes open gaps (no end_timestamp yet) from the output."
@@ -75,7 +73,7 @@ class GapEvents(Command):
     @property
     def options(self):
         return [
-            Option("--date-range", type=date_range, help=HELP_DATE_RANGE),
+            *date_range_options(),
             Option("--project", type=str, help=HELP_BQ_PROJECT),
             Option("--dry-run", type=bool, help=HELP_DRY_RUN),
             Option("--bq-in-raw-gaps", type=str, help=HELP_BQ_IN_RAW_GAPS),
@@ -89,7 +87,7 @@ class GapEvents(Command):
             Option("--bq-in-vessels-byyear-field-prefix", type=str,
                    help=HELP_BQ_IN_VESSELS_BYYEAR_FIELD_PREFIX, default=""),
             Option("--bq-in-vessels-byyear-flag-field", type=str,
-                   help=HELP_BQ_IN_VESSELS_BYYEAR_FLAG_FIELD, default=None),
+                   help=HELP_BQ_IN_VESSELS_BYYEAR_FLAG_FIELD),
             Option("--bq-out-gap-events", type=str, help=HELP_BQ_OUT_GAP_EVENTS),
             Option("--mock-bq-clients", type=bool, help=HELP_MOCK_BQ_CLIENTS),
             Option("--exclude-open-gaps", type=bool, help=HELP_EXCLUDE_OPEN_GAPS),

@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Iterable, Any
 from dataclasses import dataclass
 
@@ -57,16 +58,15 @@ class ExtractGroupBoundary(DoFn):
             Key used to extract timestamps from messages. Defaults to "timestamp".
 
         date_range:
-            Optional tuple of (start_date, end_date). When provided, the boundary
-            will also retain the first message at or after start_date, used by
-            ProcessBoundaries to correctly close open gaps.
+            Tuple of (start_date, end_date). The boundary also retains the first message at
+            or after start_date, used by ProcessBoundaries to correctly close open gaps.
     """
 
     def __init__(
         self,
         window_offset_s: int,
+        date_range: tuple[date, date],
         timestamp_key: str = "timestamp",
-        date_range=None,
     ):
         self._window_offset_s = window_offset_s
         self._timestamp_key = timestamp_key
@@ -80,11 +80,8 @@ class ExtractGroupBoundary(DoFn):
 
         start_time = window.start.seconds() + self._window_offset_s
 
-        first_message_in_range = None
-        if self._date_range is not None:
-            # TODO: should we make the date_range mandatory for the pipeline?
-            range_start_ts = datetime_from_date(self._date_range[0]).timestamp()
-            first_message_in_range = messages.first_message_at_or_after(timestamp=range_start_ts)
+        range_start_ts = datetime_from_date(self._date_range[0]).timestamp()
+        first_message_in_range = messages.first_message_at_or_after(timestamp=range_start_ts)
 
         yield Boundary(
             ssvid=key.ssvid,

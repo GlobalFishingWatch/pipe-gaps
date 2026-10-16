@@ -12,7 +12,9 @@ BASE_ARGS = [
     "--bq-in-regions-registry", "project.dataset.registry",
     "--bq-in-vessels-byyear", "project.dataset.table",
     "--bq-out-gap-events", "project.dataset.output",
-    "--date-range", "2024-01-01,2024-01-02",
+    "--start-date", "2024-01-01",
+    "--end-date", "2024-01-02",
+    "--labels", "env=test",
     "--project", "test-project",
 ]
 

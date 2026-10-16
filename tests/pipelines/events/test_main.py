@@ -3,16 +3,44 @@ from types import SimpleNamespace
 
 import pytest
 
+from google.api_core.exceptions import NotFound
+from google.cloud import bigquery
+
 from gfw.common.bigquery.helper import BigQueryHelper
 from pipe_gaps.pipelines.events import main
 from pipe_gaps.pipelines.events.config import GapEventsConfig
 from pipe_gaps.pipelines.events.main import GapEventQuery, fetch_regions_registry
 
 
+def _tables_created_on_write(client, existing=None):
+    """get_table side effect: a table exists only once a query has written to it, or if it is
+    ``existing``.
+    """
+
+    def get_table(table_ref):
+        key = str(table_ref)
+        if existing is not None and key == str(existing.reference):
+            return existing
+
+        written = {
+            str(call.kwargs["job_config"].destination)
+            for call in client.query.call_args_list
+            if call.kwargs["job_config"].destination is not None
+        }
+        if key not in written:
+            raise NotFound(key)
+
+        return bigquery.Table(key)
+
+    return get_table
+
+
 @pytest.fixture
 def basic_config_kwargs():
     return {
-        "date_range": ("2024-01-01", "2024-01-02"),
+        "labels": {"env": "test"},
+        "start_date": "2024-01-01",
+        "end_date": "2024-01-02",
         "bq_in_raw_gaps": "project.dataset.table",
         "bq_in_segment_info": "project.dataset.table",
         "bq_in_segs_activity": "project.dataset.table",
@@ -44,10 +72,8 @@ class TestFlagField:
     def _query(self, kwargs):
         config = GapEventsConfig.from_namespace(
             SimpleNamespace(**kwargs, unknown_parsed_args={}),
-            version="test",
-            name="test",
         )
-        return GapEventQuery(config)
+        return GapEventQuery.from_config(config)
 
     def test_defaults_to_prefixed_mmsi_flag(self, basic_config_kwargs):
         query = self._query(basic_config_kwargs)
@@ -82,20 +108,16 @@ def test_end_date_filter_lets_open_gaps_through(basic_config_kwargs):
     """
     config = GapEventsConfig.from_namespace(
         SimpleNamespace(**basic_config_kwargs, unknown_parsed_args={}),
-        version="test",
-        name="test",
     )
-    sql = GapEventQuery(config).render()
+    sql = GapEventQuery.from_config(config).render()
     assert "end_timestamp IS NULL OR DATE(end_timestamp) <" in sql
 
 
 def test_exclude_open_gaps_defaults_to_false(basic_config_kwargs):
     config = GapEventsConfig.from_namespace(
         SimpleNamespace(**basic_config_kwargs, unknown_parsed_args={}),
-        version="test",
-        name="test",
     )
-    sql = GapEventQuery(config).render()
+    sql = GapEventQuery.from_config(config).render()
     assert "end_timestamp IS NOT NULL" not in sql
 
 
@@ -105,10 +127,8 @@ def test_exclude_open_gaps_drops_them_from_the_output(basic_config_kwargs):
     """
     config = GapEventsConfig.from_namespace(
         SimpleNamespace(**basic_config_kwargs, exclude_open_gaps=True, unknown_parsed_args={}),
-        version="test",
-        name="test",
     )
-    sql = GapEventQuery(config).render()
+    sql = GapEventQuery.from_config(config).render()
     assert "AND end_timestamp IS NOT NULL" in sql
 
 
@@ -133,10 +153,8 @@ def test_open_gap_duration_falls_back_to_elapsed_time_to_end_date(basic_config_k
     """
     config = GapEventsConfig.from_namespace(
         SimpleNamespace(**basic_config_kwargs, unknown_parsed_args={}),
-        version="test",
-        name="test",
     )
-    sql = GapEventQuery(config).render()
+    sql = GapEventQuery.from_config(config).render()
 
     assert "COALESCE(" in sql
     assert "TIMESTAMP_DIFF(TIMESTAMP('2024-01-02'), start_timestamp, SECOND) / 3600.0" in sql
@@ -155,10 +173,8 @@ def _normalize_whitespace(sql):
 def _disabling_classification_query(kwargs):
     config = GapEventsConfig.from_namespace(
         SimpleNamespace(**kwargs, unknown_parsed_args={}),
-        version="test",
-        name="test",
     )
-    return GapEventQuery(config)
+    return GapEventQuery.from_config(config)
 
 
 def test_disabling_classification_disabled_by_default(basic_config_kwargs):
@@ -273,10 +289,8 @@ class TestRegions:
     def _query(self, kwargs, regions=_REGIONS):
         config = GapEventsConfig.from_namespace(
             SimpleNamespace(**kwargs, unknown_parsed_args={}),
-            version="test",
-            name="test",
         )
-        return GapEventQuery(config, regions=regions)
+        return GapEventQuery.from_config(config, regions=regions)
 
     def test_defaults_to_no_regions(self, basic_config_kwargs):
         query = self._query(basic_config_kwargs, regions=())
@@ -300,3 +314,68 @@ class TestRegions:
         # in the unrelated is_whitelisted_rfmo function).
         assert "rfmo ARRAY<STRING>" not in sql
         assert "this.rfmo = regions.rfmo || [];" not in sql
+
+
+@pytest.fixture
+def gap_events_config_kwargs(basic_config_kwargs):
+    return basic_config_kwargs | {"bq_out_gap_events": "p.d.gap_events"}
+
+
+def _run(kwargs):
+    bq_helper = BigQueryHelper.mocked()
+    # Output tables don't exist yet: the queries create them.
+    bq_helper.client.get_table.side_effect = _tables_created_on_write(bq_helper.client)
+    main.run(SimpleNamespace(**kwargs), bq_client_factory=lambda **_: bq_helper.client)
+    return bq_helper.client
+
+
+def _destination_job_configs(client):
+    return [
+        call.kwargs["job_config"]
+        for call in client.query.call_args_list
+        if call.kwargs["job_config"].destination is not None
+    ]
+
+
+def test_gap_events_table_is_partitioned_by_event_start_month(gap_events_config_kwargs):
+    """product_events was created unpartitioned, as the partitioning declared in its table
+    config was never passed to the query.
+    """
+    (job_config,) = _destination_job_configs(_run(gap_events_config_kwargs))
+
+    assert job_config.destination.table_id == "gap_events"
+    assert job_config.time_partitioning.field == "event_start"
+    assert job_config.time_partitioning.type_ == "MONTH"
+    assert job_config.clustering_fields == ["seg_id"]
+
+
+def test_gap_events_table_gets_its_schema_and_description(mocker, gap_events_config_kwargs):
+    update_table_metadata = mocker.patch.object(
+        BigQueryHelper, "update_table_metadata", autospec=True
+    )
+
+    _run(gap_events_config_kwargs)
+
+    (call,) = update_table_metadata.call_args_list
+    assert call.args[1] == "p.d.gap_events"
+    assert len(call.kwargs["schema"]) > 0
+    assert "GAP EVENTS" in call.kwargs["description"]
+
+
+def test_gap_events_table_allows_recreation_with_its_config_layout(
+    mocker, gap_events_config_kwargs
+):
+    """Recreating a table whose layout differs from its config is left to gfw-common
+    (allow_table_recreation), as WRITE_TRUNCATE can't change it.
+    """
+    run_query = mocker.spy(BigQueryHelper, "run_query")
+
+    _run(gap_events_config_kwargs)
+
+    (kwargs,) = [c.kwargs for c in run_query.call_args_list if c.kwargs.get("destination")]
+    assert kwargs["destination"] == "p.d.gap_events"
+    assert kwargs["write_disposition"] == "WRITE_TRUNCATE"
+    assert kwargs["partition_field"] == "event_start"
+    assert kwargs["partition_type"] == "MONTH"
+    assert kwargs["allow_table_recreation"] is True
+    assert kwargs["labels"] == {"env": "test"}

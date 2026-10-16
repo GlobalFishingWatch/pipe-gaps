@@ -4,7 +4,8 @@ open_gaps_start_date: "2023-01-01"
 ssvids:
   - "412331104"
   - "477334300"
-date_range: ["2023-01-01", "2023-01-02"]
+start_date: "2023-01-01"
+end_date: "2023-01-02"  # exclusive
 min_gap_length: 1
 n_hours_before: 12
 window_period_d: 1
@@ -13,3 +14,10 @@ filter_good_seg: true
 # Apache Beam options
 project: world-fishing-827
 runner: direct
+
+# Labels for cost tracking (label values: lowercase letters, digits, '_' and '-').
+labels:
+  environment: development
+  resource_creator: tomas-link
+  project: ais
+  stage: gaps

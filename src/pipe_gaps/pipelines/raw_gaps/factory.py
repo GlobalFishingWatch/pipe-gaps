@@ -20,9 +20,6 @@ class RawGapsLinearDagFactory(LinearDagFactory):
     def read_from_bigquery_kwargs(self) -> dict:
         # Labels the BigQuery query/export jobs Beam runs for each read, not just the
         # Dataflow job itself, so their cost is attributed the same way.
-        if not self.config.labels:
-            return {}
-
         return {"bigquery_job_labels": dict(self.config.labels)}
 
     @property
@@ -69,7 +66,7 @@ class RawGapsLinearDagFactory(LinearDagFactory):
                 normalize_output=self.config.normalize_output,
             ),
             eval_last=self.config.eval_last,
-            date_range=self.config.date_range,
+            date_range=(self.config.start_date, self.config.end_date),
             window_period_d=self.config.window_period_d,
             window_offset_h=self.config.n_hours_before,
         )
