@@ -35,7 +35,8 @@ nosetests.xml
 coverage.xml
 *.cover
 .hypothesis/
-.pytest_cache
+.pytest_cache/
+.ruff_cache/
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -67,5 +68,5 @@ workdir
 .terraform
 .terraform.lock.hcl
 
-# UV
-.python-version
+# uv
+uv.lock

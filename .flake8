@@ -2,4 +2,6 @@
 max-line-length = 99
 exclude =
     .venv
+    .git
+    build
 

@@ -2,7 +2,10 @@
 .venv
 
 Dockerfile
-docker-compose.yaml
+compose.yaml
 
+analysis
+benchmarks
+cloudbuild
 examples
-sandbox
+workdir
