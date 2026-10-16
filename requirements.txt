@@ -14,7 +14,7 @@ anyio==4.12.1
     # via
     #   google-genai
     #   httpx
-apache-beam==2.75.0
+apache-beam==2.76.0
     # via
     #   pipe-gaps (pyproject.toml)
     #   gfw-common
@@ -24,10 +24,6 @@ attrs==25.4.0
     # via aiohttp
 beartype==0.22.9
     # via apache-beam
-betterproto==2.0.0b6
-    # via
-    #   pipe-gaps (pyproject.toml)
-    #   envoy-data-plane
 cachetools==6.2.6
     # via apache-beam
 certifi==2026.2.25
@@ -55,8 +51,6 @@ dnspython==2.8.0
     #   pymongo
 docstring-parser==0.17.0
     # via google-cloud-aiplatform
-envoy-data-plane==1.0.3
-    # via apache-beam
 fastavro==1.12.1
     # via apache-beam
 fasteners==0.20
@@ -71,7 +65,7 @@ geographiclib==2.1
     # via geopy
 geopy==2.4.1
     # via pipe-gaps (pyproject.toml)
-gfw-common==0.20.2
+gfw-common==0.20.3
     # via pipe-gaps (pyproject.toml)
 google-api-core==2.30.0
     # via
@@ -137,7 +131,7 @@ google-cloud-bigquery==3.40.1
     #   google-cloud-aiplatform
 google-cloud-bigquery-storage==2.36.2
     # via apache-beam
-google-cloud-bigtable==2.35.0
+google-cloud-bigtable==2.50.1
     # via apache-beam
 google-cloud-build==3.38.1
     # via apache-beam
@@ -160,7 +154,9 @@ google-cloud-kms==3.11.0
 google-cloud-language==2.19.0
     # via apache-beam
 google-cloud-monitoring==2.29.1
-    # via google-cloud-spanner
+    # via
+    #   google-cloud-bigtable
+    #   google-cloud-spanner
 google-cloud-pubsub==2.35.0
     # via apache-beam
 google-cloud-recommendations-ai==0.10.18
@@ -213,6 +209,7 @@ grpcio==1.83.0
     #   apache-beam
     #   google-api-core
     #   google-cloud-bigquery-storage
+    #   google-cloud-bigtable
     #   google-cloud-build
     #   google-cloud-dataflow-client
     #   google-cloud-datastore
@@ -229,21 +226,12 @@ grpcio==1.83.0
     #   grpc-google-iam-v1
     #   grpc-interceptor
     #   grpcio-status
-    #   grpcio-tools
 grpcio-status==1.83.0
     # via
     #   google-api-core
     #   google-cloud-pubsub
-grpcio-tools==1.81.1
-    # via envoy-data-plane
-grpclib==0.4.9
-    # via betterproto
 h11==0.16.0
     # via httpcore
-h2==4.3.0
-    # via grpclib
-hpack==4.1.0
-    # via h2
 httpcore==1.0.9
     # via httpx
 httplib2==0.22.0
@@ -254,8 +242,6 @@ httplib2==0.22.0
     #   oauth2client
 httpx==0.28.1
     # via google-genai
-hyperframe==6.1.0
-    # via h2
 idna==3.11
     # via
     #   anyio
@@ -299,7 +285,6 @@ more-itertools==10.8.0
 multidict==6.7.1
     # via
     #   aiohttp
-    #   grpclib
     #   yarl
 numpy==2.4.2
     # via
@@ -311,6 +296,7 @@ objsize==0.7.1
     # via apache-beam
 opentelemetry-api==1.40.0
     # via
+    #   google-cloud-bigtable
     #   google-cloud-pubsub
     #   google-cloud-spanner
     #   opentelemetry-resourcedetector-gcp
@@ -320,6 +306,7 @@ opentelemetry-resourcedetector-gcp==1.11.0a0
     # via google-cloud-spanner
 opentelemetry-sdk==1.40.0
     # via
+    #   google-cloud-bigtable
     #   google-cloud-pubsub
     #   google-cloud-spanner
     #   opentelemetry-resourcedetector-gcp
@@ -391,7 +378,6 @@ protobuf==6.33.6
     #   googleapis-common-protos
     #   grpc-google-iam-v1
     #   grpcio-status
-    #   grpcio-tools
     #   proto-plus
 py-cpuinfo==9.0.0
     # via pipe-gaps (pyproject.toml)
@@ -399,8 +385,6 @@ pyarrow==18.1.0
     # via
     #   apache-beam
     #   gfw-common
-pyarrow-hotfix==0.7
-    # via apache-beam
 pyasn1==0.6.2
     # via
     #   oauth2client
@@ -430,7 +414,6 @@ pyparsing==3.3.2
 python-dateutil==2.9.0.post0
     # via
     #   apache-beam
-    #   betterproto
     #   gfw-common
     #   google-cloud-bigquery
     #   pandas
@@ -470,8 +453,6 @@ scramp==1.4.8
     # via pg8000
 secretstorage==3.5.0
     # via keyring
-setuptools==83.0.0
-    # via grpcio-tools
 six==1.17.0
     # via
     #   google-apitools

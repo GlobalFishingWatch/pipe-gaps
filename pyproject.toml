@@ -26,20 +26,14 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
-
 ]
-requires-python = ">= 3.10"
+requires-python = ">= 3.12"
 dependencies = [
-    "apache-beam[gcp]~=2.75",
-    # Pinned explicitly: apache-beam[gcp]==2.75.0 requires envoy-data-plane>=1.0.3,<2,
-    # whose only non-prerelease-excluded version (1.0.3) depends on this exact
-    # betterproto prerelease. Pinning it here lets it resolve without enabling
-    # prereleases repo-wide.
-    "betterproto==2.0.0b6",
+    "apache-beam[gcp]~=2.76",
     "importlib-resources~=6.0",
     "geopy~=2.4",
     "google-cloud-bigquery~=3.0",
-    "gfw-common[bq,beam]~=0.20.2",
+    "gfw-common[bq,beam]~=0.20.3",
     "pandas~=2.1",
     "py-cpuinfo~=9.0",
     "pydantic~=2.0",
@@ -50,7 +44,7 @@ dependencies = [
 [project.urls]
 Homepage = "https://github.com/GlobalFishingWatch/pipe-gaps"
 Documentation = "https://globalfishingwatch.github.io/pipe-gaps/"
-Changelog = "https://github.com/GlobalFishingWatch/pipe-gaps/blob/main/CHANGELOG.md"
+Changelog = "https://github.com/GlobalFishingWatch/pipe-gaps/releases"
 Repository = "https://github.com/GlobalFishingWatch/pipe-gaps"
 Issues = "https://github.com/GlobalFishingWatch/pipe-gaps/issues"
 
@@ -68,13 +62,11 @@ lint = [
   "ruff~=0.11",                # Linter and code analysis tool.
   "codespell[toml]~=2.4",      # Spell checker for code.
   "flake8~=7.0",               # Simple PEP8 checker.
-  "types-PyYAML",              # MyPy stubs for pyyaml.
 ]
 
 # Development workflow and tools
 dev = [
   "pre-commit~=4.2",          # Framework for managing pre-commit hooks.
-  "pip-tools~=7.0",           # Freezing dependencies for production containers.
   "pip-audit~=2.8",           # Audit for finding vulnerabilities in dependencies.
   "matplotlib~=3.0",
   "memory_profiler~=0.6",
@@ -86,6 +78,15 @@ build = [
   "build~=1.2",             # Python PEP 517 compliant build system.
   "setuptools~=78.1",       # Python packaging library.
   "twine~=6.1",             # For uploading Python packages to PyPI.
+]
+
+# Test dependencies (PEP 735). Not published with the package: the test Docker image installs
+# them, compiled into requirements-test.txt, on top of the production image.
+[dependency-groups]
+test = [
+  "pytest~=9.0",             # Core testing framework.
+  "pytest-cov~=7.0",         # Coverage plugin for pytest.
+  "pytest-mock~=3.14",       # Mocking plugin for pytest.
 ]
 
 [tool.ruff]
@@ -159,10 +160,10 @@ addopts = "-v --cov=src --cov-report=term-missing"
 [tool.coverage.run]
 source = ["src", "tests"]
 branch = true
-parallel = true
 context = "${CONTEXT}"
 
 [tool.coverage.report]
+omit = ["**/__init__.py"]
 precision = 0
 skip_empty = true
 ignore_errors = false
