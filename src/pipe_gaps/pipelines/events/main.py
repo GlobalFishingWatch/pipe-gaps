@@ -11,6 +11,8 @@ from pipe_gaps.pipelines.events.config import GapEventsConfig
 from pipe_gaps.pipelines.events.table_config import (
     GapEventsTableConfig,
     GapEventsTableDescription,
+    IntentionalDisablingEventsTableConfig,
+    IntentionalDisablingEventsTableDescription,
 )
 from pipe_gaps.version import __version__
 
@@ -106,6 +108,24 @@ class GapEventQuery(Query):
         )
 
 
+@dataclass
+class IntentionalDisablingEventsQuery(Query):
+    """Gap events classified as intentional disabling, from the gap events table.
+
+    Its fields are the template's variables (see template_vars).
+    """
+
+    source_gap_events: str
+
+    @property
+    def template_filename(self) -> str:
+        return "intentional_disabling_events.sql.j2"
+
+    @property
+    def template_vars(self) -> dict:
+        return dataclasses.asdict(self)
+
+
 def run(config: GapEventsConfig, bq_client_factory: Callable = None) -> None:
     bq_client_factory = bq_client_factory or BigQueryHelper.get_client_factory(
         mocked=config.mock_bq_clients
@@ -129,22 +149,39 @@ def run(config: GapEventsConfig, bq_client_factory: Callable = None) -> None:
         regions=regions,
     )
 
+    writes = [(events_query, table_config)]
+
+    if config.bq_out_intentional_disabling_events is not None:
+        disabling_table_config = IntentionalDisablingEventsTableConfig(
+            table_id=config.bq_out_intentional_disabling_events,
+            description=IntentionalDisablingEventsTableDescription(
+                version=__version__,
+                relevant_params={}
+            ),
+            regions=regions,
+        )
+        disabling_query = IntentionalDisablingEventsQuery(table_config.table_id)
+        writes.append((disabling_query, disabling_table_config))
+
     logger.info(f"Creating gap events for dates [{config.start_date}, {config.end_date})...")
-    # Recreates the table if its partitioning or clustering differ from its config,
-    # which WRITE_TRUNCATE can't change.
-    bq.run_query(
-        query_str=events_query.render(),
-        destination=table_config.table_id,
-        labels=config.labels,
-        write_disposition="WRITE_TRUNCATE",
-        partition_field=table_config.partition_field,
-        partition_type=table_config.partition_type,
-        clustering_fields=table_config.clustering_fields,
-        schema=table_config.schema,
-        description=table_config.description.render(),
-        allow_table_recreation=True,
-    )
+    for query, query_table_config in writes:
+        logger.info(f"Writing {query_table_config.table_id}...")
+        # Recreates the table if its partitioning or clustering differ from its config,
+        # which WRITE_TRUNCATE can't change.
+        bq.run_query(
+            query_str=query.render(),
+            destination=query_table_config.table_id,
+            labels=config.labels,
+            write_disposition="WRITE_TRUNCATE",
+            partition_field=query_table_config.partition_field,
+            partition_type=query_table_config.partition_type,
+            clustering_fields=query_table_config.clustering_fields,
+            schema=query_table_config.schema,
+            description=query_table_config.description.render(),
+            allow_table_recreation=True,
+        )
 
     logger.info("Done.")
     logger.info("You can check the results in:")
-    logger.info(table_config.table_id)
+    for _, query_table_config in writes:
+        logger.info(query_table_config.table_id)
