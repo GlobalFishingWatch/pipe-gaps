@@ -1,8 +1,10 @@
 """This module encapsulates a SELECT query for gaps."""
+import dataclasses
 import logging
-from typing import Optional, NamedTuple, Sequence
-from functools import cached_property
+
+from dataclasses import dataclass, field
 from datetime import date, datetime
+from typing import NamedTuple, Optional, Sequence
 
 from gfw.common.query import Query
 
@@ -13,7 +15,6 @@ class Gap(NamedTuple):
     """Schema for gaps."""
 
     gap_id: str
-    ssvid: str
     ssvid: str
     version: str
     positions_hours_before: int
@@ -51,79 +52,74 @@ class Gap(NamedTuple):
         return self._asdict().items()
 
 
+@dataclass
 class GapsQuery(Query):
-    """Encapsulates a gaps query.
+    """Last version of each gap, with TIMESTAMP columns (e.g. for the raw_gaps view).
 
-    This query will return only the last version of each gap.
+    Its fields are the template's variables. Subclasses change what is read through is_closed,
+    which isn't a constructor argument, and the timestamps_as_seconds property.
 
     Args:
+        source_gaps:
+            Table with gaps.
+
         start_date:
             Fetch gaps whose OFF message timestamp is >= start_date.
 
         end_date:
-            Fetch gaps whose OFF message timetsamp is < end_date.
-
-        source_gaps:
-            Table with gaps.
+            Fetch gaps whose ON message timestamp is < end_date.
 
         ssvids:
-            List of ssvdis to filter.
-
-        is_closed:
-            Whether to fetch
-                - only closed gaps (True),
-                - only open gaps (False)
-                - both (None).
+            List of ssvids to filter.
 
         min_gap_length:
-            If provided, filter out gaps whose duration_h is <= this threshold (in hours).
+            If provided, filter out closed gaps whose duration_h is <= this threshold (in hours).
+
+        is_closed:
+            Not a constructor argument: set by each class. Read only open gaps (False) or all of
+            them, each in its last version (None).
     """
 
-    NAME = "gaps"
+    source_gaps: str
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
+    ssvids: Sequence[str] = ()
+    min_gap_length: Optional[float] = None
+    is_closed: Optional[bool] = field(default=None, init=False)
 
-    def __init__(
-        self,
-        source_gaps: str,
-        start_date: Optional[date] = None,
-        end_date: Optional[date] = None,
-        ssvids: Sequence[str] = (),
-        is_closed: Optional[bool] = None,
-        use_timestamp: bool = False,
-        min_gap_length: Optional[float] = None,
-    ) -> None:
-        self._start_date = start_date
-        self._end_date = end_date
-        self._source_gaps = source_gaps
-        self._ssvids = ssvids
-        self._is_closed = is_closed
-        self._min_gap_length = min_gap_length
-        # TODO: consider another design: this is an external parameter not pass to the query.
-        self._use_timestamp = use_timestamp
-
-    @cached_property
-    def output_type(self):
-        return Gap
-
-    @cached_property
+    @property
     def template_filename(self) -> str:
         return "gaps.sql.j2"
 
-    @cached_property
+    @property
+    def output_type(self) -> type[Gap]:
+        return Gap
+
+    @property
+    def timestamps_as_seconds(self) -> bool:
+        """Whether to return timestamps as Unix seconds instead of TIMESTAMPs."""
+        return False
+
+    @property
     def template_vars(self) -> dict:
-        start_date = self._start_date
-        if start_date is not None:
-            start_date = start_date.isoformat()
-
-        end_date = self._end_date
-        if end_date is not None:
-            end_date = end_date.isoformat()
-
         return {
-            "fields": self.get_select_fields(self._use_timestamp),
-            "source_gaps": self._source_gaps,
-            "ssvids": self.sql_strings(self._ssvids),
-            "start_date": start_date,
-            "end_date": end_date,
-            "is_closed": self._is_closed,
-            "min_gap_length": self._min_gap_length,
+            **dataclasses.asdict(self),
+            "ssvids": self.sql_strings(self.ssvids),
+            "fields": self.get_select_fields(self.timestamps_as_seconds),
         }
+
+
+@dataclass
+class OpenGapsQuery(GapsQuery):
+    """Gaps still open, for the raw-gaps side input.
+
+    Reads the open rows with all columns and only the ids of the closed ones, so the table's
+    clustering on is_closed prunes the rest (see PIPELINE-4670). Timestamps are Unix seconds, as
+    the gap detector expects.
+    """
+
+    is_closed: Optional[bool] = field(default=False, init=False)
+
+    @property
+    def timestamps_as_seconds(self) -> bool:
+        return True

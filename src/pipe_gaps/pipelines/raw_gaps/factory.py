@@ -7,7 +7,7 @@ from gfw.common.beam.transforms import (
 from gfw.common.beam.pipeline.dag.factory import LinearDagFactory
 
 from pipe_gaps.core import GapDetector
-from pipe_gaps.queries import GapsQuery, MessagesQuery
+from pipe_gaps.queries import MessagesQuery, OpenGapsQuery
 from pipe_gaps.pipelines.raw_gaps.transforms.detect_gaps import DetectGaps
 from pipe_gaps.pipelines.raw_gaps.config import RawGapsConfig
 
@@ -81,11 +81,9 @@ class RawGapsLinearDagFactory(LinearDagFactory):
             and self.config.start_date > self.config.open_gaps_start
         ):
             side_inputs = ReadFromBigQuery.from_query(
-                query=GapsQuery(
+                query=OpenGapsQuery(
                     source_gaps=self.config.bq_in_open_gaps or self.config.bq_out_gaps_versioned,
                     start_date=self.config.open_gaps_start,
-                    is_closed=False,
-                    use_timestamp=True,
                 ).with_env(self.config.jinja_env),
                 method=self.config.bq_read_method,
                 read_from_bigquery_factory=self.read_from_bigquery_factory,

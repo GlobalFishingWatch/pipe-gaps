@@ -1,80 +1,86 @@
-from datetime import datetime
+import dataclasses
 
-from gfw.common.query import Query
+from datetime import date
+
+import pytest
 
 from pipe_gaps import queries
 
+
 DUMMY_TABLE = "project.dataset.table"
 
-EXPECTED = """
-SELECT gap_id,
-       ssvid,
-       VERSION,
-       positions_hours_before,
-       positions_hours_before_ter,
-       positions_hours_before_sat,
-       positions_hours_before_dyn,
-       distance_m,
-       duration_h,
-       implied_speed_knots,
-       CAST(UNIX_MICROS(start_timestamp) AS FLOAT64) / 1000000 AS start_timestamp,
-       start_seg_id,
-       start_msgid,
-       start_lat,
-       start_lon,
-       start_ais_class,
-       start_receiver_type,
-       start_distance_from_shore_m,
-       start_distance_from_port_m,
-       CAST(UNIX_MICROS(end_timestamp) AS FLOAT64) / 1000000 AS end_timestamp,
-       end_msgid,
-       end_seg_id,
-       end_lat,
-       end_lon,
-       end_ais_class,
-       end_receiver_type,
-       end_distance_from_shore_m,
-       end_distance_from_port_m,
-       is_closed
-FROM
-    (
-        SELECT *
-        FROM `{table}` QUALIFY ROW_NUMBER() OVER (
-        PARTITION BY gap_id, start_timestamp ORDER BY VERSION DESC) = 1
-    )
-WHERE 1 = 1
-  AND DATE(start_timestamp) >= '2024-01-01'
-  AND DATE(end_timestamp) < '2024-01-02'
-  AND ssvid IN ('1234',
-                '5678')
-  AND NOT is_closed
-""".format(table=DUMMY_TABLE)
+
+def _sql(query):
+    return " ".join(query.render().split())
 
 
-def test_gaps_query():
-    start_date = datetime(2024, 1, 1).date()
-    end_date = datetime(2024, 1, 2).date()
+@pytest.mark.parametrize(
+    "query_class, is_closed",
+    [(queries.GapsQuery, None), (queries.OpenGapsQuery, False)],
+)
+def test_constructor_takes_only_template_variables(query_class, is_closed):
+    """is_closed is a template variable set by each class, not a constructor argument."""
+    arguments = [field.name for field in dataclasses.fields(query_class) if field.init]
+    assert arguments == ["source_gaps", "start_date", "end_date", "ssvids", "min_gap_length"]
 
-    # Test without ssvids filter.
-    query = queries.GapsQuery(source_gaps=DUMMY_TABLE, start_date=start_date)
-    query.render()
-
-    # Test with ssvids filter.
-    query = queries.GapsQuery(source_gaps=DUMMY_TABLE, start_date=start_date, ssvids=["1234"])
-    query.render()
-
-    # Test with end_date filter.
-    query = queries.GapsQuery(
-        source_gaps=DUMMY_TABLE,
-        start_date=start_date,
-        end_date=end_date,
-        is_closed=False,
-        ssvids=["1234", "5678"],
-        use_timestamp=True,
-    )
+    query = query_class(source_gaps=DUMMY_TABLE)
+    assert query.template_vars["is_closed"] is is_closed
     assert query.output_type == queries.Gap
 
-    rendered = query.render(formatted=True)
+    with pytest.raises(TypeError, match="is_closed"):
+        query_class(source_gaps=DUMMY_TABLE, is_closed=True)
 
-    expected_formatted = Query.format(EXPECTED)
-    assert rendered.strip() == expected_formatted.strip()
+
+def test_gaps_query_reads_every_gap_with_timestamps():
+    sql = _sql(queries.GapsQuery(source_gaps=DUMMY_TABLE))
+
+    assert f"SELECT * FROM `{DUMMY_TABLE}` WHERE 1=1" in sql
+    assert "is_closed = FALSE" not in sql
+    assert "UNIX_MICROS" not in sql
+
+
+def test_gaps_query_filters_start_date_before_the_dedup_and_the_rest_after():
+    """start_date is on the dedup key, so filtering it first can't change the last version, and
+    it prunes partitions. The other filters could drop a gap's last version and let an older one
+    take its place, so they go after.
+    """
+    sql = _sql(
+        queries.GapsQuery(
+            source_gaps=DUMMY_TABLE,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 1, 2),
+            ssvids=["1234", "5678"],
+            min_gap_length=6,
+        )
+    )
+    dedup = sql.index("QUALIFY ROW_NUMBER()")
+
+    assert sql.index("AND DATE(start_timestamp) >= '2024-01-01'") < dedup
+    assert sql.index("AND DATE(end_timestamp) < '2024-01-02'") > dedup
+    assert sql.index("AND ssvid IN ('1234', '5678')") > dedup
+    assert sql.index("AND (NOT is_closed OR duration_h > 6)") > dedup
+
+
+def test_open_gaps_query_reads_open_rows_and_only_the_ids_of_closed_ones():
+    """is_closed = FALSE / TRUE (not NOT is_closed) lets the table's clustering prune the rest."""
+    sql = _sql(queries.OpenGapsQuery(source_gaps=DUMMY_TABLE, start_date=date(2012, 1, 1)))
+
+    assert (
+        f"SELECT * FROM `{DUMMY_TABLE}` WHERE is_closed = FALSE "
+        "AND DATE(start_timestamp) >= '2012-01-01'"
+    ) in sql
+    assert (
+        f"SELECT DISTINCT gap_id, start_timestamp FROM `{DUMMY_TABLE}` WHERE is_closed = TRUE "
+        "AND DATE(start_timestamp) >= '2012-01-01'"
+    ) in sql
+    assert (
+        "LEFT JOIN closed_ids USING (gap_id, start_timestamp) WHERE closed_ids.gap_id IS NULL"
+    ) in sql
+    assert "NOT is_closed" not in sql
+
+
+def test_open_gaps_query_returns_timestamps_as_seconds():
+    sql = _sql(queries.OpenGapsQuery(source_gaps=DUMMY_TABLE))
+
+    assert "CAST(UNIX_MICROS(start_timestamp) AS FLOAT64) / 1000000 AS start_timestamp" in sql
+    assert "CAST(UNIX_MICROS(end_timestamp) AS FLOAT64) / 1000000 AS end_timestamp" in sql
