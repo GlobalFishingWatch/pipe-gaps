@@ -1,0 +1,15 @@
+#standardSQL
+
+-- Intentional disabling events: the gap events classified as intentional disabling.
+-- Same rows and schema as the gap events table, so they can be read without scanning it.
+-- NULL (not classified) is excluded, as is false.
+
+-- Parameters of this query:
+-- * source_gap_events
+
+SELECT
+    *
+FROM
+    `{{ source_gap_events }}`
+WHERE
+    SAFE_CAST(JSON_VALUE(event_info, '$.intentional_disabling') AS BOOL)

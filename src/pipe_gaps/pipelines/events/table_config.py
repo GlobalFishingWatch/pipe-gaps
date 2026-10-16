@@ -22,6 +22,18 @@ until it is closed in the future when new data arrives.
 """
 
 
+INTENTIONAL_DISABLING_SUMMARY = """\
+Gap events classified as intentional disabling (`intentional_disabling = true`
+in `event_info`): gaps likely caused by the onboard equipment being intentionally
+turned off, rather than by poor reception or malfunction.
+
+Same rows and schema as the gap events table, so these events can be read without
+scanning the whole table. Gaps not classified (`intentional_disabling` is `null`),
+such as those starting before 2017, are not included.
+See the pipe-gaps README for the definition of intentional disabling event.
+"""
+
+
 @dataclass
 class GapEventsTableDescription(TableDescription):
     repo_name: str = "pipe-gaps"
@@ -29,6 +41,13 @@ class GapEventsTableDescription(TableDescription):
     subtitle: str = "𝗧𝗶𝗺𝗲 𝗴𝗮𝗽𝘀 𝗯𝗲𝘁𝘄𝗲𝗲𝗻 𝘃𝗲𝘀𝘀𝗲𝗹𝘀 𝗽𝗼𝘀𝗶𝘁𝗶𝗼𝗻𝘀"
     summary: str = collapse_paragraphs(SUMMARY)
     caveats: str = CAVEATS
+
+
+@dataclass
+class IntentionalDisablingEventsTableDescription(GapEventsTableDescription):
+    title: str = "INTENTIONAL DISABLING EVENTS"
+    subtitle: str = "𝗚𝗮𝗽𝘀 𝗹𝗶𝗸𝗲𝗹𝘆 𝗰𝗮𝘂𝘀𝗲𝗱 𝗯𝘆 𝗶𝗻𝘁𝗲𝗻𝘁𝗶𝗼𝗻𝗮𝗹 𝗱𝗶𝘀𝗮𝗯𝗹𝗶𝗻𝗴"
+    summary: str = collapse_paragraphs(INTENTIONAL_DISABLING_SUMMARY)
 
 
 @dataclass
@@ -63,3 +82,10 @@ class GapEventsTableConfig(TableConfig):
 
     def delete_query(self, **kwargs: Any) -> str | None:
         """Returns a rendered query to truncate gaps from start_date."""
+
+
+@dataclass
+class IntentionalDisablingEventsTableConfig(GapEventsTableConfig):
+    """Same schema and partitioning as the gap events table; small, so not clustered."""
+
+    clustering_fields: tuple | None = None

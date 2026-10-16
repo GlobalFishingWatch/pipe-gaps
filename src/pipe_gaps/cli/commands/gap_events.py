@@ -28,6 +28,11 @@ HELP_BQ_IN_VESSELS_BYYEAR_FLAG_FIELD = (
     "Defaults to «<field-prefix>mmsi_flag»; VMS pipelines pass «gfw_best_flag»."
 )
 HELP_BQ_OUT_GAP_EVENTS = "BigQuery table in which to store the gap events."
+HELP_BQ_OUT_DISABLING = (
+    "BigQuery table in which to store only the intentional disabling events "
+    "(intentional_disabling is true), a copy of those gap-event rows. "
+    "Requires --classify-disabling. Optional."
+)
 
 HELP_CLASSIFY_DISABLING = (
     "If passed, classifies gaps as intentional disabling in event_info. If not, "
@@ -90,6 +95,7 @@ class GapEvents(Command):
             Option("--bq-in-vessels-byyear-flag-field", type=str,
                    help=HELP_BQ_IN_VESSELS_BYYEAR_FLAG_FIELD),
             Option("--bq-out-gap-events", type=str, help=HELP_BQ_OUT_GAP_EVENTS),
+            Option("--bq-out-intentional-disabling-events", type=str, help=HELP_BQ_OUT_DISABLING),
             Option("--mock-bq-clients", type=bool, help=HELP_MOCK_BQ_CLIENTS),
             Option("--exclude-open-gaps", type=bool, help=HELP_EXCLUDE_OPEN_GAPS),
             Option("--classify-disabling", type=bool, help=HELP_CLASSIFY_DISABLING),

@@ -69,7 +69,7 @@ Time gap detector for vessel position reporting systems (**[AIS]**, **[VMS]**, e
 **Table of contents**:
 - [Introduction](#introduction)
 - [Definition of gap](#definition-of-gap)
-- [Definition of disabling event](#definition-of-disabling-event)
+- [Definition of intentional disabling event](#definition-of-intentional-disabling-event)
 - [Some results](#some-results)
 - [:warning: Important note on grouping messages by `ssvid`](#warning-important-note-on-grouping-messages-by-ssvid)
 - [:warning: Important note on not filtering `overlapping_and_short`](#warning-important-note-on-not-filtering-overlapping_and_short)
@@ -138,15 +138,15 @@ This de-noising process happens in the [segment pipeline].
 
 </div>
 
-## Definition of disabling event
+## Definition of intentional disabling event
 
 <div align="justify">
 
-A **disabling event** is a gap that is likely to be caused by
+An **intentional disabling event** is a gap that is likely to be caused by
 the onboard equipment being intentionally turned off,
 rather than by poor reception or malfunction.
 Following [[1]](#1),
-a gap is classified as a disabling event (`intentional_disabling = true`)
+a gap is classified as an intentional disabling event (`intentional_disabling = true`)
 when all of the following conditions hold:
 
 | Condition | Default |
@@ -410,13 +410,21 @@ All the needed transformations are encapsulated in the query
 This process can be executed with the command `pipe-gaps gap-events`. See next section.
 
 When the `--classify-disabling` flag is passed,
-this is also the step in which gaps are classified as disabling events.
+this is also the step in which gaps are classified as intentional disabling events.
 It never filters out a gap event:
 it sets `intentional_disabling` and `positions_per_day_sat_reception`
 in the `event_info` of the event.
 Without the flag, both fields are still present, as `null` (not classified),
 so `event_info` has the same keys either way.
-See [Definition of disabling event](#definition-of-disabling-event).
+See [Definition of intentional disabling event](#definition-of-intentional-disabling-event).
+
+If `--bq-out-intentional-disabling-events` is also passed,
+the intentional disabling events (`intentional_disabling = true`) are also written to that table,
+after the gap events table is written.
+It has the same rows and schema as the gap events table,
+so they can be read without scanning the whole gap events table.
+The gap events table still contains them.
+Gaps not classified (`null`) are not included.
 
 </div>
 

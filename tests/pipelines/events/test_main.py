@@ -9,7 +9,11 @@ from google.cloud import bigquery
 from gfw.common.bigquery.helper import BigQueryHelper
 from pipe_gaps.pipelines.events import main
 from pipe_gaps.pipelines.events.config import GapEventsConfig
-from pipe_gaps.pipelines.events.main import GapEventQuery, fetch_regions_registry
+from pipe_gaps.pipelines.events.main import (
+    GapEventQuery,
+    IntentionalDisablingEventsQuery,
+    fetch_regions_registry,
+)
 
 
 def _tables_created_on_write(client, existing=None):
@@ -311,8 +315,13 @@ def test_regions_rendered_query_struct_matches_registry_regions(basic_config_kwa
 
 
 @pytest.fixture
-def gap_events_config_kwargs(basic_config_kwargs):
-    return basic_config_kwargs | {"bq_out_gap_events": "p.d.gap_events"}
+def disabling_config_kwargs(basic_config_kwargs):
+    return basic_config_kwargs | {
+        "bq_out_gap_events": "p.d.gap_events",
+        "classify_disabling": True,
+        "bq_in_sat_reception": "p.d.sat_reception",
+        "bq_out_intentional_disabling_events": "p.d.intentional_disabling_events",
+    }
 
 
 def _run(kwargs):
@@ -332,45 +341,91 @@ def _destination_job_configs(client):
     ]
 
 
-def test_gap_events_table_is_partitioned_by_event_start_month(gap_events_config_kwargs):
+def _destinations(client):
+    return [job_config.destination.table_id for job_config in _destination_job_configs(client)]
+
+
+def test_intentional_disabling_events_requires_classify_disabling(basic_config_kwargs):
+    with pytest.raises(ValueError, match="bq_out_intentional_disabling_events"):
+        _disabling_classification_query(
+            basic_config_kwargs
+            | {"bq_out_intentional_disabling_events": "project.dataset.disabling"}
+        )
+
+
+def test_intentional_disabling_events_query_selects_disabling_rows_from_gap_events():
+    """A separate table with only the intentional disabling events, so they can be read
+    without scanning the whole gap-events table.
+    """
+    query = IntentionalDisablingEventsQuery("project.dataset.gap_events")
+    sql = _normalize_whitespace(query.render())
+
+    assert "FROM `project.dataset.gap_events`" in sql
+    assert "WHERE SAFE_CAST(JSON_VALUE(event_info, '$.intentional_disabling') AS BOOL)" in sql
+
+
+def test_intentional_disabling_events_not_written_by_default(basic_config_kwargs):
+    client = _run(basic_config_kwargs | {"bq_out_gap_events": "p.d.gap_events"})
+    assert _destinations(client) == ["gap_events"]
+
+
+def test_intentional_disabling_events_written_after_gap_events(disabling_config_kwargs):
+    client = _run(disabling_config_kwargs)
+
+    assert _destinations(client) == ["gap_events", "intentional_disabling_events"]
+    disabling_query = _normalize_whitespace(client.query.call_args_list[-1].args[0])
+    assert "FROM `p.d.gap_events`" in disabling_query
+
+
+def test_output_tables_are_partitioned_by_event_start_month(disabling_config_kwargs):
     """product_events was created unpartitioned, as the partitioning declared in its table
     config was never passed to the query.
     """
-    (job_config,) = _destination_job_configs(_run(gap_events_config_kwargs))
+    gap_events, intentional_disabling_events = _destination_job_configs(
+        _run(disabling_config_kwargs)
+    )
 
-    assert job_config.destination.table_id == "gap_events"
-    assert job_config.time_partitioning.field == "event_start"
-    assert job_config.time_partitioning.type_ == "MONTH"
-    assert job_config.clustering_fields == ["seg_id"]
+    for job_config in (gap_events, intentional_disabling_events):
+        assert job_config.time_partitioning.field == "event_start"
+        assert job_config.time_partitioning.type_ == "MONTH"
+
+    assert gap_events.clustering_fields == ["seg_id"]
+    assert intentional_disabling_events.clustering_fields is None
 
 
-def test_gap_events_table_gets_its_schema_and_description(mocker, gap_events_config_kwargs):
+def test_each_output_table_gets_its_schema_and_description(mocker, disabling_config_kwargs):
     update_table_metadata = mocker.patch.object(
         BigQueryHelper, "update_table_metadata", autospec=True
     )
 
-    _run(gap_events_config_kwargs)
+    _run(disabling_config_kwargs)
 
-    (call,) = update_table_metadata.call_args_list
-    assert call.args[1] == "p.d.gap_events"
-    assert len(call.kwargs["schema"]) > 0
-    assert "GAP EVENTS" in call.kwargs["description"]
+    calls = {call.args[1]: call.kwargs for call in update_table_metadata.call_args_list}
+    assert list(calls) == ["p.d.gap_events", "p.d.intentional_disabling_events"]
+    assert all(len(kwargs["schema"]) > 0 for kwargs in calls.values())
+    assert "GAP EVENTS" in calls["p.d.gap_events"]["description"]
+    disabling_description = calls["p.d.intentional_disabling_events"]["description"]
+    assert "INTENTIONAL DISABLING EVENTS" in disabling_description
 
 
-def test_gap_events_table_allows_recreation_with_its_config_layout(
-    mocker, gap_events_config_kwargs
+def test_output_tables_allow_recreation_with_their_config_layout(
+    mocker, disabling_config_kwargs
 ):
-    """Recreating a table whose layout differs from its config is left to gfw-common
-    (allow_table_recreation), as WRITE_TRUNCATE can't change it.
+    """product_events was created unpartitioned. Recreating a table whose layout differs from
+    its config is left to gfw-common (allow_table_recreation), as WRITE_TRUNCATE can't change it.
     """
     run_query = mocker.spy(BigQueryHelper, "run_query")
 
-    _run(gap_events_config_kwargs)
+    _run(disabling_config_kwargs)
 
-    (kwargs,) = [c.kwargs for c in run_query.call_args_list if c.kwargs.get("destination")]
-    assert kwargs["destination"] == "p.d.gap_events"
-    assert kwargs["write_disposition"] == "WRITE_TRUNCATE"
-    assert kwargs["partition_field"] == "event_start"
-    assert kwargs["partition_type"] == "MONTH"
-    assert kwargs["allow_table_recreation"] is True
-    assert kwargs["labels"] == {"env": "test"}
+    writes = [call.kwargs for call in run_query.call_args_list if call.kwargs.get("destination")]
+    assert [kwargs["destination"] for kwargs in writes] == [
+        "p.d.gap_events",
+        "p.d.intentional_disabling_events",
+    ]
+    for kwargs in writes:
+        assert kwargs["write_disposition"] == "WRITE_TRUNCATE"
+        assert kwargs["partition_field"] == "event_start"
+        assert kwargs["partition_type"] == "MONTH"
+        assert kwargs["allow_table_recreation"] is True
+        assert kwargs["labels"] == {"env": "test"}
