@@ -58,8 +58,7 @@ def basic_config_kwargs():
 
 
 def test_run(basic_config_kwargs):
-    input_config = SimpleNamespace(**basic_config_kwargs)
-    main.run(input_config)
+    main.run(GapEventsConfig.from_namespace(SimpleNamespace(**basic_config_kwargs)))
 
 
 class TestFlagField:
@@ -325,7 +324,8 @@ def _run(kwargs):
     bq_helper = BigQueryHelper.mocked()
     # Output tables don't exist yet: the queries create them.
     bq_helper.client.get_table.side_effect = _tables_created_on_write(bq_helper.client)
-    main.run(SimpleNamespace(**kwargs), bq_client_factory=lambda **_: bq_helper.client)
+    config = GapEventsConfig.from_namespace(SimpleNamespace(**kwargs))
+    main.run(config, bq_client_factory=lambda **_: bq_helper.client)
     return bq_helper.client
 
 
