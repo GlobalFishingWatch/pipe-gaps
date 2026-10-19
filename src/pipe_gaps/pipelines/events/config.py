@@ -42,6 +42,11 @@ class GapEventsConfig(DatePipelineConfig):
     # the 2017 Spire launch. See PIPELINE-4662.
     disabling_min_year: int = 2017
 
+    # Optional table with only the intentional disabling events (intentional_disabling = true):
+    # a copy of those gap-event rows, so they can be read without scanning the whole gap-events
+    # table.
+    bq_out_intentional_disabling_events: str | None = None
+
     def __post_init__(self) -> None:
         super().__post_init__()
         self.validate()
@@ -49,6 +54,11 @@ class GapEventsConfig(DatePipelineConfig):
     def validate(self) -> None:
         if self.classify_disabling and self.bq_in_sat_reception is None:
             raise ValueError("bq_in_sat_reception is required when classify_disabling is set.")
+
+        if self.bq_out_intentional_disabling_events is not None and not self.classify_disabling:
+            raise ValueError(
+                "bq_out_intentional_disabling_events requires classify_disabling to be set."
+            )
 
     @property
     def vessels_byyear_flag_field(self) -> str:

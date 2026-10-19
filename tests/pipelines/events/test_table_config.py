@@ -1,6 +1,8 @@
 from pipe_gaps.pipelines.events.table_config import (
     GapEventsTableConfig,
     GapEventsTableDescription,
+    IntentionalDisablingEventsTableConfig,
+    IntentionalDisablingEventsTableDescription,
 )
 
 
@@ -57,3 +59,23 @@ def test_gaps_table_config_with_description():
     )
 
     assert isinstance(config.description, GapEventsTableDescription)
+
+
+def test_intentional_disabling_events_table_description():
+    description = IntentionalDisablingEventsTableDescription(version="1.0.0").render()
+
+    assert "INTENTIONAL DISABLING EVENTS" in description
+    assert "intentional_disabling = true" in description
+
+
+def test_intentional_disabling_events_table_config_same_schema_no_clustering():
+    regions = [{"name": "eez", "description": "Exclusive Economic Zones."}]
+    gap_events = GapEventsTableConfig(table_id="gap-events", regions=regions)
+    disabling = IntentionalDisablingEventsTableConfig(
+        table_id="intentional-disabling-events", regions=regions
+    )
+
+    assert disabling.schema == gap_events.schema
+    assert disabling.partition_field == gap_events.partition_field == "event_start"
+    assert disabling.partition_type == gap_events.partition_type == "MONTH"
+    assert disabling.clustering_fields is None

@@ -33,6 +33,7 @@ def test_cli_executes_run_with_disabling_classification(tmp_path):
         "--disabling-min-reception-positions-per-day", "5",
         "--disabling-min-positions-before", "2",
         "--disabling-min-year", "2019",
+        "--bq-out-intentional-disabling-events", "project.dataset.intentional_disabling_events",
     ]
 
     main.run(args)
