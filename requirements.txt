@@ -65,7 +65,7 @@ geographiclib==2.1
     # via geopy
 geopy==2.4.1
     # via pipe-gaps (pyproject.toml)
-gfw-common==0.20.3
+gfw-common==0.24.2
     # via pipe-gaps (pyproject.toml)
 google-api-core==2.30.0
     # via
