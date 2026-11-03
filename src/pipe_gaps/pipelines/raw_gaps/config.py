@@ -8,6 +8,7 @@ from datetime import date, timedelta
 from functools import cached_property
 
 from gfw.common.beam.pipeline.hooks import create_table_hook, create_view_hook, delete_events_hook
+from gfw.common.bigquery.helper import BigQueryHelper
 from gfw.common.config import DatePipelineConfig
 from pipe_gaps.pipelines.raw_gaps.hooks import create_segments_n_days_ahead_hook
 from pipe_gaps.pipelines.raw_gaps.table_config import (
@@ -116,6 +117,10 @@ class RawGapsConfig(DatePipelineConfig):
         )
 
     @property
+    def bq_client_factory(self):
+        return BigQueryHelper.get_client_factory(mocked=self.mock_bq_clients)
+
+    @property
     def pre_hooks(self):
         pre_hooks = []
         if self.filter_good_seg and self.good_seg_stabilization_days > 0:
@@ -130,7 +135,8 @@ class RawGapsConfig(DatePipelineConfig):
             pre_hooks.append(
                 create_table_hook(
                     table_config=self.table_config,
-                    mock=self.mock_bq_clients
+                    labels=self.labels,
+                    bq_client_factory=self.bq_client_factory,
                 )
             )
 
@@ -138,7 +144,8 @@ class RawGapsConfig(DatePipelineConfig):
                 delete_events_hook(
                     table_config=self.table_config,
                     start_date=self.start_date,
-                    mock=self.mock_bq_clients
+                    labels=self.labels,
+                    bq_client_factory=self.bq_client_factory,
                 )
             )
         return pre_hooks
@@ -150,7 +157,8 @@ class RawGapsConfig(DatePipelineConfig):
             post_hooks.append(
                 create_view_hook(
                     view_config=self.view_config,
-                    mock=self.mock_bq_clients
+                    labels=self.labels,
+                    bq_client_factory=self.bq_client_factory,
                 )
             )
         return post_hooks

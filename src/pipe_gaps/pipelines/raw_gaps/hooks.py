@@ -56,10 +56,13 @@ def create_segments_n_days_ahead_hook(
 
         logger.info(f"Validating {segments_table} table is {n_days} days ahead...")
 
-        query_result = bq_client.run_query(query, query_parameters=[
+        query_result = bq_client.run_query(
+            query,
+            query_parameters=[
                 bigquery.ScalarQueryParameter("end_date", "DATE", end_date),
                 bigquery.ScalarQueryParameter("n_days", "INT64", n_days),
-            ]
+            ],
+            labels=pipeline_config.labels,
         )
 
         result = query_result.tolist()[0]
