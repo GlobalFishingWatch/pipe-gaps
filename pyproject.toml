@@ -10,6 +10,13 @@ where = ["src"]
 exclude = ["tests*"]
 namespaces = false
 
+[tool.setuptools.package-data]
+"pipe_gaps" = ["assets/**/*"]
+
+# Keep stray bytecode in assets/ out of the wheel.
+[tool.setuptools.exclude-package-data]
+"*" = ["__pycache__", "*.py[cod]"]
+
 [project]
 name = "pipe-gaps"
 version = "0.17.1"
@@ -51,8 +58,10 @@ Issues = "https://github.com/GlobalFishingWatch/pipe-gaps/issues"
 [project.scripts]
 pipe-gaps = "pipe_gaps.cli.main:main"
 
-[project.optional-dependencies]
-
+# Development dependencies (PEP 735). Not published with the package, and installed on their own,
+# without the project dependencies. The test group is compiled into requirements-test.txt for the
+# test Docker image, which installs it on top of the production image.
+[dependency-groups]
 # Linting and code quality tools
 lint = [
   "black~=25.1",               # Code formatting tool.
@@ -80,9 +89,7 @@ build = [
   "twine~=6.1",             # For uploading Python packages to PyPI.
 ]
 
-# Test dependencies (PEP 735). Not published with the package: the test Docker image installs
-# them, compiled into requirements-test.txt, on top of the production image.
-[dependency-groups]
+# Test dependencies
 test = [
   "pytest~=9.0",             # Core testing framework.
   "pytest-cov~=7.0",         # Coverage plugin for pytest.
