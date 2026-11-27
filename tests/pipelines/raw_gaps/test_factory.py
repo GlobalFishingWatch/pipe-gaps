@@ -41,7 +41,6 @@ def test_core_property(base_config):
     assert isinstance(core, DetectGaps)
     assert core._gap_detector._threshold_h == timedelta(hours=base_config.min_gap_length)
     assert core._gap_detector._normalize_output == base_config.normalize_output
-    assert core._eval_last == base_config.eval_last
     assert core._date_range == (base_config.start_date, base_config.end_date)
     assert core._window_period_d == base_config.window_period_d
     assert core._window_offset_h == base_config.n_hours_before

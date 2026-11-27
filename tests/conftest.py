@@ -98,8 +98,8 @@ class TestCases:
                 create_message(ssvid="446013750", time=datetime(2024, 1, 1, 1)),
             ],
             "threshold": 1,
-            "expected_gaps": 0,
-            "id": "different_ssvid_zero_gaps"
+            "expected_gaps": 2,
+            "id": "different_ssvid_two_open_gaps"
         },
         {
             "messages": [
@@ -108,8 +108,8 @@ class TestCases:
                 create_message(ssvid="226013750", time=datetime(2024, 1, 1, 1)),
             ],
             "threshold": 1,
-            "expected_gaps": 4,
-            "id": "same_ssvid_two_closed_gaps_two_open_gaps"
+            "expected_gaps": 5,
+            "id": "same_ssvid_two_closed_gaps_three_open_gaps"
         },
         {
             "messages": [
@@ -130,8 +130,8 @@ class TestCases:
                 create_message(ssvid="446013750", time=datetime(2024, 1, 1, 1)),
             ],
             "threshold": 12,
-            "expected_gaps": 3,
-            "id": "different_ssvid_three_gaps"
+            "expected_gaps": 4,
+            "id": "different_ssvid_four_gaps"
         }
     ]
 
@@ -178,7 +178,6 @@ class TestCases:
                 utc_datetime(2020, 12, 19, 14): utc_datetime(2020, 12, 20, 20),
                 utc_datetime(2020, 12, 22, 1): None
             },
-            "eval_last": True,
             "id": "one_open_gap_one_closed_gap"
         },
     ]
@@ -394,7 +393,6 @@ class TestCases:
             "date_range": (date(2024, 2, 1), date(2024, 3, 1)),  # We want to process february.
             "window_period_d": 1,
             "expected_gaps": 6,
-            "eval_last": True,
             "id": "period_1_day"
         },
         {
@@ -414,7 +412,6 @@ class TestCases:
             "date_range": (date(2024, 2, 1), date(2024, 2, 4)),
             "window_period_d": 1,
             "expected_gaps": 4,
-            "eval_last": True,
             "id": "period_1_day_for_3_days"
         },
         {
@@ -426,7 +423,6 @@ class TestCases:
             "date_range": (date(2024, 1, 2), date(2024, 1, 3)),
             "window_period_d": 1,
             "expected_gaps": 0,
-            "eval_last": True,
             "id": "period_1_day_no_duplicated_open_gap"
         },
         {
@@ -440,7 +436,6 @@ class TestCases:
             "date_range": (date(2020, 12, 20), date(2020, 12, 21)),
             "window_period_d": 1,
             "expected_gaps": 1,
-            "eval_last": True,
             "id": "period_1_day_no_duplicated_closed_gap"
         },
         {
@@ -455,7 +450,6 @@ class TestCases:
             "date_range": (date(2020, 12, 21), date(2020, 12, 22)),
             "window_period_d": 1,
             "expected_gaps": 1,
-            "eval_last": True,
             "id": "period_1_day_no_duplicated_closed_gap_2"
         },
         {
@@ -470,7 +464,6 @@ class TestCases:
             "threshold": 10,
             "date_range": (date(2024, 2, 1), date(2024, 3, 1)),  # We want to process february.
             "window_period_d": 30,
-            "eval_last": True,
             "expected_gaps": 6,
             "id": "period_30_days"
         },
@@ -482,7 +475,6 @@ class TestCases:
             "threshold": 6,
             "date_range": (date(2020, 1, 1), date(2020, 12, 20)),
             "window_period_d": 180,
-            "eval_last": True,
             "expected_gaps": 1,
             "id": "period_180_days_gap_after_6_pm_in_last_window",
         },
@@ -494,7 +486,6 @@ class TestCases:
             "threshold": 6,
             "date_range": (date(2020, 1, 1), date(2020, 12, 20)),
             "window_period_d": 180,
-            "eval_last": True,
             "expected_gaps": 1,
             "id": "period_180_days_gap_after_6_pm_in_middle_window",
         },
@@ -538,6 +529,13 @@ class TestCases:
                     "positions_hours_before_sat": 2,
                     "positions_hours_before_dyn": 1
                 },
+                {
+                    "positions_hours_before": 6,
+                    "positions_hours_before_ter": 3,
+                    "positions_hours_before_sat": 2,
+                    "positions_hours_before_dyn": 0
+                },
+                # open gap on the last message (04:00)
                 {
                     "positions_hours_before": 6,
                     "positions_hours_before_ter": 3,

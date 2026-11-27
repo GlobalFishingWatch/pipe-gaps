@@ -48,10 +48,6 @@ HELP_SSVIDS = "Detect gaps for this list of ssvids, e.g., Â«412331104,477334300Â
 
 HELP_MIN_GAP_LENGTH = "Minimum time difference (hours) to start considering gaps."
 HELP_WINDOW_PERIOD_D = "Period (in days) of time windows used to parallelize the process."
-HELP_EVAL_LAST = (
-    "Whether to evaluate the last message of each SSVID to create an open gap "
-    "if it qualifies. Use --no-eval-last to disable it."
-)
 HELP_N_HOURS_BEFORE = "Count messages this amount of hours before each gap."
 HELP_STABILIZATION = (
     "Number of days the segments table needs to be ahead in order to filter messages with a "
@@ -93,7 +89,6 @@ class RawGaps(Command):
             Option("--ssvids", type=ssvids, default=tuple(), help=HELP_SSVIDS),
             Option("--min-gap-length", type=float, required=True, help=HELP_MIN_GAP_LENGTH),
             Option("--window-period-d", type=float, help=HELP_WINDOW_PERIOD_D),
-            Option("--eval-last", type=bool, default=True, help=HELP_EVAL_LAST),
             Option("--n-hours-before", default=12, type=float, help=HELP_N_HOURS_BEFORE),
             Option("--good-seg-stabilization-days", default=0, type=int, help=HELP_STABILIZATION),
         ]

@@ -34,7 +34,6 @@ class DetectGaps(beam.PTransform):
         gap_detector: GapDetector,
         date_range: tuple[date, date],
         key: Key = None,
-        eval_last: bool = False,
         window_period_d: int = None,
         window_offset_h: int = 12,
         side_inputs: PCollection = None,
@@ -68,10 +67,6 @@ class DetectGaps(beam.PTransform):
                 A `Key` object used to group elements, typically by SSVID or a similar entity.
                 Defaults to `Key([GapDetector.KEY_SSVID])` if not provided.
 
-            eval_last:
-                If True, evaluates the last message in each group to possibly generate
-                an open-ended gap.
-
             window_period_d:
                 Size of the time window (in days) for grouping messages. If not set,
                 it is the length of `date_range`, capped by `MAX_WINDOW_PERIOD_D`.
@@ -87,7 +82,6 @@ class DetectGaps(beam.PTransform):
         super().__init__(**kwargs)
         self._gap_detector = gap_detector
         self._key = key or Key([self.KEY_SSVID])
-        self._eval_last = eval_last
         self._window_period_d = window_period_d
         self._window_offset_h = window_offset_h
         self._date_range = date_range
@@ -134,7 +128,6 @@ class DetectGaps(beam.PTransform):
         process_boundaries = ProcessBoundaries(
             gap_detector=self._gap_detector,
             key=self._key,
-            eval_last=self._eval_last,
             date_range=self._date_range,
         )
 
