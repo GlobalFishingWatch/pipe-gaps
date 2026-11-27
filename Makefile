@@ -17,7 +17,7 @@ GCP_DOCKER_VOLUME:=gcp
 # Run as the host user so files written into the mounted repo aren't owned by root.
 DOCKER_AS_USER:=--user $(shell id -u):$(shell id -g) -e UV_CACHE_DIR=/tmp/uv-cache
 
-PYTHON_VERSION:=3.12
+PYTHON_VERSION:=3.13
 UV_VERSION := 0.10.9
 
 VENV:=uv venv

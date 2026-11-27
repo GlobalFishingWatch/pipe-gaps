@@ -90,7 +90,7 @@ google-api-core==2.30.0
     #   google-cloud-storage
     #   google-cloud-videointelligence
     #   google-cloud-vision
-google-apitools==0.5.31
+google-apitools==0.5.35
     # via apache-beam
 google-auth==2.49.0
     # via
@@ -471,8 +471,6 @@ tenacity==9.1.4
     # via google-genai
 typing-extensions==4.15.0
     # via
-    #   aiosignal
-    #   anyio
     #   apache-beam
     #   google-cloud-aiplatform
     #   google-genai
