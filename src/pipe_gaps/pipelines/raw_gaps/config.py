@@ -33,7 +33,6 @@ class RawGapsConfig(DatePipelineConfig):
     min_gap_length: float = 6
     n_hours_before: int = 12
     window_period_d: int = None
-    eval_last: bool = True
     normalize_output: bool = True
     json_in_messages: str = None
     json_in_open_gaps: str = None

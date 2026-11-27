@@ -57,7 +57,6 @@ def test_detect_gaps_between_years(messages, threshold, expected_gaps):
             input_pcoll
             | "DetectGaps" >> DetectGaps(
                 gap_detector=gap_detector,
-                eval_last=False,
                 date_range=_covering_date_range(messages),
                 window_offset_h=12,
             )
@@ -97,7 +96,6 @@ def test_detect_gaps_between_days(messages, open_gaps, threshold, date_range, ex
             main_input
             | "DetectGaps" >> DetectGaps(
                 gap_detector=gap_detector,
-                eval_last=True,
                 window_period_d=1,
                 date_range=date_range,
                 side_inputs=side_input
@@ -116,7 +114,7 @@ def test_detect_gaps_between_days(messages, open_gaps, threshold, date_range, ex
 
 
 @pytest.mark.parametrize(
-    "messages, open_gaps, expected_gaps, threshold, date_range, window_period_d, eval_last",
+    "messages, open_gaps, expected_gaps, threshold, date_range, window_period_d",
     [
         pytest.param(
             case["messages"],
@@ -125,14 +123,13 @@ def test_detect_gaps_between_days(messages, open_gaps, threshold, date_range, ex
             case["threshold"],
             case["date_range"],
             case["window_period_d"],
-            case["eval_last"],
             id=case["id"]
         )
         for case in TestCases.GAP_BETWEEN_ARBITRARY_PERIODS
     ],
 )
 def test_detect_gaps_arbitrary_period(
-    messages, open_gaps, expected_gaps, threshold, date_range, window_period_d, eval_last
+    messages, open_gaps, expected_gaps, threshold, date_range, window_period_d
 ):
     """Checks that DetectGaps correctly detects gaps with arbitrary window periods."""
 
@@ -146,7 +143,6 @@ def test_detect_gaps_arbitrary_period(
             main_input
             | "DetectGaps" >> DetectGaps(
                 gap_detector=gap_detector,
-                eval_last=eval_last,
                 window_period_d=window_period_d,
                 date_range=date_range,
                 side_inputs=side_input
@@ -185,7 +181,6 @@ def test_detect_open_gaps(messages, threshold, expected_gaps):
             | "DetectGaps" >> DetectGaps(
                 gap_detector=gap_detector,
                 date_range=_covering_date_range(messages),
-                eval_last=True  # Required to detect open-ended gaps
             )
         )
 
@@ -200,8 +195,7 @@ def test_detect_open_gaps(messages, threshold, expected_gaps):
 
 
 @pytest.mark.parametrize(
-    "messages, open_gaps, expected_gaps, expected_dt, threshold, date_range, window_period_d,"
-    "eval_last",
+    "messages, open_gaps, expected_gaps, expected_dt, threshold, date_range, window_period_d",
     [
         pytest.param(
             case["messages"],
@@ -211,7 +205,6 @@ def test_detect_open_gaps(messages, threshold, expected_gaps):
             case["threshold"],
             case["date_range"],
             case["window_period_d"],
-            case["eval_last"],
             id=case["id"]
         )
         for case in TestCases.CLOSING_GAPS
@@ -219,7 +212,7 @@ def test_detect_open_gaps(messages, threshold, expected_gaps):
 )
 def test_detect_closing_gaps(
     messages, open_gaps, expected_gaps, expected_dt,
-    threshold, date_range, window_period_d, eval_last,
+    threshold, date_range, window_period_d,
 ):
     """Checks that open gaps are correctly closed by later messages."""
 
@@ -233,7 +226,6 @@ def test_detect_closing_gaps(
             main_input
             | "DetectGaps" >> DetectGaps(
                 gap_detector=gap_detector,
-                eval_last=eval_last,
                 window_period_d=window_period_d,
                 date_range=date_range,
                 side_inputs=side_input,
@@ -281,7 +273,6 @@ def test_detect_positions_hours_before(messages, threshold, date_range, expected
             main_input
             | "DetectGaps" >> DetectGaps(
                 gap_detector=gap_detector,
-                eval_last=False,
                 window_period_d=1,
                 date_range=date_range,
                 side_inputs=None,
@@ -390,7 +381,6 @@ def test_incremental_mode(
                 | "DetectGaps" >> DetectGaps(
                     gap_detector=gap_detector,
                     date_range=(start_date, end_date),
-                    eval_last=True,
                     window_period_d=window_period_d,
                     side_inputs=side_inputs,
                 )

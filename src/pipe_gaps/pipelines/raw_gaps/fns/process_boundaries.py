@@ -96,11 +96,9 @@ class ProcessBoundaries(DoFn):
         gap_detector: GapDetector,
         key: Key,
         date_range: tuple[date, date],
-        eval_last: bool = False,
     ):
         self._gap_detector = gap_detector
         self._key = key
-        self._eval_last = eval_last
         self._date_range = date_range
 
     def process(
@@ -179,31 +177,30 @@ class ProcessBoundaries(DoFn):
 
         # Step three:
         # Create open gap if last message of last group met condition.
-        if self._eval_last:
-            last_boundary = boundaries.boundary_for_last_message()
-            last_message = last_boundary.last_message()
+        last_boundary = boundaries.boundary_for_last_message()
+        last_message = last_boundary.last_message()
 
-            last_message_dt = datetime_from_timestamp(last_message[self.KEY_TIMESTAMP])
+        last_message_dt = datetime_from_timestamp(last_message[self.KEY_TIMESTAMP])
 
-            comparison_date = self._date_range[1] - timedelta(days=1)
+        comparison_date = self._date_range[1] - timedelta(days=1)
 
-            last_message_in_range = self._is_message_in_range(last_message)
-            open_gap_condition_is_met = self._gap_detector.eval_open_gap(
-                last_message, comparison_date)
+        last_message_in_range = self._is_message_in_range(last_message)
+        open_gap_condition_is_met = self._gap_detector.eval_open_gap(
+            last_message, comparison_date)
 
-            logger.debug("Comparison dt: {}".format(comparison_date))
-            logger.debug("Last message dt: {}".format(last_message_dt))
-            logger.debug("Is in range: {}".format(last_message_in_range))
-            logger.debug("Open gap condition: {}".format(open_gap_condition_is_met))
+        logger.debug("Comparison dt: {}".format(comparison_date))
+        logger.debug("Last message dt: {}".format(last_message_dt))
+        logger.debug("Is in range: {}".format(last_message_in_range))
+        logger.debug("Open gap condition: {}".format(open_gap_condition_is_met))
 
-            if last_message_in_range and open_gap_condition_is_met:
-                logger.debug(f"Creating new open gap for {formatted_key}...")
-                new_open_gap = self._gap_detector.create_gap(
-                    off_m=last_message,
-                    previous_positions=last_boundary.end[:-1]
-                )
-                gaps[new_open_gap[self.KEY_GAP_ID]] = [new_open_gap]
-                self._gap_detector.debug_gap(new_open_gap)
+        if last_message_in_range and open_gap_condition_is_met:
+            logger.debug(f"Creating new open gap for {formatted_key}...")
+            new_open_gap = self._gap_detector.create_gap(
+                off_m=last_message,
+                previous_positions=last_boundary.end[:-1]
+            )
+            gaps[new_open_gap[self.KEY_GAP_ID]] = [new_open_gap]
+            self._gap_detector.debug_gap(new_open_gap)
 
         total = sum(len(versions) for versions in gaps.values())
         logger.debug(f"Found {total} gap(s) for boundaries {formatted_key}...")

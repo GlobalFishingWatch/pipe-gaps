@@ -119,7 +119,6 @@ def test_process_boundaries_closes_open_gap_with_same_on_regardless_of_input_ord
     dofn = ProcessBoundaries(
         gap_detector=gap_detector,
         key=key,
-        eval_last=False,
         date_range=(range_start_date, range_end_date),
     )
 

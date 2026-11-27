@@ -19,7 +19,6 @@ def base_config():
         filter_not_overlapping_and_short=True,
         min_gap_length=5.0,
         n_hours_before=10,
-        eval_last=True,
         normalize_output=True,
         save_json=False,
         mock_bq_clients=False,

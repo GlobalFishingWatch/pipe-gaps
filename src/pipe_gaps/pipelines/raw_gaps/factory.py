@@ -65,7 +65,6 @@ class RawGapsLinearDagFactory(LinearDagFactory):
                 threshold=self.config.min_gap_length,
                 normalize_output=self.config.normalize_output,
             ),
-            eval_last=self.config.eval_last,
             date_range=(self.config.start_date, self.config.end_date),
             window_period_d=self.config.window_period_d,
             window_offset_h=self.config.n_hours_before,
