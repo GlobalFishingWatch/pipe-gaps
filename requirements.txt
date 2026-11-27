@@ -14,7 +14,7 @@ anyio==4.12.1
     # via
     #   google-genai
     #   httpx
-apache-beam==2.76.0
+apache-beam==2.78.0
     # via
     #   pipe-gaps (pyproject.toml)
     #   gfw-common
@@ -37,7 +37,7 @@ charset-normalizer==3.4.5
     # via requests
 cloud-sql-python-connector==1.20.0
     # via apache-beam
-cryptography==46.0.5
+cryptography==50.0.2
     # via
     #   apache-beam
     #   cloud-sql-python-connector
@@ -90,7 +90,7 @@ google-api-core==2.30.0
     #   google-cloud-storage
     #   google-cloud-videointelligence
     #   google-cloud-vision
-google-apitools==0.5.31
+google-apitools==0.5.35
     # via apache-beam
 google-auth==2.49.0
     # via
@@ -131,7 +131,7 @@ google-cloud-bigquery==3.40.1
     #   google-cloud-aiplatform
 google-cloud-bigquery-storage==2.36.2
     # via apache-beam
-google-cloud-bigtable==2.50.1
+google-cloud-bigtable==2.47.0
     # via apache-beam
 google-cloud-build==3.38.1
     # via apache-beam
@@ -169,7 +169,7 @@ google-cloud-secret-manager==2.26.0
     # via apache-beam
 google-cloud-spanner==3.63.0
     # via apache-beam
-google-cloud-storage==2.19.0
+google-cloud-storage==3.17.2
     # via
     #   apache-beam
     #   google-cloud-aiplatform
@@ -471,8 +471,6 @@ tenacity==9.1.4
     # via google-genai
 typing-extensions==4.15.0
     # via
-    #   aiosignal
-    #   anyio
     #   apache-beam
     #   google-cloud-aiplatform
     #   google-genai

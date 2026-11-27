@@ -7,7 +7,7 @@ FROM ghcr.io/astral-sh/uv:0.10.9 AS uv
 # ---------------------------------------------------------------------------------------
 # BUILDER
 # ---------------------------------------------------------------------------------------
-FROM python:3.12-slim-bookworm AS builder
+FROM python:3.13-slim-bookworm AS builder
 
 VOLUME ["/root/.config"]
 
@@ -29,7 +29,7 @@ RUN uv pip install --system --prefix=/install --no-deps .
 # ---------------------------------------------------------------------------------------
 # PRODUCTION IMAGE
 # ---------------------------------------------------------------------------------------
-FROM python:3.12-slim-bookworm AS prod
+FROM python:3.13-slim-bookworm AS prod
 
 ENV PYTHONUNBUFFERED=1
 
@@ -38,7 +38,7 @@ COPY --from=builder /install /usr/local
 
 # APACHE BEAM INTEGRATION
 # IMPORTANT: this version must match the apache-beam pin in requirements.txt.
-COPY --from=apache/beam_python3.12_sdk:2.76.0 /opt/apache/beam /opt/apache/beam
+COPY --from=apache/beam_python3.13_sdk:2.78.0 /opt/apache/beam /opt/apache/beam
 ENTRYPOINT ["/opt/apache/beam/boot"]
 
 WORKDIR /opt/project
