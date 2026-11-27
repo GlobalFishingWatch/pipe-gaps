@@ -36,7 +36,7 @@ classifiers = [
 ]
 requires-python = ">= 3.12"
 dependencies = [
-    "apache-beam[gcp]~=2.76",
+    "apache-beam[gcp]~=2.78",
     "importlib-resources~=6.0",
     "geopy~=2.4",
     "google-cloud-bigquery~=3.0",

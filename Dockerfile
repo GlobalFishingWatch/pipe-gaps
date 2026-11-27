@@ -38,7 +38,7 @@ COPY --from=builder /install /usr/local
 
 # APACHE BEAM INTEGRATION
 # IMPORTANT: this version must match the apache-beam pin in requirements.txt.
-COPY --from=apache/beam_python3.12_sdk:2.76.0 /opt/apache/beam /opt/apache/beam
+COPY --from=apache/beam_python3.12_sdk:2.78.0 /opt/apache/beam /opt/apache/beam
 ENTRYPOINT ["/opt/apache/beam/boot"]
 
 WORKDIR /opt/project
